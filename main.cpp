@@ -1,9 +1,13 @@
-#include "Compass.cpp"
+#include "Bitboard.h"
+#include "Compass.h"
 #include <iostream>
 
 int main() {
     Compass compass;
-    std::cout << sizeof(compass.val) << std::endl;
-
+    for (int sq = 0; sq < 64; sq++)
+    {
+        std::cout << sq << ":" << std::endl;
+        print_binary_string(compass.knight_moves[sq]);
+    }
     return 0;
 }

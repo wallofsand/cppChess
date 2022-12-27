@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(cppChess VERSION 0.1.0)
 include_directories(lab7 ${CMAKE_CURRENT_SOURCE_DIR})
-add_executable(cppChess main.cpp ccc_time.cpp Compass.cpp)
+add_executable(cppChess main.cpp Compass.cpp Bitboard.cpp)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
