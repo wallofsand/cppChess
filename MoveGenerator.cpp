@@ -15,53 +15,48 @@ void MoveGenerator::check_exists()
 {
     U64 op = *chess.bb_by_color[1-chess.aci];
     int ksq = find_king(chess.aci);
+    in_check = false;
+    in_double_check = false;
     if (chess.aci == 0 && Bitboard::contains_square((chess.bb_pawns & op & ch_cst::nothfile), ksq + NORTHWEST))
-        in_check = true;
+        check_method(ksq+NORTHWEST);
     if (chess.aci == 0 && Bitboard::contains_square((chess.bb_pawns & op & ch_cst::notafile), ksq + NORTHEAST))
-        if (in_check)
-        {
-            in_double_check = true;
-            return;
-        }
-        in_check = true;
+        check_method(ksq+NORTHEAST);
     if (chess.aci == 1 && Bitboard::contains_square((chess.bb_pawns & op & ch_cst::nothfile), ksq + SOUTHWEST))
-        if (in_check)
-        {
-            in_double_check = true;
-            return;
-        }
-        in_check = true;
+        check_method(ksq+SOUTHWEST);
     if (chess.aci == 1 && Bitboard::contains_square((chess.bb_pawns & op & ch_cst::notafile), ksq + SOUTHEAST))
-        if (in_check)
-        {
-            in_double_check = true;
-            return;
-        }
-        in_check = true;
+        check_method(ksq+SOUTHEAST);
     for (Move m : gen_knight_piece_moves(ksq))
         if (Bitboard::contains_square(chess.bb_knights & op, m.end))
-            if (in_check)
-            {
-                in_double_check = true;
-                return;
-            }
-            in_check = true;
+            check_method(m.end);
     for (Move m : gen_bishop_piece_moves(ksq))
         if (Bitboard::contains_square(chess.bb_queens & chess.bb_bishops & op, m.end))
-            if (in_check)
-            {
-                in_double_check = true;
-                return;
-            }
-            in_check = true;
+            check_method(m.end);
     for (Move m : gen_rook_piece_moves(ksq))
         if (Bitboard::contains_square(chess.bb_queens & chess.bb_rooks & op, m.end))
-            if (in_check)
-            {
-                in_double_check = true;
-                return;
-            }
-            in_check = true;
+            check_method(m.end);
+    // if there is single check, find the ray that the check exists upon
+    if (in_check && !in_double_check)
+    {
+        if (Bitboard::contains_square(chess.bb_knights, check_square)
+            || Bitboard::contains_square(chess.bb_pawns, check_square))
+        {
+            check_ray = 1L << check_square;
+        } else {
+            int squares[2] = { ksq, check_square };
+            check_ray = Compass::build_ray(squares);
+        }
+    }
+}
+
+void MoveGenerator::check_method(int sq)
+{
+    if (in_check)
+    {
+        in_double_check = true;
+        return;
+    }
+    in_check = true;
+    check_square = sq;
 }
 
 // setup method to get pins in a position
@@ -286,6 +281,14 @@ std::vector<Move> MoveGenerator::gen_pawn_moves()
             || Compass::file_xindex(find_king(chess.aci)) == Compass::file_xindex(sq))
             pawn_moves.push_back(Move(sq - 2 * PAWN_DIR[chess.aci], sq));
     }
+    if (in_check)
+        for (int i = pawn_moves.size()-1; i >= 0; i--)
+        {
+            Move m = pawn_moves[i];
+            if (m.end != check_square && !Bitboard::contains_square(check_ray, m.end) &&
+            (m.end != chess.ep_square && check_square == chess.ep_square + directions::PAWN_DIR[1-chess.aci]))
+                pawn_moves.erase(pawn_moves.begin()+i);
+        }
     return pawn_moves;
 }
 
@@ -302,6 +305,13 @@ std::vector<Move> MoveGenerator::gen_knight_piece_moves(int sq)
             continue;
         knight_moves.push_back(Move(sq, end));
     }
+    if (in_check)
+        for (int i = knight_moves.size()-1; i >= 0; i--)
+        {
+            Move m = knight_moves[i];
+            if (m.end != check_square && !Bitboard::contains_square(check_ray, m.end))
+                knight_moves.erase(knight_moves.begin()+i);
+        }
     return knight_moves;
 }
 
@@ -322,6 +332,13 @@ std::vector<Move> MoveGenerator::gen_bishop_piece_moves(int sq)
                 break;
         }
     }
+    if (in_check)
+        for (int i = bishop_moves.size()-1; i >= 0; i--)
+        {
+            Move m = bishop_moves[i];
+            if (m.end != check_square && !Bitboard::contains_square(check_ray, m.end))
+                bishop_moves.erase(bishop_moves.begin()+i);
+        }
     return bishop_moves;
 }
 
@@ -345,6 +362,13 @@ std::vector<Move> MoveGenerator::gen_rook_piece_moves(int sq)
                 break;
         }
     }
+    if (in_check)
+        for (int i = rook_moves.size()-1; i >= 0; i--)
+        {
+            Move m = rook_moves[i];
+            if (m.end != check_square && !Bitboard::contains_square(check_ray, m.end))
+                rook_moves.erase(rook_moves.begin()+i);
+        }
     return rook_moves;
 }
 

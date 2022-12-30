@@ -17,7 +17,7 @@ int main()
         std::vector<Move> move_list = mgen.gen_moves();
         print_board(chess);
         bool move = false;
-        Move* next;
+        Move next(0,0);
         while (!move)
         {
             int counter = 0;
@@ -25,7 +25,7 @@ int main()
             {
                 if (counter == 4)
                     std::cout << std::endl;
-                std::cout << m.start << ", " << m.end << " ";
+                std::cout << "(" << m.start << ", " << m.end << ") ";
                 counter = counter++ % 5;
             }
             std::cout << std::endl << "Start square: ";
@@ -38,11 +38,11 @@ int main()
                 if (m.start == start && m.end == end && (m.promote == 0 || m.promote == ch_cst::QUEEN))
                 {
                     move = true;
-                    next = &m;
+                    next = Move(start, end, m.promote);
                 }
             }
         }
-        chess.make_move(*next);
+        chess.make_move(next);
     }
 
 

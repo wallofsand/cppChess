@@ -28,6 +28,7 @@ void Chess::build_bitboards()
 void Chess::make_move(Move mv, bool record)
 {
     bool iscastle = false;
+    ep_square = 0;
     for (int i = ch_cst::PAWN; i <= ch_cst::KING; i++)
     {
         // remove captured pieces
@@ -41,6 +42,11 @@ void Chess::make_move(Move mv, bool record)
             // place the new piece
             *bb_by_piece[i] |= 1ull << mv.end;
             *bb_by_color[aci] ^= 1ull << mv.end;
+            // update ep square
+            if (i == ch_cst::PAWN && (mv.start - mv.end) % 16 == 0)
+            {
+                ep_square = mv.start + directions::PAWN_DIR[aci];
+            }
             // update castle rights
             if (i == ch_cst::KING)
             {

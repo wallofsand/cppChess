@@ -18,6 +18,8 @@ void Compass::init_compass()
     compute_king_attacks();
 }
 
+// Method to return a bitboard of the ray which
+// passes through square sq in direction DIRS[dir_index]
 U64 Compass::build_ray(int sq, int dir_index)
 {
     U64 ray = 0;

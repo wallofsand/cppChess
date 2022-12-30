@@ -14,6 +14,8 @@ public:
 private:
     bool in_check;
     bool in_double_check;
+    int check_square;
+    U64 check_ray;
     U64 pinned_pieces;
     U64 pin_ray_moves;
     U64 op_attack_mask;
@@ -21,6 +23,7 @@ private:
     int find_king(int color);
     void gen_op_attack_mask();
     void check_exists();
+    void check_method(int sq);
     std::vector<Move> gen_pawn_moves();
     std::vector<Move> gen_knight_piece_moves(int sq);
     std::vector<Move> gen_bishop_piece_moves(int sq);
