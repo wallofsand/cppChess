@@ -4,14 +4,15 @@
 #include <string>
 #include <iostream>
 
-#define ULL unsigned long long
+#define U64 uint64_t
 
 namespace Bitboard
 {
-    bool contains_square(ULL bb, int sq);
-    std::string build_binary_string(ULL bb);
-    void print_binary_string(std::string bbstr);
-    int leading_zeros(ULL num);
+    bool contains_square(U64 bb, int sq);
+    int num_bits_flipped(U64 bb);
+    std::string build_binary_string(U64 bb);
+    void print_binary_string(std::string bbstr, bool fmt = true);
+    int leading_zeros(U64 num);
 }
 
 #endif

@@ -3,28 +3,51 @@
 #include <iostream>
 
 char piece_char(int piece);
+void print_ULL(U64 bb, bool fmt = true);
+void print_board(Chess ch);
 
 int main()
 {
+    Compass::init_compass();
     Chess chess;
-    std::string str = "";
-    for (int sq = 0; sq < 64; sq++)
+    MoveGenerator mgen;
+    while (!chess.game_over)
     {
-        for (int color = 0; color < 2; color++)
+        mgen.set_chess(&chess);
+        std::vector<Move> move_list = mgen.gen_moves();
+        print_board(chess);
+        bool move = false;
+        Move* next;
+        while (!move)
         {
-            for (int piece = constants::PAWN; piece <= constants::KING; piece++)
+            int counter = 0;
+            for (Move m : mgen.gen_moves())
             {
-                if (Bitboard::contains_square(*chess.piece_bbs[piece] & *chess.color_bbs[color], sq))
+                if (counter == 4)
+                    std::cout << std::endl;
+                std::cout << m.start << ", " << m.end << " ";
+                counter = counter++ % 5;
+            }
+            std::cout << std::endl << "Start square: ";
+            int start, end;
+            std::cin >> start;
+            std::cout << " End square: ";
+            std::cin >> end;
+            for (Move m : move_list)
+            {
+                if (m.start == start && m.end == end && (m.promote == 0 || m.promote == ch_cst::QUEEN))
                 {
-                    str += piece_char(piece | color << 3);
+                    move = true;
+                    next = &m;
                 }
             }
         }
-        if (str.length() > sq)
-            continue;
-        str += '.';
+        chess.make_move(*next);
     }
-    Bitboard::print_binary_string(str);
+
+
+
+
     return 0;
 }
 
@@ -59,4 +82,31 @@ char piece_char(int piece)
     default:
         return '.';
     }
+}
+
+void print_board(Chess ch)
+{
+std::string board = "";
+        for (int sq = 0; sq < 64; sq++)
+        {
+            for (int color = 0; color < 2; color++)
+            {
+                for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
+                {
+                    if (Bitboard::contains_square(*ch.bb_by_piece[piece] & *ch.bb_by_color[color], sq))
+                    {
+                        board += piece_char(piece | (color << 3));
+                    }
+                }
+            }
+            if (board.length() > sq)
+                continue;
+            board += '.';
+        }
+        Bitboard::print_binary_string(board);
+}
+
+void print_ULL(U64 bb, bool fmt)
+{
+    Bitboard::print_binary_string(Bitboard::build_binary_string(bb), fmt);
 }

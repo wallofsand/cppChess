@@ -6,8 +6,10 @@
 #include "Compass.h"
 #include <vector>
 
-namespace constants
+namespace ch_cst
 {
+    const U64 notafile = 0xfefefefefefefefe;
+    const U64 nothfile = 0x7f7f7f7f7f7f7f7f;
     const int PAWN = 1;
     const int KNIGHT = 2;
     const int BISHOP = 3;
@@ -23,20 +25,20 @@ class Chess
 public:
     Chess();
     ~Chess();
-    uint8_t ep_square;
-    bool gameover = false;
-    ULL bbwhite;
-    ULL bbblack;
-    ULL bbpawns;
-    ULL bbknights;
-    ULL bbbishops;
-    ULL bbrooks;
-    ULL bbqueens;
-    ULL bbkings;
-    ULL bbocc;
-    ULL* piece_bbs[7] = { nullptr, &bbpawns, &bbknights, &bbbishops, &bbrooks, &bbqueens, &bbkings };
-    ULL* color_bbs[2] = { &bbwhite, &bbblack };
-    int active_color_index;
+    int ep_square;
+    bool game_over = false;
+    U64 bb_white;
+    U64 bb_black;
+    U64 bb_pawns;
+    U64 bb_knights;
+    U64 bb_bishops;
+    U64 bb_rooks;
+    U64 bb_queens;
+    U64 bb_kings;
+    U64 bb_occ;
+    U64* bb_by_piece[7] = { nullptr, &bb_pawns, &bb_knights, &bb_bishops, &bb_rooks, &bb_queens, &bb_kings };
+    U64* bb_by_color[2] = { &bb_white, &bb_black };
+    int aci;
     int ply_counter;
     std::vector<Move> history;
     int castle_rights;
