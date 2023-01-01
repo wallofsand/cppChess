@@ -1,4 +1,5 @@
 #include "Move.h"
+#include "Compass.h"
 
 Move::Move(int s, int e)
 {
@@ -14,4 +15,7 @@ Move::Move(int s, int e, int type)
     promote = type;
 }
 
-Move::~Move() { }
+std::ostream& operator<<(std::ostream& outS, const Move& mv)
+{
+    return outS << Compass::string_from_square(mv.start) << Compass::string_from_square(mv.end);
+}

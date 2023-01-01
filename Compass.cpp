@@ -1,6 +1,4 @@
 #include "Compass.h"
-#include "Chess.h"
-#include <iostream>
 
 using namespace directions;
 
@@ -190,4 +188,123 @@ int Compass::rank_yindex(int sq)
 int Compass::file_xindex(int sq)
 {
     return sq % 8;
+}
+
+int Compass::square_from_string(std::string str)
+{
+    int sq;
+    switch (str[0])
+    {
+    case 'a':
+        sq = 0;
+        break;
+    case 'b':
+        sq = 1;
+        break;
+    case 'c':
+        sq = 2;
+        break;
+    case 'd':
+        sq = 3;
+        break;
+    case 'e':
+        sq = 4;
+        break;
+    case 'f':
+        sq = 5;
+        break;
+    case 'g':
+        sq = 6;
+        break;
+    case 'h':
+        sq = 7;
+        break;
+    }
+    switch (str[1])
+    {
+    case '1':
+        break;
+    case '2':
+        sq |= 1 << 3;
+        break;
+    case '3':
+        sq |= 2 << 3;
+        break;
+    case '4':
+        sq |= 3 << 3;
+        break;
+    case '5':
+        sq |= 4 << 3;
+        break;
+    case '6':
+        sq |= 5 << 3;
+        break;
+    case '7':
+        sq |= 6 << 3;
+        break;
+    case '8':
+        sq |= 7 << 3;
+        break;
+    }
+    return sq;
+}
+
+std::string Compass::string_from_square(int sq)
+{
+    std::string str = "";
+    switch (file_xindex(sq))
+    {
+    case 0:
+        str += 'a';
+        break;
+    case 1:
+        str += 'b';
+        break;
+    case 2:
+        str += 'c';
+        break;
+    case 3:
+        str += 'd';
+        break;
+    case 4:
+        str += 'e';
+        break;
+    case 5:
+        str += 'f';
+        break;
+    case 6:
+        str += 'g';
+        break;
+    case 7:
+        str += 'h';
+        break;
+    }
+    switch (rank_yindex(sq))
+    {
+    case 0:
+        str += '1';
+        break;
+    case 1:
+        str += '2';
+        break;
+    case 2:
+        str += '3';
+        break;
+    case 3:
+        str += '4';
+        break;
+    case 4:
+        str += '5';
+        break;
+    case 5:
+        str += '6';
+        break;
+    case 6:
+        str += '7';
+        break;
+    case 7:
+        str += '8';
+        break;
+    }
+    return str;
 }

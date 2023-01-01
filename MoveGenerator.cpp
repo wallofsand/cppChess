@@ -1,5 +1,4 @@
 #include "MoveGenerator.h"
-#include "Compass.h"
 
 using namespace directions;
 
@@ -11,19 +10,28 @@ void MoveGenerator::set_chess(Chess* ch)
     check_exists();
 }
 
+bool MoveGenerator::is_game_over()
+{
+    if (gen_moves().size() == 0)
+    {
+        return true;
+    }
+    return false;
+}
+
 void MoveGenerator::check_exists()
 {
     U64 op = *chess.bb_by_color[1-chess.aci];
     int ksq = find_king(chess.aci);
     in_check = false;
     in_double_check = false;
-    if (chess.aci == 0 && Bitboard::contains_square((chess.bb_pawns & op & ch_cst::nothfile), ksq + NORTHWEST))
+    if (!chess.aci && Bitboard::contains_square((chess.bb_pawns & op & Bitboard::NOTHFILE), ksq + NORTHWEST))
         check_method(ksq+NORTHWEST);
-    if (chess.aci == 0 && Bitboard::contains_square((chess.bb_pawns & op & ch_cst::notafile), ksq + NORTHEAST))
+    if (!chess.aci && Bitboard::contains_square((chess.bb_pawns & op & Bitboard::NOTAFILE), ksq + NORTHEAST))
         check_method(ksq+NORTHEAST);
-    if (chess.aci == 1 && Bitboard::contains_square((chess.bb_pawns & op & ch_cst::nothfile), ksq + SOUTHWEST))
+    if (chess.aci && Bitboard::contains_square((chess.bb_pawns & op & Bitboard::NOTHFILE), ksq + SOUTHWEST))
         check_method(ksq+SOUTHWEST);
-    if (chess.aci == 1 && Bitboard::contains_square((chess.bb_pawns & op & ch_cst::notafile), ksq + SOUTHEAST))
+    if (chess.aci && Bitboard::contains_square((chess.bb_pawns & op & Bitboard::NOTAFILE), ksq + SOUTHEAST))
         check_method(ksq+SOUTHEAST);
     for (Move m : gen_knight_piece_moves(ksq))
         if (Bitboard::contains_square(chess.bb_knights & op, m.end))
@@ -104,12 +112,12 @@ void MoveGenerator::find_pins()
             break;
         }
     }
-    if (pinned_pieces)
-    {
-        std::cout << "Pins exist!" << std::endl;
-        Bitboard::print_binary_string(Bitboard::build_binary_string(pinned_pieces));
-        Bitboard::print_binary_string(Bitboard::build_binary_string(pin_ray_moves));
-    }
+    // if (pinned_pieces)
+    // {
+    //     std::cout << "Pins exist!" << std::endl;
+    //     Bitboard::print_binary_string(Bitboard::build_binary_string(pinned_pieces));
+    //     Bitboard::print_binary_string(Bitboard::build_binary_string(pin_ray_moves));
+    // }
 }
 
 void MoveGenerator::gen_op_attack_mask()
@@ -118,12 +126,12 @@ void MoveGenerator::gen_op_attack_mask()
     U64 op = *chess.bb_by_color[1-chess.aci];
     // pawn attacks
     // white, shift left
-    U64 pattacksWest = (chess.bb_pawns & op & ch_cst::notafile) << NORTHWEST;
-    U64 pattacksEast = (chess.bb_pawns & op & ch_cst::nothfile) << NORTHEAST;
+    U64 pattacksWest = (chess.bb_pawns & op & Bitboard::NOTAFILE) << NORTHWEST;
+    U64 pattacksEast = (chess.bb_pawns & op & Bitboard::NOTHFILE) << NORTHEAST;
     if (1-chess.aci)
     { // black, shift right
-        pattacksWest = (chess.bb_pawns & op & ch_cst::notafile) >> NORTHEAST;
-        pattacksEast = (chess.bb_pawns & op & ch_cst::nothfile) >> NORTHWEST;
+        pattacksWest = (chess.bb_pawns & op & Bitboard::NOTAFILE) >> NORTHEAST;
+        pattacksEast = (chess.bb_pawns & op & Bitboard::NOTHFILE) >> NORTHWEST;
     }
     op_attack_mask |= pattacksEast;
     op_attack_mask |= pattacksWest;
@@ -217,12 +225,12 @@ std::vector<Move> MoveGenerator::gen_pawn_moves()
     U64 op = *chess.bb_by_color[1 - chess.aci];
     // pawn captures
     // white to move, shift left
-    U64 capturesWest = (pawns & ~op & ch_cst::notafile) << NORTHWEST & op;
-    U64 capturesEast = (pawns & ~op & ch_cst::nothfile) << NORTHEAST & op;
+    U64 capturesWest = (pawns & ~op & Bitboard::NOTAFILE) << NORTHWEST & op;
+    U64 capturesEast = (pawns & ~op & Bitboard::NOTHFILE) << NORTHEAST & op;
     if (chess.aci)
     { // black to move, shift right
-        capturesWest = (pawns & ~op & ch_cst::notafile) >> NORTHWEST & op;
-        capturesEast = (pawns & ~op & ch_cst::nothfile) >> NORTHEAST & op;
+        capturesWest = (pawns & ~op & Bitboard::NOTAFILE) >> NORTHWEST & op;
+        capturesEast = (pawns & ~op & Bitboard::NOTHFILE) >> NORTHEAST & op;
     }
     if (capturesEast)
     {
@@ -233,7 +241,15 @@ std::vector<Move> MoveGenerator::gen_pawn_moves()
             if (Bitboard::contains_square(pinned_pieces, sq -DIRS[4+2*chess.aci])
                 && !Bitboard::contains_square(pin_ray_moves, sq))
                 continue;
-            pawn_moves.push_back(Move(sq -DIRS[4+2*chess.aci], sq));
+            if (Compass::rank_yindex(sq) % 7 != 0)
+                pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq));
+            else // pawn promotions
+            {
+                pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::QUEEN));
+                pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::ROOK));
+                pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::BISHOP));
+                pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::KNIGHT));
+            }
         }
     }
     if (capturesWest)
@@ -245,7 +261,15 @@ std::vector<Move> MoveGenerator::gen_pawn_moves()
             if (Bitboard::contains_square(pinned_pieces, sq - DIRS[5+2*chess.aci])
                 && !Bitboard::contains_square(pin_ray_moves, sq))
                 continue;
-            pawn_moves.push_back(Move(sq -DIRS[5+2*chess.aci], sq));
+            if (Compass::rank_yindex(sq) % 7 != 0)
+                pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq));
+            else // pawn promotions
+            {
+                pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::QUEEN));
+                pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::ROOK));
+                pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::BISHOP));
+                pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::KNIGHT));
+            }
         }
     }
     /// pawn moves
@@ -263,7 +287,7 @@ std::vector<Move> MoveGenerator::gen_pawn_moves()
     {
         if (!Bitboard::contains_square(pawns, sq))
             continue;
-        if (Bitboard::contains_square(chess.bb_pawns, sq - PAWN_DIR[chess.aci])
+        if (Bitboard::contains_square(chess.bb_pawns & *chess.bb_by_color[chess.aci], sq - PAWN_DIR[chess.aci])
         && (!Bitboard::contains_square(pinned_pieces, sq - PAWN_DIR[chess.aci])
             || Compass::file_xindex(find_king(chess.aci)) == Compass::file_xindex(sq)))
         {
@@ -296,7 +320,7 @@ std::vector<Move> MoveGenerator::gen_knight_piece_moves(int sq)
 {
     std::vector<Move> knight_moves;
     U64 moves = Compass::knight_attacks[sq] & ~*chess.bb_by_color[chess.aci];
-    for (int end = (0 > sq - 17) ? 0 : sq; end < 64 && end < sq + 17; end++)
+    for (int end = std::max(0, sq - 17); end < std::min(64, sq + 18); end++)
     {
         if (!Bitboard::contains_square(moves, end))
             continue;
@@ -376,11 +400,76 @@ std::vector<Move> MoveGenerator::gen_king_piece_moves(int sq)
 {
     std::vector<Move> king_moves;
     U64 moves = Compass::king_attacks[sq] & ~*chess.bb_by_color[chess.aci] & ~op_attack_mask;
-    for (int endsq = 0 > sq-9 ? 0 : sq-9; endsq < 64 && endsq <= sq+9; endsq++)
+    // normal moves
+    for (int endsq = std::max(0, sq-9); endsq < std::min(64, sq+9); endsq++)
     {
         if (!Bitboard::contains_square(moves, endsq))
             continue;
         king_moves.push_back(Move(sq, endsq));
     }
+    // castle moves
+    // wh:QuKi bl:QuKi
+    if (chess.castle_rights & 2 << 2 * chess.aci
+        && Bitboard::contains_square(chess.bb_rooks & *chess.bb_by_color[chess.aci], sq - 4))
+        // queenside castle
+        king_moves.push_back(Move(sq, sq - 2));
+    if (chess.castle_rights & 1 << 2 * chess.aci
+        && Bitboard::contains_square(chess.bb_rooks & *chess.bb_by_color[chess.aci], sq + 3))
+        // kingside castle
+        king_moves.push_back(Move(sq, sq + 2));
     return king_moves;
+}
+
+U64 MoveGenerator::perft_root(int depth) {
+    std::string perft_results[] = {
+        "1",
+        "20",
+        "400",
+        "8902",
+        "197281",
+        "4865609",
+        "119060324",
+        "3195901860",
+        "84998978956",
+        "2439530234167",
+        "69352859712417",
+        "2097651003696806",
+        "62854969236701747",
+        "1981066775000396239",
+        "61885021521585529237",
+        "2015099950053364471960"
+    };
+    if (depth == 0)
+        return 1;
+    Timer t;
+    U64 nodes = 0;
+    std::cout << "Starting perft(" << depth << "):" << std::endl;
+    set_chess(&chess);
+    std::vector<Move> moves = gen_moves();
+    for (int mvidx = 0; mvidx < moves.size(); mvidx++)
+    {
+        Move mv = moves.at(mvidx);
+        std::cout << mvidx + 1 << "/" << moves.size() << ": (" << mv.start << ", " << mv.end << ") ";
+        chess.make_move(mv);
+        int i = perft(depth - 1);
+        std::cout << i << std::endl;
+        nodes += i;
+        chess.unmake_move(1);
+    }
+    std::cout << nodes << " moves found in " << t.elapsed() << " seconds." << std::endl;
+    std::cout << perft_results[depth] << std::endl;
+    return nodes;
+}
+
+U64 MoveGenerator::perft(int depth) {
+    if (depth == 0)
+        return 1;
+    U64 nodes = 0;
+    set_chess(&chess);
+    for (Move mv : gen_moves()) {
+        chess.make_move(mv);
+        nodes += perft(depth - 1);
+        chess.unmake_move(1);
+    }
+    return nodes;
 }

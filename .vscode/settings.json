@@ -57,6 +57,10 @@
         "memory_resource": "cpp",
         "numeric": "cpp",
         "string_view": "cpp",
-        "numbers": "cpp"
+        "numbers": "cpp",
+        "chrono": "cpp",
+        "ratio": "cpp",
+        "fstream": "cpp",
+        "sstream": "cpp"
     }
 }

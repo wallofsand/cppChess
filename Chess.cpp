@@ -4,13 +4,11 @@ Chess::Chess()
 {
     aci = 0;
     ply_counter = 0;
-    // wh:QuKi bl:QuKi
+    // bl:QuKi wh:QuKi
     castle_rights = 0b1111;
     build_bitboards();
     std::vector<Move> history;
 }
-
-Chess::~Chess() {}
 
 void Chess::build_bitboards()
 {
@@ -52,13 +50,13 @@ void Chess::make_move(Move mv, bool record)
             {
                 if (mv.start - mv.end == 2 || mv.start - mv.end == -2)
                     iscastle = true;
-                castle_rights &= 0b11 << (2 * aci);
+                castle_rights &= 3 << (2 * (1 - aci));
             }
             else if (i == ch_cst::ROOK)
                 if (Compass::rank_yindex(mv.start) == 0) // queenside rook moved
-                    castle_rights &= ~(2 << 2 * (1 - aci));
+                    castle_rights &= ~(2 << 2 * aci);
                 else if (Compass::rank_yindex(mv.start) == 7) // kingside rook moved
-                    castle_rights &= ~(1 << 2 * (1 - aci));
+                    castle_rights &= ~(1 << 2 * aci);
         }
     }
     if (iscastle) // handle castles
@@ -82,12 +80,15 @@ void Chess::make_move(Move mv, bool record)
 
 void Chess::unmake_move(int undos)
 {
+    std::vector<Move> hist = history;
+    history.clear();
+    aci = 0;
+    ply_counter = 0;
+    // bl:QuKi wh:QuKi
+    castle_rights = 0b1111;
     build_bitboards();
-    ep_square = 0;
-    for (int i = 0; i < history.size() - undos; i++)
+    for (int i = 0; i < hist.size() - undos; i++)
     {
-        make_move(history[i], false);
+        make_move(history[i]);
     }
-    for (int i = 0; i < undos; i++)
-        history.pop_back();
 }

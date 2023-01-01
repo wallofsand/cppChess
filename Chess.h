@@ -6,25 +6,10 @@
 #include "Compass.h"
 #include <vector>
 
-namespace ch_cst
-{
-    const U64 notafile = 0xfefefefefefefefe;
-    const U64 nothfile = 0x7f7f7f7f7f7f7f7f;
-    const int PAWN = 1;
-    const int KNIGHT = 2;
-    const int BISHOP = 3;
-    const int ROOK = 4;
-    const int QUEEN = 5;
-    const int KING = 6;
-    const int WHITE_INDEX = 0;
-    const int BLACK_INDEX = 1;
-}
-
 class Chess
 {
 public:
     Chess();
-    ~Chess();
     int ep_square;
     bool game_over = false;
     U64 bb_white;

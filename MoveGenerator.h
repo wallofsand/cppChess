@@ -3,6 +3,8 @@
 
 #include "Chess.h"
 #include "Compass.h"
+#include "Timer.h"
+#include <algorithm>
 #include <vector>
 
 class MoveGenerator
@@ -11,6 +13,8 @@ public:
     Chess chess;
     void set_chess(Chess* ch);
     std::vector<Move> gen_moves();
+    U64 perft_root(int depth);
+    U64 perft(int depth);
 private:
     bool in_check;
     bool in_double_check;
@@ -22,6 +26,7 @@ private:
     void find_pins();
     int find_king(int color);
     void gen_op_attack_mask();
+    bool is_game_over();
     void check_exists();
     void check_method(int sq);
     std::vector<Move> gen_pawn_moves();
