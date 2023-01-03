@@ -1,3 +1,6 @@
+// timer class by alex
+// from: https://www.learncpp.com/cpp-tutorial/timing-your-code/
+
 #ifndef TIMER_H
 #define TIMER_H
 

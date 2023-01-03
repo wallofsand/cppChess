@@ -61,6 +61,7 @@
         "chrono": "cpp",
         "ratio": "cpp",
         "fstream": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "iomanip": "cpp"
     }
 }

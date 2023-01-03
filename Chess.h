@@ -10,6 +10,7 @@ class Chess
 {
 public:
     Chess();
+    // Chess(const Chess &ch);
     int ep_square;
     bool game_over = false;
     U64 bb_white;
@@ -27,7 +28,7 @@ public:
     int ply_counter;
     std::vector<Move> history;
     int castle_rights;
-    void make_move(Move mv, bool record = true);
+    void make_move(Move mv);
     void unmake_move(int undos);
 private:
     void build_bitboards();

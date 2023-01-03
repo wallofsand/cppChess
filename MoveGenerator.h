@@ -10,22 +10,22 @@
 class MoveGenerator
 {
 public:
+    MoveGenerator(Chess &ch);
     Chess chess;
-    void set_chess(Chess* ch);
+    void init();
     std::vector<Move> gen_moves();
-    U64 perft_root(int depth);
-    U64 perft(int depth);
-private:
+    U64 perft_root(int depth, bool log = true, bool initial_pos = true);
+    int find_king(int color);
     bool in_check;
     bool in_double_check;
     int check_square;
     U64 check_ray;
     U64 pinned_pieces;
     U64 pin_ray_moves;
-    U64 op_attack_mask;
+    // U64 op_attack_mask;
+    U64 perft(int depth);
     void find_pins();
-    int find_king(int color);
-    void gen_op_attack_mask();
+    U64 gen_op_attack_mask();
     bool is_game_over();
     void check_exists();
     void check_method(int sq);

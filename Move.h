@@ -8,11 +8,12 @@ class Move
 public:
     Move(int s, int e);
     Move(int s, int e, int type);
-    int start;
-    int end;
-    int promote;
-    friend std::ostream& operator<<(std::ostream& outS, const Move& mv);
+    friend std::ostream& operator<<(std::ostream& outS, Move& mv);
+    const int start();
+    const int end();
+    const int promote();
 private:
+    int data;
 };
 
 #endif

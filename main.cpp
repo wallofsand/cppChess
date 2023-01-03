@@ -2,27 +2,26 @@
 #include "MoveGenerator.h"
 #include <iostream>
 
+using namespace ch_cst;
+
 char piece_char(int piece);
+void print_board(Chess ch, bool fmt = true);
 void print_U64(U64 bb, bool fmt = true);
-void print_board(Chess ch);
-U64 gen_shift(U64 x, int s);
 
 int main()
 {
     Compass::init_compass();
     Chess ch;
-    MoveGenerator mgen;
-
-    mgen.perft_root(3);
-    // print_board(ch);
+    MoveGenerator mgen(ch);
 
     for (Move mv : mgen.gen_moves())
     {
-        // ch.make_move(mv);
-        // mgen.set_chess(&ch);
-        // std::cout << mv << std::endl;
-        // mgen.perft_root(2);
-        // ch.unmake_move(1);
+        mgen.init();
+        ch.make_move(mv);
+        print_board(ch, false);
+        std::cout << mv << std::endl;
+        mgen.perft_root(2, false, false);
+        ch.unmake_move(1);
     }
 
     // while (!ch.game_over)
@@ -98,7 +97,7 @@ char piece_char(int piece)
     }
 }
 
-void print_board(Chess ch)
+void print_board(Chess ch, bool fmt)
 {
     std::string board = "";
     for (int sq = 0; sq < 64; sq++)
@@ -117,7 +116,7 @@ void print_board(Chess ch)
             continue;
         board += '.';
     }
-    Bitboard::print_binary_string(board);
+    Bitboard::print_binary_string(board, fmt);
 }
 
 void print_U64(U64 bb, bool fmt)

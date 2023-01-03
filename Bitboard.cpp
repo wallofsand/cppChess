@@ -51,7 +51,7 @@ U64 Bitboard::sout_shift(U64 bb)
  */
 U64 Bitboard::east_shift(U64 bb)
 {
-    return (bb & NOTHFILE) >> 1;
+    return (bb & NOT_H_FILE) >> 1;
 }
 
 /*
@@ -61,7 +61,7 @@ U64 Bitboard::east_shift(U64 bb)
  */
 U64 Bitboard::west_shift(U64 bb)
 {
-    return (bb & NOTAFILE) >> 1;
+    return (bb & NOT_A_FILE) >> 1;
 }
 
 /*
@@ -71,7 +71,7 @@ U64 Bitboard::west_shift(U64 bb)
  */
 U64 Bitboard::NoEa_shift(U64 bb)
 {
-    return (bb & NOTHFILE) << 9;
+    return (bb & NOT_H_FILE) << 9;
 }
 
 /*
@@ -81,7 +81,7 @@ U64 Bitboard::NoEa_shift(U64 bb)
  */
 U64 Bitboard::NoWe_shift(U64 bb)
 {
-    return (bb & NOTAFILE) << 7;
+    return (bb & NOT_A_FILE) << 7;
 }
 
 /*
@@ -91,7 +91,7 @@ U64 Bitboard::NoWe_shift(U64 bb)
  */
 U64 Bitboard::SoEa_shift(U64 bb)
 {
-    return (bb & NOTHFILE) >> 7;
+    return (bb & NOT_H_FILE) >> 7;
 }
 
 /*
@@ -101,7 +101,7 @@ U64 Bitboard::SoEa_shift(U64 bb)
  */
 U64 Bitboard::SoWe_shift(U64 bb)
 {
-    return (bb & NOTAFILE) >> 9;
+    return (bb & NOT_A_FILE) >> 9;
 }
 
 /*
@@ -144,7 +144,7 @@ U64 Bitboard::sout_occl(U64 gen, U64 empty)
  */
 U64 Bitboard::east_occl(U64 gen, U64 empty)
 {
-    empty &= NOTHFILE;
+    empty &= NOT_H_FILE;
     gen |= empty & (gen << 1);
     empty = empty & (empty << 1);
     gen |= empty & (gen << 2);
@@ -161,7 +161,7 @@ U64 Bitboard::east_occl(U64 gen, U64 empty)
  */
 U64 Bitboard::west_occl(U64 gen, U64 empty)
 {
-    empty &= NOTAFILE;
+    empty &= NOT_A_FILE;
     gen |= empty & (gen >> 1);
     empty = empty & (empty >> 1);
     gen |= empty & (gen >> 2);
@@ -178,7 +178,7 @@ U64 Bitboard::west_occl(U64 gen, U64 empty)
  */
 U64 Bitboard::NoEa_occl(U64 gen, U64 empty)
 {
-    empty &= NOTHFILE;
+    empty &= NOT_H_FILE;
     gen |= empty & (gen << 9);
     empty = empty & (empty << 9);
     gen |= empty & (gen << 18);
@@ -195,7 +195,7 @@ U64 Bitboard::NoEa_occl(U64 gen, U64 empty)
  */
 U64 Bitboard::NoWe_occl(U64 gen, U64 empty)
 {
-    empty &= NOTAFILE;
+    empty &= NOT_A_FILE;
     gen |= empty & (gen << 7);
     empty = empty & (empty << 7);
     gen |= empty & (gen << 14);
@@ -212,7 +212,7 @@ U64 Bitboard::NoWe_occl(U64 gen, U64 empty)
  */
 U64 Bitboard::SoEa_occl(U64 gen, U64 empty)
 {
-    empty &= NOTHFILE;
+    empty &= NOT_H_FILE;
     gen |= empty & (gen >> 7);
     empty = empty & (empty >> 7);
     gen |= empty & (gen >> 14);
@@ -229,7 +229,7 @@ U64 Bitboard::SoEa_occl(U64 gen, U64 empty)
  */
 U64 Bitboard::SoWe_occl(U64 gen, U64 empty)
 {
-    empty &= NOTAFILE;
+    empty &= NOT_A_FILE;
     gen |= empty & (gen >> 9);
     empty = empty & (empty >> 9);
     gen |= empty & (gen >> 18);
@@ -297,12 +297,12 @@ void Bitboard::print_binary_string(std::string bbstr, bool fmt)
     for (int file = 7; file >= 0; file--)
     {
         if (fmt)
-            std::cout << divider << std::endl << "!";
+            std::cout << divider << std::endl << "! ";
         for (int rank = 0; rank < 8; rank++)
         {
-            std::cout << " " << bbstr[(file<<3) + rank] << " ";
+            std::cout << bbstr[(file<<3) + rank];
             if (fmt)
-                std::cout << "!";
+                std::cout << " ! ";
         }
         std::cout << std::endl;
     }

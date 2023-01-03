@@ -8,8 +8,8 @@
 
 namespace Bitboard
 {
-    const U64 NOTAFILE = 0xfefefefefefefefe;
-    const U64 NOTHFILE = 0x7f7f7f7f7f7f7f7f;
+    const U64 NOT_A_FILE = 0xfefefefefefefefe;
+    const U64 NOT_H_FILE = 0x7f7f7f7f7f7f7f7f;
     U64 nort_shift(U64 bb);
     U64 sout_shift(U64 bb);
     U64 east_shift(U64 bb);
