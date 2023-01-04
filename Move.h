@@ -12,6 +12,7 @@ public:
     const int start();
     const int end();
     const int promote();
+    const std::string to_string();
 private:
     int data;
 };

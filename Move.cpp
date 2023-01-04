@@ -26,7 +26,13 @@ const int Move::promote()
     return data >> 12;
 }
 
+const std::string Move::to_string()
+{
+    return "(" + Compass::string_from_square(start()) + " "
+        + Compass::string_from_square(end()) + ")";
+}
+
 std::ostream& operator<<(std::ostream& outS, Move& mv)
 {
-    return outS << Compass::string_from_square(mv.start()) << Compass::string_from_square(mv.end());
+    return outS << mv.to_string();
 }

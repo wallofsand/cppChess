@@ -20,12 +20,12 @@ namespace ch_cst
         "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
     };
     /*
-     * Indexed by (piece | (color << 3)) where
-     *      piece: (1 - 6) pawn - king
+     * Indexed by [color << 3 | piece] where
      *      color: (0 - 1) white, black
+     *      piece: (1 - 6) pawn - king
      */
     const char piece_char[15] = {
-        '.', 'P', 'N', 'B', 'R', 'Q', 'K', '.',
+        ' ', 'P', 'N', 'B', 'R', 'Q', 'K', '.',
         '.', 'p', 'n', 'b', 'r', 'q', 'k'
     };
     enum Square {

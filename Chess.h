@@ -4,6 +4,7 @@
 #include "Move.h"
 #include "Bitboard.h"
 #include "Compass.h"
+#include <string>
 #include <vector>
 
 class Chess
@@ -29,6 +30,7 @@ public:
     int castle_rights;
     void make_move(Move mv);
     void unmake_move(int undos);
+    std::string move_fen(Move mv);
 private:
     void build_bitboards();
 };

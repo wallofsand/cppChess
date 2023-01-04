@@ -1,12 +1,13 @@
 #include "Chess.h"
+#include "Move.h"
 #include "MoveGenerator.h"
 #include "SearchLogger.h"
 #include <iostream>
 
 using namespace ch_cst;
 
-U64 perft_root(Chess *chess, int depth, int log_depth, bool initial_pos);
-U64 perft(MoveGenerator *perft_gen, Chess *chess, int depth);
+U64 perft_root(Chess& chess, int depth, bool initial_position = false, int log_depth = 0);
+U64 perft(MoveGenerator& perft_gen, Chess& chess, int depth, SearchLogger& perft_log);
 void print_board(Chess ch, bool fmt = true);
 void print_U64(U64 bb, bool fmt = true);
 
@@ -14,11 +15,8 @@ int main()
 {
     Compass::init_compass();
     Chess ch0;
-    MoveGenerator mgen(ch0);
 
-    std::cout << SearchLogger::date_to_string() << std::endl;
-
-    // perft_root(&ch0, 1, 1, true);
+    perft_root(ch0, 3, true, 2);
 
     return 0;
 }
@@ -34,36 +32,67 @@ const std::string perft_results[] = {
  * Performance test root method
  * @param chess the starting position to test
  * @param depth number of ply to search
- * @param log_depth the depth of nodes to list in log file
- *        default: 0
  * @param initial_pos true if we are testing the initial position.
  *        if (initial_pos && depth < 16) we can print known target values.
  *        default: false
+ * @param log_depth the depth of nodes to list in log file
+ *        default: 0
  */
-U64 perft_root(Chess *chess, int depth, int log_depth, bool initial_pos)
+U64 perft_root(Chess& chess, int depth, bool initial_pos, int log_depth)
 {
     if (depth == 0)
         return 1;
-    Timer t;
+    SearchLogger perft_log("perft_log", depth - log_depth);
     U64 nodes = 0;
-    std::cout << "Starting perft(" << depth << "):" << std::endl;
-    MoveGenerator perft_gen(*chess);
+    if (depth > perft_log.depth)
+    {
+        perft_log.write(fmt::format("Starting perft({}) at {}\n",
+            depth, SearchLogger::time_to_string()));
+    }
+    std::cout << "Starting perft(" << depth << ") at "
+            << SearchLogger::time_to_string() << std::endl;
+    Timer t;
+
+    // main test loop
+    MoveGenerator perft_gen(chess);
     std::vector<Move> moves = perft_gen.gen_moves();
     for (int mvidx = 0; mvidx < moves.size(); mvidx++)
     {
         Move mv = moves.at(mvidx);
-        if (log_depth)
-            std::cout << mvidx + 1 << "/" << moves.size() << ": (" << mv << ") ";
-        (*chess).make_move(mv);
-        U64 i = perft(&perft_gen, chess, depth - 1);
-        if (log_depth)
-            std::cout << i << std::endl;
+        std::cout << mvidx + 1 << "/" << moves.size() << ":" << mv << " ";
+        if (depth > perft_log.depth)
+            perft_log.buffer = fmt::format(
+                "{}/{}: {}", mvidx + 1, moves.size(), mv.to_string());
+        chess.make_move(mv);
+        U64 i = perft(perft_gen, chess, depth - 1, perft_log);
+        std::cout << i << std::endl;
+        if (depth == 1 + perft_log.depth)
+            perft_log.write(perft_log.buffer + " " + std::to_string(i) + "\n");
         nodes += i;
-        (*chess).unmake_move(1);
+        chess.unmake_move(1);
     }
-    std::cout << nodes << " moves found in " << t.elapsed() << " seconds." << std::endl;
+
+    // test finished, print results
+    if (depth > perft_log.depth)
+    {
+        perft_log.write(fmt::format("{}: {} moves found in {} seconds.\n",
+            SearchLogger::time_to_string(), nodes, t.elapsed()));
+    }
+    std::cout << nodes << " moves found in " << t.elapsed()
+              << " seconds." << std::endl;
+
+    // initial position tested, verify results
     if (initial_pos)
     {
+        if (depth > perft_log.depth)
+        {
+            perft_log.write(fmt::format("{} moves expected. ",
+                perft_results[depth]));
+            if (nodes != std::stoll(perft_results[depth]))
+                perft_log.write("Uh oh!\n");
+            else
+                perft_log.write("Nice!\n");
+        }
         std::cout << perft_results[depth] << " moves expected. ";
         if (nodes != std::stoll(perft_results[depth]))
             std::cout << "Uh oh!";
@@ -71,7 +100,8 @@ U64 perft_root(Chess *chess, int depth, int log_depth, bool initial_pos)
             std::cout << "Nice!";
         std::cout << std::endl;
     }
-    // print_board(chess);
+    if (depth > perft_log.depth)
+        perft_log.write("\n");
     return nodes;
 }
 
@@ -80,17 +110,26 @@ U64 perft_root(Chess *chess, int depth, int log_depth, bool initial_pos)
  * @param chess the current position to search
  * @param depth number of ply remaining in the search
  */
-U64 perft(MoveGenerator *perft_gen, Chess *chess, int depth)
+U64 perft(MoveGenerator& perft_gen, Chess& chess, int depth, SearchLogger& perft_log)
 {
-    if (depth == 0)
+    if (depth <= 0)
         return 1;
     U64 nodes = 0;
-    (*perft_gen).set_chess(*chess);
-    std::vector<Move> moves = (*perft_gen).gen_moves();
-    for (Move mv : moves) {
-        (*chess).make_move(mv);
-        nodes += perft(perft_gen, chess, depth - 1);
-        (*chess).unmake_move(1);
+    perft_gen.set_chess(chess);
+    std::vector<Move> moves = perft_gen.gen_moves();
+    for (Move mv : moves)
+    {
+        if (depth > perft_log.depth)
+            perft_log.buffer += fmt::format(
+                " {}", mv.to_string());
+        chess.make_move(mv);
+        U64 i = perft(perft_gen, chess, depth - 1, perft_log);
+        if (depth == 1 + perft_log.depth)
+            perft_log.write(perft_log.buffer + " " + std::to_string(i) + "\n");
+        if (depth > perft_log.depth)
+            perft_log.buffer.erase(perft_log.buffer.length() - 8, perft_log.buffer.length());
+        nodes += i;
+        chess.unmake_move(1);
     }
     return nodes;
 }

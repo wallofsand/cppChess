@@ -78,6 +78,14 @@
         "xloctime": "cpp",
         "xtree": "cpp",
         "condition_variable": "cpp",
-        "semaphore": "cpp"
+        "semaphore": "cpp",
+        "any": "cpp",
+        "codecvt": "cpp",
+        "complex": "cpp",
+        "list": "cpp",
+        "set": "cpp",
+        "cinttypes": "cpp",
+        "typeindex": "cpp",
+        "variant": "cpp"
     }
 }

@@ -2,40 +2,38 @@
 
 using namespace ch_cst;
 
-/*
- * Initialize the log file
- */
-void SearchLogger::init()
+SearchLogger::SearchLogger(std::string str, int d)
 {
-    std::string file_path = "C:/Users/graha/Documents/GitHub/cppChess/log/"
-                          + SearchLogger::date_to_string();
+    name = str;
+    depth = d;
+    buffer = "";
 }
 
 /*
- * @return the current date as a string
+ * Write a string to the log file
  */
-const std::string SearchLogger::date_to_string()
+const void SearchLogger::write(std::string text)
 {
-    std::time_t t = std::time(nullptr);
-    return fmt::format("{:%Y/%m/%d}", fmt::localtime(t));
+    std::string file_path =
+        "C:/Users/graha/Documents/GitHub/cppChess/logs/"
+        + name + "_" + SearchLogger::date_to_string() + ".txt";
+    fmt::ostream out = fmt::output_file(file_path,
+        fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND);
+    out.print(text);
 }
 
-// inline string getCurrentDateTime( string s ){
-//     time_t now = time(0);
-//     struct tm  tstruct;
-//     char  buf[80];
-//     tstruct = *localtime(&now);
-//     if(s=="now")
-//         strftime(buf, sizeof(buf), "%Y-%m-%d %X", &tstruct);
-//     else if(s=="date")
-//         strftime(buf, sizeof(buf), "%Y-%m-%d", &tstruct);
-//     return string(buf);
-// };
-// inline void Logger( string logMsg ){
+/*
+ * @return the current date as a string 20XX-12-05
+ */
+std::string SearchLogger::date_to_string()
+{
+    return fmt::format("{:%Y-%m-%d}", fmt::localtime(std::time(nullptr)));
+}
 
-//     string filePath = "/somedir/log_"+getCurrentDateTime("date")+".txt";
-//     string now = getCurrentDateTime("now");
-//     ofstream ofs(filePath.c_str(), std::ios_base::out | std::ios_base::app );
-//     ofs << now << '\t' << logMsg << '\n';
-//     ofs.close();
-// }
+/*
+ * @return the current time in strftime-like format: 03:15:30
+ */
+std::string SearchLogger::time_to_string()
+{
+    return fmt::format("{:%H:%M:%S}", fmt::localtime(std::time(nullptr)));
+}
