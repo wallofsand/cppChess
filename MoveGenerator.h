@@ -11,29 +11,29 @@ class MoveGenerator
 {
 public:
     MoveGenerator(Chess &ch);
-    Chess chess;
+    void set_chess(Chess &ch);
     void init();
-    std::vector<Move> gen_moves();
-    U64 perft_root(int depth, bool log = true, bool initial_pos = true);
-    int find_king(int color);
     bool in_check;
     bool in_double_check;
     int check_square;
+    const bool is_game_over();
+    const int find_king(int color);
+    const std::vector<Move> gen_moves();
+private:
+    const std::vector<Move> gen_pawn_moves();
+    const std::vector<Move> gen_knight_piece_moves(int sq);
+    const std::vector<Move> gen_bishop_piece_moves(int sq);
+    const std::vector<Move> gen_rook_piece_moves(int sq);
+    const std::vector<Move> gen_king_piece_moves(int sq);
+    void find_pins();
+    U64 gen_op_attack_mask();
+    void check_exists();
+    void check_method(int sq);
+    Chess chess;
     U64 check_ray;
     U64 pinned_pieces;
     U64 pin_ray_moves;
-    // U64 op_attack_mask;
-    U64 perft(int depth);
-    void find_pins();
-    U64 gen_op_attack_mask();
-    bool is_game_over();
-    void check_exists();
-    void check_method(int sq);
-    std::vector<Move> gen_pawn_moves();
-    std::vector<Move> gen_knight_piece_moves(int sq);
-    std::vector<Move> gen_bishop_piece_moves(int sq);
-    std::vector<Move> gen_rook_piece_moves(int sq);
-    std::vector<Move> gen_king_piece_moves(int sq);
+    U64 op_attack_mask;
 };
 
 #endif

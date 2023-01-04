@@ -4,11 +4,12 @@
 #include "Chess.h"
 #include <iostream>
 #include <string>
+
 #define U64 uint64_t
 
 namespace ch_cst
 {
-    const std::string square_to_string[] = {
+    const std::string square_string[64] = {
         "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
         "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
         "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
@@ -17,6 +18,15 @@ namespace ch_cst
         "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
         "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
         "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"
+    };
+    /*
+     * Indexed by (piece | (color << 3)) where
+     *      piece: (1 - 6) pawn - king
+     *      color: (0 - 1) white, black
+     */
+    const char piece_char[15] = {
+        '.', 'P', 'N', 'B', 'R', 'Q', 'K', '.',
+        '.', 'p', 'n', 'b', 'r', 'q', 'k'
     };
     enum Square {
         a1, b1, c1, d1, e1, f1, g1, h1,

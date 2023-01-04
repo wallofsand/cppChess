@@ -37,32 +37,31 @@ void Chess::make_move(Move mv)
         // remove captured pieces
         *bb_by_piece[i] &= ~(1ull << end);
         *bb_by_color[1 - aci] &= ~(1ull << end);
-        if (Bitboard::contains_square(*bb_by_piece[i], start))
+        if (!Bitboard::contains_square(*bb_by_piece[i], start))
+            continue;
+        // remove the old piece
+        *bb_by_piece[i] ^= 1ull << start;
+        *bb_by_color[aci] ^= 1ull << start;
+        // place the new piece
+        *bb_by_piece[i] |= 1ull << end;
+        *bb_by_color[aci] ^= 1ull << end;
+        // update ep square
+        if (i == ch_cst::PAWN && (start - end) % 16 == 0)
         {
-            // remove the old piece
-            *bb_by_piece[i] ^= 1ull << start;
-            *bb_by_color[aci] ^= 1ull << start;
-            // place the new piece
-            *bb_by_piece[i] |= 1ull << end;
-            *bb_by_color[aci] ^= 1ull << end;
-            // update ep square
-            if (i == ch_cst::PAWN && (start - end) % 16 == 0)
-            {
-                ep_square = start + directions::PAWN_DIR[aci];
-            }
-            // update castle rights
-            if (i == ch_cst::KING)
-            {
-                if (start - end == 2 || start - end == -2)
-                    iscastle = true;
-                castle_rights &= 3 << (2 * (1 - aci));
-            }
-            else if (i == ch_cst::ROOK)
-                if (Compass::rank_yindex(start) == 0) // queenside rook moved
-                    castle_rights &= ~(2 << 2 * aci);
-                else if (Compass::rank_yindex(start) == 7) // kingside rook moved
-                    castle_rights &= ~(1 << 2 * aci);
+            ep_square = start + directions::PAWN_DIR[aci];
         }
+        // update castle rights
+        if (i == ch_cst::KING)
+        {
+            if (start - end == 2 || start - end == -2)
+                iscastle = true;
+            castle_rights &= 3 << (2 * (1 - aci));
+        }
+        else if (i == ch_cst::ROOK)
+            if (Compass::rank_yindex(start) == 0) // queenside rook moved
+                castle_rights &= ~(2 << 2 * aci);
+            else if (Compass::rank_yindex(start) == 7) // kingside rook moved
+                castle_rights &= ~(1 << 2 * aci);
     }
     if (iscastle) // handle castles
     {
@@ -93,7 +92,6 @@ void Chess::unmake_move(int undos)
     // bl:QuKi wh:QuKi
     castle_rights = 0b1111;
     build_bitboards();
-    Bitboard::print_binary_string(Bitboard::build_binary_string(bb_knights & bb_white));
     for (int i = 0; i < temp.size() - undos; i++)
     {
         make_move(temp[i]);

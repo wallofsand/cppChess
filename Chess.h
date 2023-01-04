@@ -12,7 +12,6 @@ public:
     Chess();
     // Chess(const Chess &ch);
     int ep_square;
-    bool game_over = false;
     U64 bb_white;
     U64 bb_black;
     U64 bb_pawns;

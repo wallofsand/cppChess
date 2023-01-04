@@ -29,7 +29,7 @@ int Bitboard::num_bits_flipped(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::nort_shift(U64 bb)
+U64 Bitboard::nort_shift_one(U64 bb)
 {
     return bb << 8;
 }
@@ -39,7 +39,7 @@ U64 Bitboard::nort_shift(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::sout_shift(U64 bb)
+U64 Bitboard::sout_shift_one(U64 bb)
 {
     return bb >> 8;
 }
@@ -49,7 +49,7 @@ U64 Bitboard::sout_shift(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::east_shift(U64 bb)
+U64 Bitboard::east_shift_one(U64 bb)
 {
     return (bb & NOT_H_FILE) >> 1;
 }
@@ -59,7 +59,7 @@ U64 Bitboard::east_shift(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::west_shift(U64 bb)
+U64 Bitboard::west_shift_one(U64 bb)
 {
     return (bb & NOT_A_FILE) >> 1;
 }
@@ -69,7 +69,7 @@ U64 Bitboard::west_shift(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::NoEa_shift(U64 bb)
+U64 Bitboard::NoEa_shift_one(U64 bb)
 {
     return (bb & NOT_H_FILE) << 9;
 }
@@ -79,7 +79,7 @@ U64 Bitboard::NoEa_shift(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::NoWe_shift(U64 bb)
+U64 Bitboard::NoWe_shift_one(U64 bb)
 {
     return (bb & NOT_A_FILE) << 7;
 }
@@ -89,7 +89,7 @@ U64 Bitboard::NoWe_shift(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::SoEa_shift(U64 bb)
+U64 Bitboard::SoEa_shift_one(U64 bb)
 {
     return (bb & NOT_H_FILE) >> 7;
 }
@@ -99,7 +99,7 @@ U64 Bitboard::SoEa_shift(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::SoWe_shift(U64 bb)
+U64 Bitboard::SoWe_shift_one(U64 bb)
 {
     return (bb & NOT_A_FILE) >> 9;
 }
@@ -110,7 +110,7 @@ U64 Bitboard::SoWe_shift(U64 bb)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::nort_occl(U64 gen, U64 empty)
+U64 Bitboard::nort_occl_fill(U64 gen, U64 empty)
 {
     gen |= empty & (gen << 8);
     empty = empty & (empty << 8);
@@ -126,7 +126,7 @@ U64 Bitboard::nort_occl(U64 gen, U64 empty)
  * @param empty bitboard of empty squares
  * @return shifted bitboard
  */
-U64 Bitboard::sout_occl(U64 gen, U64 empty)
+U64 Bitboard::sout_occl_fill(U64 gen, U64 empty)
 {
     gen |= empty & (gen >> 8);
     empty = empty & (empty >> 8);
@@ -142,7 +142,7 @@ U64 Bitboard::sout_occl(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::east_occl(U64 gen, U64 empty)
+U64 Bitboard::east_occl_fill(U64 gen, U64 empty)
 {
     empty &= NOT_H_FILE;
     gen |= empty & (gen << 1);
@@ -159,7 +159,7 @@ U64 Bitboard::east_occl(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::west_occl(U64 gen, U64 empty)
+U64 Bitboard::west_occl_fill(U64 gen, U64 empty)
 {
     empty &= NOT_A_FILE;
     gen |= empty & (gen >> 1);
@@ -176,7 +176,7 @@ U64 Bitboard::west_occl(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::NoEa_occl(U64 gen, U64 empty)
+U64 Bitboard::NoEa_occl_fill(U64 gen, U64 empty)
 {
     empty &= NOT_H_FILE;
     gen |= empty & (gen << 9);
@@ -193,7 +193,7 @@ U64 Bitboard::NoEa_occl(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::NoWe_occl(U64 gen, U64 empty)
+U64 Bitboard::NoWe_occl_fill(U64 gen, U64 empty)
 {
     empty &= NOT_A_FILE;
     gen |= empty & (gen << 7);
@@ -210,7 +210,7 @@ U64 Bitboard::NoWe_occl(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::SoEa_occl(U64 gen, U64 empty)
+U64 Bitboard::SoEa_occl_fill(U64 gen, U64 empty)
 {
     empty &= NOT_H_FILE;
     gen |= empty & (gen >> 7);
@@ -227,7 +227,7 @@ U64 Bitboard::SoEa_occl(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::SoWe_occl(U64 gen, U64 empty)
+U64 Bitboard::SoWe_occl_fill(U64 gen, U64 empty)
 {
     empty &= NOT_A_FILE;
     gen |= empty & (gen >> 9);

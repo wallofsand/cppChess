@@ -1,100 +1,98 @@
 #include "Chess.h"
 #include "MoveGenerator.h"
+#include "SearchLogger.h"
 #include <iostream>
 
 using namespace ch_cst;
 
-char piece_char(int piece);
+U64 perft_root(Chess *chess, int depth, int log_depth, bool initial_pos);
+U64 perft(MoveGenerator *perft_gen, Chess *chess, int depth);
 void print_board(Chess ch, bool fmt = true);
 void print_U64(U64 bb, bool fmt = true);
 
 int main()
 {
     Compass::init_compass();
-    Chess ch;
-    MoveGenerator mgen(ch);
+    Chess ch0;
+    MoveGenerator mgen(ch0);
 
-    for (Move mv : mgen.gen_moves())
-    {
-        mgen.init();
-        ch.make_move(mv);
-        print_board(ch, false);
-        std::cout << mv << std::endl;
-        mgen.perft_root(2, false, false);
-        ch.unmake_move(1);
-    }
+    std::cout << SearchLogger::date_to_string() << std::endl;
 
-    // while (!ch.game_over)
-    // {
-    //     mgen.set_chess(&ch);
-    //     std::vector<Move> move_list = mgen.gen_moves();
-    //     print_board(ch);
-    //     bool move = false;
-    //     Move next(0,0);
-    //     while (!move)
-    //     {
-    //         int counter = 0;
-    //         for (Move m : mgen.gen_moves())
-    //         {
-    //             std::cout << "(" << Compass::string_from_square(m.start) << ", " << Compass::string_from_square(m.end) << ") ";
-    //             if (counter % 5 == 4)
-    //                 std::cout << std::endl;
-    //             counter++;
-    //         }
-    //         std::cout << std::endl << "Start square: ";
-    //         std::string startstr, endstr;
-    //         std::cin >> startstr;
-    //         std::cout << " End square: ";
-    //         std::cin >> endstr;
-    //         std::cout << std::endl;
-    //         int start = Compass::square_from_string(startstr);
-    //         int end = Compass::square_from_string(endstr);
-    //         for (Move m : move_list)
-    //         {
-    //             if (m.start == start && m.end == end && (m.promote == 0 || m.promote == ch_cst::QUEEN))
-    //             {
-    //                 move = true;
-    //                 next = Move(start, end, m.promote);
-    //             }
-    //         }
-    //     }
-    //     ch.make_move(next);
-    // }
+    // perft_root(&ch0, 1, 1, true);
 
     return 0;
 }
 
-char piece_char(int piece)
+const std::string perft_results[] = {
+    "1", "20", "400", "8902", "197281", "4865609", "119060324", "3195901860",
+    "84998978956", "2439530234167", "69352859712417", "2097651003696806",
+    "62854969236701747", "1981066775000396239", "61885021521585529237",
+    "2015099950053364471960"
+};
+
+/*
+ * Performance test root method
+ * @param chess the starting position to test
+ * @param depth number of ply to search
+ * @param log_depth the depth of nodes to list in log file
+ *        default: 0
+ * @param initial_pos true if we are testing the initial position.
+ *        if (initial_pos && depth < 16) we can print known target values.
+ *        default: false
+ */
+U64 perft_root(Chess *chess, int depth, int log_depth, bool initial_pos)
 {
-    switch (piece)
+    if (depth == 0)
+        return 1;
+    Timer t;
+    U64 nodes = 0;
+    std::cout << "Starting perft(" << depth << "):" << std::endl;
+    MoveGenerator perft_gen(*chess);
+    std::vector<Move> moves = perft_gen.gen_moves();
+    for (int mvidx = 0; mvidx < moves.size(); mvidx++)
     {
-    case 1:
-        return 'P';
-    case 9:
-        return 'p';
-    case 2:
-        return 'N';
-    case 10:
-        return 'n';
-    case 3:
-        return 'B';
-    case 11:
-        return 'b';
-    case 4:
-        return 'R';
-    case 12:
-        return 'r';
-    case 5:
-        return 'Q';
-    case 13:
-        return 'q';
-    case 6:
-        return 'K';
-    case 14:
-        return 'k';
-    default:
-        return '.';
+        Move mv = moves.at(mvidx);
+        if (log_depth)
+            std::cout << mvidx + 1 << "/" << moves.size() << ": (" << mv << ") ";
+        (*chess).make_move(mv);
+        U64 i = perft(&perft_gen, chess, depth - 1);
+        if (log_depth)
+            std::cout << i << std::endl;
+        nodes += i;
+        (*chess).unmake_move(1);
     }
+    std::cout << nodes << " moves found in " << t.elapsed() << " seconds." << std::endl;
+    if (initial_pos)
+    {
+        std::cout << perft_results[depth] << " moves expected. ";
+        if (nodes != std::stoll(perft_results[depth]))
+            std::cout << "Uh oh!";
+        else
+            std::cout << "Nice!";
+        std::cout << std::endl;
+    }
+    // print_board(chess);
+    return nodes;
+}
+
+/*
+ * Performance test recursion method
+ * @param chess the current position to search
+ * @param depth number of ply remaining in the search
+ */
+U64 perft(MoveGenerator *perft_gen, Chess *chess, int depth)
+{
+    if (depth == 0)
+        return 1;
+    U64 nodes = 0;
+    (*perft_gen).set_chess(*chess);
+    std::vector<Move> moves = (*perft_gen).gen_moves();
+    for (Move mv : moves) {
+        (*chess).make_move(mv);
+        nodes += perft(perft_gen, chess, depth - 1);
+        (*chess).unmake_move(1);
+    }
+    return nodes;
 }
 
 void print_board(Chess ch, bool fmt)
@@ -108,7 +106,7 @@ void print_board(Chess ch, bool fmt)
             {
                 if (Bitboard::contains_square(*ch.bb_by_piece[piece] & *ch.bb_by_color[color], sq))
                 {
-                    board += piece_char(piece | (color << 3));
+                    board += piece_char[piece | (color << 3)];
                 }
             }
         }

@@ -2,6 +2,9 @@
 
 using namespace directions;
 
+/*
+ * Default constructor.
+ */
 MoveGenerator::MoveGenerator(Chess &ch)
 {
     chess = ch;
@@ -28,13 +31,15 @@ void MoveGenerator::init()
     check_exists();
 }
 
-bool MoveGenerator::is_game_over()
+/*
+ * Method to determine whether a game has ended.
+ * Must call AFTER init(): we use gen_moves().size() to determine state.
+ * @return true if stalemate, checkmate
+ * @return false if any legal moves exist
+ */
+const bool MoveGenerator::is_game_over()
 {
-    if (gen_moves().size() == 0)
-    {
-        return true;
-    }
-    return false;
+    return gen_moves().size() == 0;
 }
 
 void MoveGenerator::check_exists()
@@ -138,6 +143,10 @@ void MoveGenerator::find_pins()
     // }
 }
 
+/*
+ * Method to get the opponents' attack mask
+ * @return the bitboard of squares attacked by opponent's pieces
+ */
 U64 MoveGenerator::gen_op_attack_mask()
 {
     U64 op_attack_mask = Compass::king_attacks[find_king(1-chess.aci)];
@@ -183,15 +192,23 @@ U64 MoveGenerator::gen_op_attack_mask()
     return op_attack_mask;
 }
 
-int MoveGenerator::find_king(int color)
+/*
+ * Method to find a given king.
+ * @param color the color index of the king to search for
+ * @return the square index of the king (0-63)
+ */
+const int MoveGenerator::find_king(int color)
 {
-    U64 king = chess.bb_kings & *chess.bb_by_color[color];
-    return 63 - Bitboard::leading_zeros(king);
+    return 63 - Bitboard::leading_zeros(chess.bb_kings & *chess.bb_by_color[color]);
 }
 
-std::vector<Move> MoveGenerator::gen_moves()
+/*
+ * Method to get the legal moves in a position.
+ * Remeber to call init() first.
+ * @return an unsorted vector of moves
+ */
+const std::vector<Move> MoveGenerator::gen_moves()
 {
-    init();
     std::vector<Move> moves;
     moves = gen_pawn_moves();
     for (int sq = 0; sq < 64; sq++)
@@ -230,11 +247,15 @@ std::vector<Move> MoveGenerator::gen_moves()
     return moves;
 }
 
-std::vector<Move> MoveGenerator::gen_pawn_moves()
+/*
+ * Generates legal pawn moves
+ * @return an unsorted list of pawn moves
+ */
+const std::vector<Move> MoveGenerator::gen_pawn_moves()
 {
     std::vector<Move> pawn_moves;
     U64 pawns = chess.bb_pawns & *chess.bb_by_color[chess.aci];
-    if (!pawns)
+    if (!pawns || in_double_check)
         return pawn_moves;
     U64 op = *chess.bb_by_color[1 - chess.aci];
     // pawn captures
@@ -242,62 +263,59 @@ std::vector<Move> MoveGenerator::gen_pawn_moves()
     U64 capturesWest = (pawns & ~op & Bitboard::NOT_A_FILE) << NORTHWEST & op;
     U64 capturesEast = (pawns & ~op & Bitboard::NOT_H_FILE) << NORTHEAST & op;
     if (chess.aci)
-    { // black to move, shift right
+    {
+        // black to move, shift right
         capturesWest = (pawns & ~op & Bitboard::NOT_A_FILE) >> NORTHWEST & op;
         capturesEast = (pawns & ~op & Bitboard::NOT_H_FILE) >> NORTHEAST & op;
     }
-    if (capturesEast)
+    for (int sq = (chess.aci) ? 0 : 16; capturesEast >> sq; sq++)
     {
-        for (int sq = 0; capturesEast >> sq; sq++)
+        if (!Bitboard::contains_square(capturesEast, sq))
+            continue;
+        if (Bitboard::contains_square(pinned_pieces, sq - DIRS[4+2*chess.aci])
+            && !Bitboard::contains_square(pin_ray_moves, sq))
+            continue;
+        if (Compass::rank_yindex(sq) % 7 != 0)
+            pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq));
+        else // pawn promotions
         {
-            if (!Bitboard::contains_square(capturesEast, sq))
-                continue;
-            if (Bitboard::contains_square(pinned_pieces, sq -DIRS[4+2*chess.aci])
-                && !Bitboard::contains_square(pin_ray_moves, sq))
-                continue;
-            if (Compass::rank_yindex(sq) % 7 != 0)
-                pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq));
-            else // pawn promotions
-            {
-                pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::QUEEN));
-                pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::ROOK));
-                pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::BISHOP));
-                pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::KNIGHT));
-            }
+            pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::QUEEN));
+            pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::ROOK));
+            pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::BISHOP));
+            pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::KNIGHT));
         }
     }
-    if (capturesWest)
+    for (int sq = (chess.aci) ? 0 : 16; capturesWest >> sq; sq++)
     {
-        for (int sq = 0; capturesWest >> sq; sq++)
+        if (!Bitboard::contains_square(capturesWest, sq))
+            continue;
+        if (Bitboard::contains_square(pinned_pieces, sq - DIRS[5+2*chess.aci])
+            && !Bitboard::contains_square(pin_ray_moves, sq))
+            continue;
+        if (Compass::rank_yindex(sq) % 7 != 0)
+            pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq));
+        else // pawn promotions
         {
-            if (!Bitboard::contains_square(capturesWest, sq))
-                continue;
-            if (Bitboard::contains_square(pinned_pieces, sq - DIRS[5+2*chess.aci])
-                && !Bitboard::contains_square(pin_ray_moves, sq))
-                continue;
-            if (Compass::rank_yindex(sq) % 7 != 0)
-                pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq));
-            else // pawn promotions
-            {
-                pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::QUEEN));
-                pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::ROOK));
-                pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::BISHOP));
-                pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::KNIGHT));
-            }
+            pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::QUEEN));
+            pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::ROOK));
+            pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::BISHOP));
+            pawn_moves.push_back(Move(sq - DIRS[5+2*chess.aci], sq, ch_cst::KNIGHT));
         }
     }
-    /// pawn moves
-    if (chess.aci == ch_cst::WHITE_INDEX)
+    // pawn moves
+    if (!chess.aci)
     {
+        // white moves
         pawns = pawns << 8 & ~op;
         pawns |= (pawns & 255ull << 16) << 8 & ~op;
     }
     else
     {
+        // black moves
         pawns = pawns >> 8 & ~op;
         pawns |= (pawns & 255ull << 40) >> 8 & ~op;
     }
-    for (int sq = 0; sq < 64; sq++)
+    for (int sq = (chess.aci) ? 0 : 16; pawns >> sq; sq++)
     {
         if (!Bitboard::contains_square(pawns, sq))
             continue;
@@ -331,10 +349,12 @@ std::vector<Move> MoveGenerator::gen_pawn_moves()
     return legal_moves;
 }
 
-std::vector<Move> MoveGenerator::gen_knight_piece_moves(int sq)
+const std::vector<Move> MoveGenerator::gen_knight_piece_moves(int sq)
 {
     std::vector<Move> knight_moves;
     U64 moves = Compass::knight_attacks[sq] & ~*chess.bb_by_color[chess.aci];
+    if (!moves || in_double_check)
+        return knight_moves;
     for (int end = std::max(0, sq - 17); end < std::min(64, sq + 18); end++)
     {
         if (!Bitboard::contains_square(moves, end))
@@ -355,9 +375,12 @@ std::vector<Move> MoveGenerator::gen_knight_piece_moves(int sq)
     return legal_moves;
 }
 
-std::vector<Move> MoveGenerator::gen_bishop_piece_moves(int sq)
+const std::vector<Move> MoveGenerator::gen_bishop_piece_moves(int sq)
 {
     std::vector<Move> bishop_moves;
+    U64 bishops = (chess.bb_bishops | chess.bb_queens) & *chess.bb_by_color[chess.aci];
+    if (!bishops || in_double_check)
+        return bishop_moves;
     for (int i = Compass::get_dir_start_index(ch_cst::BISHOP); i < Compass::get_dir_end_index(ch_cst::BISHOP); i++)
     {
         for (int step = 1; step <= Compass::edge_distance64x8[sq][i]; step++)
@@ -383,9 +406,12 @@ std::vector<Move> MoveGenerator::gen_bishop_piece_moves(int sq)
     return legal_moves;
 }
 
-std::vector<Move> MoveGenerator::gen_rook_piece_moves(int sq)
+const std::vector<Move> MoveGenerator::gen_rook_piece_moves(int sq)
 {
     std::vector<Move> rook_moves;
+    U64 rooks = (chess.bb_rooks | chess.bb_queens) & *chess.bb_by_color[chess.aci];
+    if (!rooks || in_double_check)
+        return rook_moves;
     // uint8_t row = (chess.bb_occ >> Compass::rank_yindex(sq) * 8) & 255;
     // uint8_t col = (chess.bb_occ_rot >> Compass::rank_yindex(sq))
     // Compass::rook_rows256x8[row][sq];
@@ -414,18 +440,21 @@ std::vector<Move> MoveGenerator::gen_rook_piece_moves(int sq)
     return legal_moves;
 }
 
-std::vector<Move> MoveGenerator::gen_king_piece_moves(int sq)
+const std::vector<Move> MoveGenerator::gen_king_piece_moves(int sq)
 {
     std::vector<Move> king_moves;
     U64 moves = Compass::king_attacks[sq] & ~*chess.bb_by_color[chess.aci] & ~gen_op_attack_mask();
+    if (!moves)
+        return king_moves;
     // normal moves
-    for (int endsq = std::max(0, sq-9); endsq < std::min(64, sq+9); endsq++)
+    int end = std::min(64, sq + 10);
+    for (int endsq = std::max(0, sq - 9); endsq < end; endsq++)
     {
         if (!Bitboard::contains_square(moves, endsq))
             continue;
         king_moves.push_back(Move(sq, endsq));
     }
-    // castle moves
+    // castling
     // wh:QuKi bl:QuKi
     // queenside castle
     if (chess.castle_rights & 2 << 2 * chess.aci
@@ -441,66 +470,4 @@ std::vector<Move> MoveGenerator::gen_king_piece_moves(int sq)
         && Bitboard::contains_square(chess.bb_rooks & *chess.bb_by_color[chess.aci], sq + 3))
         king_moves.push_back(Move(sq, sq + 2));
     return king_moves;
-}
-
-/*
- * Performance test method
- * @param depth number of ply to test
- * @param log true if we should print nodes per move in root node
- * @param initial_pos true if we are testing the initial position.
- *        if (initial_pos && depth < 16) we can print known target values.
- */
-U64 MoveGenerator::perft_root(int depth, bool log, bool initial_pos) {
-    if (depth == 0)
-        return 1;
-    std::string perft_results[16] = {
-        "1",
-        "20",
-        "400",
-        "8902",
-        "197281",
-        "4865609",
-        "119060324",
-        "3195901860",
-        "84998978956",
-        "2439530234167",
-        "69352859712417",
-        "2097651003696806",
-        "62854969236701747",
-        "1981066775000396239",
-        "61885021521585529237",
-        "2015099950053364471960"
-    };
-    Timer t;
-    U64 nodes = 0;
-    std::cout << "Starting perft(" << depth << "):" << std::endl;
-    std::vector<Move> moves = gen_moves();
-    for (int mvidx = 0; mvidx < moves.size(); mvidx++)
-    {
-        Move mv = moves.at(mvidx);
-        if (log)
-            std::cout << mvidx + 1 << "/" << moves.size() << ": (" << ch_cst::square_to_string[mv.start()] << ", " << ch_cst::square_to_string[mv.end()] << ") ";
-        chess.make_move(mv);
-        int i = perft(depth - 1);
-        if (log)
-            std::cout << i << std::endl;
-        nodes += i;
-        chess.unmake_move(1);
-    }
-    std::cout << nodes << " moves found in " << t.elapsed() << " seconds." << std::endl;
-    if (initial_pos && depth < 16)
-        std::cout << perft_results[depth] << " target value." << std::endl;
-    return nodes;
-}
-
-U64 MoveGenerator::perft(int depth) {
-    if (depth == 0)
-        return 1;
-    U64 nodes = 0;
-    for (Move mv : gen_moves()) {
-        chess.make_move(mv);
-        nodes += perft(depth - 1);
-        chess.unmake_move(1);
-    }
-    return nodes;
 }
