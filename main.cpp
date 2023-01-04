@@ -6,7 +6,7 @@
 
 using namespace ch_cst;
 
-U64 perft_root(Chess& chess, int depth, bool initial_position = false, int log_depth = 0);
+U64 perft_root(Chess& chess, int depth, bool initial_position, int log_depth = 0);
 U64 perft(MoveGenerator& perft_gen, Chess& chess, int depth, SearchLogger& perft_log);
 void print_board(Chess ch, bool fmt = true);
 void print_U64(U64 bb, bool fmt = true);
@@ -16,7 +16,7 @@ int main()
     Compass::init_compass();
     Chess ch0;
 
-    perft_root(ch0, 3, true, 2);
+    perft_root(ch0, 6, true, 1);
 
     return 0;
 }
