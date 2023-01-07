@@ -30,9 +30,10 @@ public:
     int castle_rights;
     void make_move(Move mv);
     void unmake_move(int undos);
-    std::string move_fen(Move mv);
-private:
+    const void print_board(bool fmt = true);
+    const std::string move_fen(Move& mv);
     void build_bitboards();
+private:
 };
 
 #endif

@@ -1,4 +1,5 @@
-// 
+// Logging class for move searches and perft verification
+// GB 2023/01/03
 #ifndef SEARCHLOGGER_H
 #define SEARCHLOGGER_H
 
@@ -16,6 +17,7 @@ class SearchLogger {
 public:
     SearchLogger(std::string str, int d);
     std::string buffer;
+    const std::string SearchLogger::file_path();
     const void write(std::string text);
     static std::string date_to_string();
     static std::string time_to_string();

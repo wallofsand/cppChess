@@ -67,18 +67,19 @@ public:
     static uint8_t rook_rows256x8[256][8];
     static int edge_distance64x8[64][8];
     static void init_compass();
-    static U64 build_ray(int sq, int dir_index);
-    static U64 build_ray(int* sq);
+    const static U64 build_ray(int sq, int dir_index);
+    const static U64 build_ray(int sq[2]);
+    const static int get_dir_start_index(int piece);
+    const static int get_dir_end_index(int piece);
+    const static int square_from_string(std::string str);
+    const static std::string string_from_square(int sq);
+    const static int rank_yindex(int sq);
+    const static int file_xindex(int sq);
+private:
     static void compute_edge_distances();
     static void compute_knight_attacks();
     static void compute_rook_attacks();
     static void compute_king_attacks();
-    static int get_dir_start_index(int piece);
-    static int get_dir_end_index(int piece);
-    static int square_from_string(std::string str);
-    static std::string string_from_square(int sq);
-    static int rank_yindex(int sq);
-    static int file_xindex(int sq);
 };
 
 #endif

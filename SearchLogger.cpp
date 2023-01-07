@@ -2,11 +2,21 @@
 
 using namespace ch_cst;
 
+const std::string SearchLogger::file_path()
+{
+    // return "C:/Users/graha/Documents/GitHub/cppChess/logs/"
+            // + name + "_" + SearchLogger::date_to_string() + ".txt";
+    return "C:/Users/graha/OneDrive/Documents/Github/cppChess/logs/"
+            + name + "_" + SearchLogger::date_to_string() + ".txt";
+}
+
 SearchLogger::SearchLogger(std::string str, int d)
 {
     name = str;
     depth = d;
     buffer = "";
+    fmt::ostream out = fmt::output_file(file_path(),
+        fmt::file::WRONLY | fmt::file::CREATE | fmt::file::TRUNC);
 }
 
 /*
@@ -14,10 +24,7 @@ SearchLogger::SearchLogger(std::string str, int d)
  */
 const void SearchLogger::write(std::string text)
 {
-    std::string file_path =
-        "C:/Users/graha/Documents/GitHub/cppChess/logs/"
-        + name + "_" + SearchLogger::date_to_string() + ".txt";
-    fmt::ostream out = fmt::output_file(file_path,
+    fmt::ostream out = fmt::output_file(file_path(),
         fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND);
     out.print(text);
 }

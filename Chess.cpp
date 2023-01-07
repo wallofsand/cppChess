@@ -47,10 +47,12 @@ void Chess::make_move(Move mv)
         // remove the old piece
         *bb_by_piece[i] ^= 1ull << start;
         *bb_by_color[aci] ^= 1ull << start;
+        bb_occ ^= 1ull << start;
 
         // place the new piece
         *bb_by_piece[i] |= 1ull << end;
-        *bb_by_color[aci] ^= 1ull << end;
+        *bb_by_color[aci] |= 1ull << end;
+        bb_occ |= 1ull << end;
 
         // update ep square
         if (i == ch_cst::PAWN && (start - end) % 16 == 0)
@@ -104,25 +106,20 @@ void Chess::unmake_move(int undos)
     }
 }
 
-std::string Chess::move_fen(Move mv)
+const std::string Chess::move_fen(Move& mv)
 {
     std::string fen = "";
     int start = mv.start(), end = mv.end();
-    int piece_moved, capture;
-
     for (int type = PAWN; type <= KING; type++)
     {
         if (!Bitboard::contains_square(*bb_by_piece[type], start))
             continue;
-
-        fen += piece_char[aci << 3 | type];
-
+        if (type != PAWN)
+            fen += piece_char[type];
         // captures
         if (Bitboard::contains_square(bb_occ, end))
             fen += "x";
-
         fen += square_string[end];
-
         // castling
         if (type == KING && (start - end == 2 || start - end == -2))
         {
@@ -130,13 +127,33 @@ std::string Chess::move_fen(Move mv)
             fen = "O-O";
             // long castle
             if (start - end == 2)
-                fen +="-O";
+                fen += "-O";
         }
-
         // promotions
         if (mv.promote())
-            fen += piece_char[mv.promote()];
+            fen += "=" + piece_char[mv.promote()];
     }
-
     return fen;
+}
+
+const void Chess::print_board(bool fmt)
+{
+    std::string board = "";
+    for (int sq = 0; sq < 64; sq++)
+    {
+        for (int color = 0; color < 2; color++)
+        {
+            for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
+            {
+                if (Bitboard::contains_square(*bb_by_piece[piece] & *bb_by_color[color], sq))
+                {
+                    board += piece_char[piece | (color << 3)];
+                }
+            }
+        }
+        if (board.length() > sq)
+            continue;
+        board += '.';
+    }
+    Bitboard::print_binary_string(board, fmt);
 }

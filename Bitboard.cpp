@@ -17,7 +17,7 @@ bool Bitboard::contains_square(U64 bb, int sq)
 int Bitboard::num_bits_flipped(U64 bb)
 {
     int count = 0;
-    for (int i = 0; i < 64; i++)
+    for (int i = 0; bb >> i; i++)
     {
         count += contains_square(bb, i) * 1;
     }
@@ -238,6 +238,15 @@ U64 Bitboard::SoWe_occl_fill(U64 gen, U64 empty)
     return gen;
 }
 
+U64 Bitboard::nort_attacks(U64 rooks, U64 empty) { return nort_shift_one(nort_occl_fill(rooks, empty)); }
+U64 Bitboard::sout_attacks(U64 rooks, U64 empty) { return sout_shift_one(sout_occl_fill(rooks, empty)); }
+U64 Bitboard::east_attacks(U64 rooks, U64 empty) { return east_shift_one(east_occl_fill(rooks, empty)); }
+U64 Bitboard::west_attacks(U64 rooks, U64 empty) { return west_shift_one(west_occl_fill(rooks, empty)); }
+U64 Bitboard::NoEa_attacks(U64 bishops, U64 empty) { return NoEa_shift_one(NoEa_occl_fill(bishops, empty)); }
+U64 Bitboard::NoWe_attacks(U64 bishops, U64 empty) { return NoWe_shift_one(NoWe_occl_fill(bishops, empty)); }
+U64 Bitboard::SoEa_attacks(U64 bishops, U64 empty) { return SoEa_shift_one(SoEa_occl_fill(bishops, empty)); }
+U64 Bitboard::SoWe_attacks(U64 bishops, U64 empty) { return SoWe_shift_one(SoWe_occl_fill(bishops, empty)); }
+
 /*
  * generalized shift
  * @author Gerd Isenberg
@@ -247,11 +256,11 @@ U64 Bitboard::SoWe_occl_fill(U64 gen, U64 empty)
  *          right if negative
  * @return shifted bitboard
  */
-U64 gen_shift(U64 x, int s)
+U64 Bitboard::gen_shift(U64 bb, int s)
 {
     char left = (char) s;
     char right = -((char) (s >> 8) & left);
-    return (x >> right) << (right + left);
+    return (bb >> right) << (right + left);
 }
 
 /*

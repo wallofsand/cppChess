@@ -18,19 +18,19 @@ void Compass::init_compass()
 
 // Method to return a bitboard of the ray which
 // passes through square sq in direction DIRS[dir_index]
-U64 Compass::build_ray(int sq, int dir_index)
+const U64 Compass::build_ray(int sq, int dir_index)
 {
     U64 ray = 0;
     for (int step = 1; step <= Compass::edge_distance64x8[sq][dir_index]; step++)
     {
-        ray |= 1ull << sq + step * DIRS[dir_index];
+        ray |= 1ull << (sq + step * DIRS[dir_index]);
     }
     return ray;
 }
 
 // Method to return a bitboard of the ray which
 // passes between two colinear squares sq0 to sq1
-U64 Compass::build_ray(int* sq)
+const U64 Compass::build_ray(int sq[2])
 {
     int sq0 = sq[0];
     int sq1 = sq[1];
@@ -142,7 +142,7 @@ void Compass::compute_king_attacks()
     }
 }
 
-int Compass::get_dir_start_index(int piece)
+const int Compass::get_dir_start_index(int piece)
 {
     switch (piece)
     {
@@ -159,7 +159,7 @@ int Compass::get_dir_start_index(int piece)
     }
 }
 
-int Compass::get_dir_end_index(int piece)
+const int Compass::get_dir_end_index(int piece)
 {
     switch (piece)
     {
@@ -178,19 +178,19 @@ int Compass::get_dir_end_index(int piece)
 
 // y-coordinate, 1-8
 // function returns an index 0-7
-int Compass::rank_yindex(int sq)
+const int Compass::rank_yindex(int sq)
 {
     return sq >> 3;
 }
 
 // x-coordinate, a-h
 // function returns an index 0-7
-int Compass::file_xindex(int sq)
+const int Compass::file_xindex(int sq)
 {
     return sq % 8;
 }
 
-int Compass::square_from_string(std::string str)
+const int Compass::square_from_string(std::string str)
 {
     int sq;
     switch (str[0])
@@ -249,7 +249,7 @@ int Compass::square_from_string(std::string str)
     return sq;
 }
 
-std::string Compass::string_from_square(int sq)
+const std::string Compass::string_from_square(int sq)
 {
     std::string str = "";
     switch (file_xindex(sq))
