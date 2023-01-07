@@ -1,7 +1,5 @@
 #include "Compass.h"
 
-using namespace directions;
-
 U64 Compass::knight_attacks[64];
 U64 Compass::king_attacks[64];
 uint8_t Compass::rook_rows256x8[256][8];
@@ -23,7 +21,7 @@ const U64 Compass::build_ray(int sq, int dir_index)
     U64 ray = 0;
     for (int step = 1; step <= Compass::edge_distance64x8[sq][dir_index]; step++)
     {
-        ray |= 1ull << (sq + step * DIRS[dir_index]);
+        ray |= 1ull << (sq + step * directions::DIRS[dir_index]);
     }
     return ray;
 }
@@ -37,16 +35,16 @@ const U64 Compass::build_ray(int sq[2])
     int end_index = get_dir_end_index(ch_cst::QUEEN);
     for (int i = 0; i < end_index; i++)
     {
-        int dir = DIRS[i];
+        int dir = directions::DIRS[i];
         for (int step = 1; step <= edge_distance64x8[sq0][i]; step++)
-            if (sq0 + step * DIRS[i] == sq1)
+            if (sq0 + step * directions::DIRS[i] == sq1)
             {
                 U64 ray = 0;
                 int sq = sq0;
                 while(sq != sq1)
                 {
-                    sq += DIRS[i];
                     ray |= 1ull << sq;
+                    sq += directions::DIRS[i];
                 }
                 return ray;
             }
@@ -77,6 +75,7 @@ void Compass::compute_edge_distances()
 
 void Compass::compute_knight_attacks()
 {
+    using namespace directions;
     for (int sq = 0; sq < 64; sq++)
     {
         // NORTH, EAST, SOUTH, WEST
@@ -134,7 +133,7 @@ void Compass::compute_king_attacks()
         king_attacks[sq] = 0b0;
         for (int dir_idx = get_dir_start_index(ch_cst::KING); dir_idx < get_dir_end_index(ch_cst::KING); dir_idx++)
         {
-            int dir = DIRS[dir_idx];
+            int dir = directions::DIRS[dir_idx];
             if (edge_distance64x8[sq][dir_idx] == 0)
                 continue;
             king_attacks[sq] |= 1ull << (sq + dir);

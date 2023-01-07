@@ -1,20 +1,166 @@
 #include "Player.h"
+
+Move Player::get_move(Chess& ch, int depth)
+{
+    MoveGenerator mgen(ch);
+    float high_score = -99.99f;
+    Move best_move = Move(0, 0);
+    std::vector<Move> moves = mgen.gen_moves();
+    // moves = order_moves_by_piece(ch, moves);
+    if (moves.size() == 1)
+        return moves.at(0);
+    U64 nodes = 0;
+    for (Move m : moves)
+    {
+        ch.make_move(m);
+        float score = nega_max(ch, depth, nodes, high_score);
+        if (score > high_score)
+        {
+            high_score = score;
+            best_move = m;
+       }
+        ch.unmake_move(1);
+    }
+    return best_move;
+}
+
 /*
-Move get_move(Chess* ch);
+ * @param ch the position to be evaluated
+ * @param depth the number of ply to search
+ * @param nodes the number of positions seen so far
+ * @param a the score-to-beat for future evaluations
+ * @param b the minimum eval allowed by the opponent
+ * @return the eval of the most favorable end node
+ */
+float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta)
 {
-
+    if (!depth)
+        return eval(ch);
+        // return quiescence_search(ch, depth, nodes, alpha, beta);
+    nodes++;
+    MoveGenerator mgen(ch);
+    std::vector<Move> moves = mgen.gen_moves();
+    // moves = order_moves_by_piece(ch, moves);
+    if (!moves.size())
+        return eval(ch);
+    for (Move mv : moves)
+    {
+        ch.make_move(mv);
+        float score = -nega_max(ch, depth - 1, nodes, -beta, -alpha);
+        ch.unmake_move(1);
+        if (score >= beta)
+            return score;
+        alpha = std::max(alpha, score);
+    }
+    return alpha;
 }
 
-Move get_book_move(Chess* ch)
+/*
+ *
+ */
+float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, float beta)
 {
+    nodes++;
+    MoveGenerator mgen(ch);
+    float stand_pat = eval(ch, depth);
+    std::vector<Move> moves = mgen.gen_moves();
+    if (!moves.size() || stand_pat > beta)
+        return stand_pat;
 
+    // Delta pruning: if a huge swing (> 1 queen)
+    // is not enough to improve the position, give up
+    const float DELTA = var_piece_value[ch_cst::QUEEN];
+    if (stand_pat < alpha - DELTA)
+        return alpha;
+
+    if (stand_pat > alpha)
+        alpha = stand_pat;
+    float score = stand_pat;
+    // moves = order_moves_by_piece(ch, moves);
+    // make captures until no captures remain, then eval
+    for (Move mv : moves)
+    {
+        if (!Bitboard::contains_square(ch.bb_occ, mv.end()) && mv.end() != ch.ep_square)
+            continue;
+        nodes++;
+        ch.make_move(mv);
+        score = -quiescence_search(ch, depth - 1, nodes, -beta, -alpha);
+        ch.unmake_move(1);
+        if (score >= beta) {
+            return beta;
+        }
+        if (score > alpha) {
+            alpha = score;
+        }
+    }
+    return alpha;
 }
 
-float eval_position(Chess* ch)
+std::vector<Move> Player::order_moves_by_piece(Chess& ch, std::vector<Move> moves)
 {
-
+    std::vector<Move> ordered;
+    for (int piece = ch_cst::KING; piece >= ch_cst::PAWN; piece--)
+    {
+        for (Move mv: moves)
+        {
+            if (!Bitboard::contains_square(*ch.bb_by_piece[piece], mv.start()))
+                continue;
+            ordered.push_back(mv);
+        }
+    }
+    return ordered;
 }
 
+float Player::eval(Chess& ch, int mate_offset)
+{
+    float material_score = 0;
+    float positional_score = 0;
+    const float MATE_IN_ZERO = 99.99f;
+    MoveGenerator eval_gen(ch);
+    std::vector<Move> moves = eval_gen.gen_moves();
+
+    if (!moves.size())
+    {
+        if(eval_gen.in_check)
+        {
+            // black wins, eval low
+            if (ch.aci) return -(MATE_IN_ZERO + mate_offset);
+            // white wins, eval high
+            else return MATE_IN_ZERO + mate_offset;
+        }
+        // If it is a stalemate return 0
+        return 0.0f;
+    } else {
+        // game isn't over, eval the position
+        // endgame interpolation
+        float middlegame_weight = Bitboard::num_bits_flipped(ch.bb_occ) / var_middlegame_weight;
+        for (int sq = 0; sq < 64; sq++) {
+            if (!Bitboard::contains_square(ch.bb_occ, sq))
+                continue;
+            int piece = ch.piece_at(sq);
+            material_score += var_piece_value[piece] * (1 - (2 * Bitboard::contains_square(ch.bb_black, sq)));
+            positional_score += PieceLocationTables::complex_read(piece, sq, middlegame_weight, Bitboard::contains_square(ch.bb_black, sq)) * (1 - (2 * Bitboard::contains_square(ch.bb_black, sq)));
+        }
+    }
+    float score = material_score + (positional_score / 100.0f);
+
+    // mobility score:
+    float mobility_score = (float) moves.size();
+    ch.aci = ~ch.aci & 1;
+    eval_gen.init();
+    mobility_score -= eval_gen.gen_moves().size();
+    ch.aci = ~ch.aci & 1;
+    mobility_score *= var_mobility_weight;
+    score += mobility_score;
+
+    // round to the nearest hundreth
+    score = std::round(score * 100) / 100.0f;
+    // System.out.printf("mobility: %+-7.2f | score: %+-7.2f | ratio: %+-7.2f\n", mob, score, mob/score);
+    // adjust the eval so the player to move is positive
+    return (ch.aci) ? -score : score;
+}
+
+/*
 package chess3;
 
 import java.text.DateFormat;
@@ -30,7 +176,6 @@ public class QuiescencePlayer extends Player {
     const float MAX = 499.99f;
     const float MIN = -MAX;
     const float mateinzero = 300f;
-    float[] pieceValue = { 0f, 1f, 2.8f, 3f, 5f, 9.7f, 0f, 0f };
     U64 nodes = 0;
     long startTime, time;
     float mobWeight = 0.1f;
@@ -581,58 +726,6 @@ public class QuiescencePlayer extends Player {
             }
         assert moveout.size() == movein.size() : movein.size() - moveout.size();
         return moveout;
-    }
-
-    private float evalMaterial(MoveGenerator evalgen, int mateOffset) {
-        float materialScore = 0;
-        float positionalScore = 0;
-        int gameOver = evalgen.gameOver;
-        if (gameOver != -1) {
-            if (gameOver == Chess.WHITE_INDEX) {
-                // If white has checkmate, eval the position high
-                assert evalgen.activeColour == Chess.BLACK;
-                return (evalgen.activeColour == Chess.WHITE) ? mateinzero + mateOffset : -(mateinzero + mateOffset);
-            } else if (gameOver == Chess.BLACK_INDEX) {
-                // If black has checkmate, eval the position low
-                assert evalgen.activeColour == Chess.WHITE;
-                return (evalgen.activeColour == Chess.WHITE) ? -(mateinzero + mateOffset) : mateinzero + mateOffset;
-            } else {
-                // If it is a draw (repetition or stalemate) return 0
-                return 0.0f;
-            }
-        } else { // game isn't over, eval the position
-            // endgame interpolation
-            float midgameWeight = countPieces(test) / 32f;
-            // are we in the endgame?
-            for (int sq = 0; sq < 64; sq++) {
-                if (test.isEmptySquare(sq))
-                    continue;
-                int piece = test.board[sq];
-                if (test.board[sq] >>> 3 == Chess.WHITE) {
-                    materialScore += pieceValue[Piece.type(piece)];
-                    positionalScore += PieceLocationTables.complexRead(Piece.type(piece), sq, midgameWeight, true);
-                } else {
-                    materialScore -= pieceValue[Piece.type(piece)];
-                    positionalScore -= PieceLocationTables.complexRead(Piece.type(piece), sq, midgameWeight, false);
-                }
-            }
-        }
-        float score = materialScore + (positionalScore / 100f);
-
-        // mobility score:
-        float mobilityScore = evalgen.moves.size();
-        test.activeColourIndex = ~test.activeColourIndex & 1;
-        MoveGenerator opgen = new MoveGenerator(test);
-        mobilityScore -= opgen.moves.size();
-        test.activeColourIndex = ~test.activeColourIndex & 1;
-        mobilityScore *= mobWeight;
-        score += mobilityScore;
-
-        // round to the nearest hundreth
-        score = Math.round(score * 100) / 100f;
-        // System.out.printf("mobility: %+-7.2f | score: %+-7.2f | ratio: %+-7.2f\n", mob, score, mob/score);
-        // adjust the eval so the player to move is positive
-        return (evalgen.activeColour == Chess.WHITE) ? score : -score;
     }
 
 }

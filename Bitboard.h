@@ -39,7 +39,7 @@ namespace Bitboard
     bool contains_square(U64 bb, int sq);
     int num_bits_flipped(U64 bb);
     std::string build_binary_string(U64 bb);
-    void print_binary_string(std::string bbstr, bool fmt = true);
+    void print_binary_string(std::string bbstr, bool fmt = false);
     int leading_zeros(U64 num);
     U64 gen_shift(U64 bb, int s);
 }

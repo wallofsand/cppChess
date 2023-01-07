@@ -1,12 +1,9 @@
 #include "Chess.h"
 
-using namespace ch_cst;
-
 Chess::Chess()
 {
     aci = 0;
     ply_counter = 0;
-    // bl:QuKi wh:QuKi
     castle_rights = 0b1111;
     build_bitboards();
     std::vector<Move> history;
@@ -28,6 +25,16 @@ void Chess::build_bitboards()
     bb_occ     = bb_white                 | bb_black;
 }
 
+int Chess::piece_at(int sq)
+{
+    for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
+    {
+        if (Bitboard::contains_square(*bb_by_piece[piece], sq))
+            return piece;
+    }
+    return 0;
+}
+
 void Chess::make_move(Move mv)
 {
     ep_square = 0;
@@ -35,12 +42,13 @@ void Chess::make_move(Move mv)
     int end = mv.end();
     bool castle = false;
 
-    // what type of piece is moving?
     for (int i = ch_cst::PAWN; i <= ch_cst::KING; i++)
     {
         // remove captured pieces
         *bb_by_piece[i] &= ~(1ull << end);
         *bb_by_color[1 - aci] &= ~(1ull << end);
+
+        // is this type of piece is moving?
         if (!Bitboard::contains_square(*bb_by_piece[i], start))
             continue;
 
@@ -58,31 +66,42 @@ void Chess::make_move(Move mv)
         if (i == ch_cst::PAWN && (start - end) % 16 == 0)
             ep_square = start + directions::PAWN_DIR[aci];
 
-        // update castle rights
         if (i == ch_cst::KING)
         {
             // handle castles
             // kingside castle
-            if (end - start == -2)
+            if (end - start == 2 && castle_rights & 1 << (2 * aci))
             {
                 *bb_by_piece[ch_cst::ROOK] ^= 1ull << (start | 0b111);
                 *bb_by_piece[ch_cst::ROOK] |= 1ull << (end - 1);
+                *bb_by_color[aci] ^= 1ull << (start | 0b111);
+                *bb_by_color[aci] |= 1ull << (end - 1);
+                bb_occ ^= 1ull << (start | 0b111);
+                bb_occ |= 1ull << (end - 1);
             }
             // queenside castle
-            else if (end - start == 2)
+            else if (end - start == -2 && castle_rights & 2 << (2 * aci))
             {
                 *bb_by_piece[ch_cst::ROOK] ^= 1ull << (start & 0b111000);
                 *bb_by_piece[ch_cst::ROOK] |= 1ull << (end + 1);
+                *bb_by_color[aci] ^= 1ull << (start & 0b111000);
+                *bb_by_color[aci] |= 1ull << (end + 1);
+                bb_occ ^= 1ull << (start & 0b111000);
+                bb_occ |= 1ull << (end + 1);
+                
             }
+            // update castle rights
             castle_rights &= 3 << (2 * (1 - aci));
         }
         else if (i == ch_cst::ROOK)
+        {
             // queenside rook moved
             if (Compass::rank_yindex(start) == 0)
                 castle_rights &= ~(2 << 2 * aci);
             // kingside rook moved
             else if (Compass::rank_yindex(start) == 7)
                 castle_rights &= ~(1 << 2 * aci);
+        }
     }
 
     ply_counter++;
@@ -108,6 +127,7 @@ void Chess::unmake_move(int undos)
 
 const std::string Chess::move_fen(Move& mv)
 {
+    using namespace ch_cst;
     std::string fen = "";
     int start = mv.start(), end = mv.end();
     for (int type = PAWN; type <= KING; type++)
@@ -147,7 +167,7 @@ const void Chess::print_board(bool fmt)
             {
                 if (Bitboard::contains_square(*bb_by_piece[piece] & *bb_by_color[color], sq))
                 {
-                    board += piece_char[piece | (color << 3)];
+                    board += ch_cst::piece_char[piece | (color << 3)];
                 }
             }
         }

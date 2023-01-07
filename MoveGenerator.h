@@ -27,7 +27,7 @@ private:
     std::vector<Move> gen_rook_piece_moves(int sq);
     std::vector<Move> gen_king_piece_moves(int sq);
     void find_pins();
-    U64 gen_op_attack_mask();
+    void gen_op_attack_mask();
     void check_exists();
     void check_method();
     U64 check_ray;

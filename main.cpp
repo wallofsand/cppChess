@@ -1,6 +1,7 @@
 #include "Chess.h"
 #include "Move.h"
 #include "MoveGenerator.h"
+#include "Player.h"
 #include <iostream>
 
 using namespace ch_cst;
@@ -23,34 +24,30 @@ int main()
 {
     Compass::init_compass();
     Chess chess;
+    Player pl;
 
-    perft_root(chess, 3, true, 1);
-    perft_root(chess, 3, true, 1);
-    perft_root(chess, 3, true, 1);
-    perft_root(chess, 3, true, 1);
-    perft_root(chess, 3, true, 1);
-
-    bool playing = false;
+    bool playing = true;
     MoveGenerator mgen(chess);
-    while (playing)
+    while (playing && !mgen.is_game_over())
     {
-        mgen.set_chess(chess);
         std::vector<Move> move_list = mgen.gen_moves();
         chess.print_board(true);
-        std::string mv_str;
-        for (Move mv : move_list)
-            std::cout << chess.move_fen(mv) << " ";
-        std::cout << std::endl << (chess.aci ? "Black to move: " : "White to move: ");
-        std::cin >> mv_str;
-        if (mv_str.substr(0, 2) == "um" && (std::stoi(mv_str.substr(2)) <= chess.ply_counter))
-            chess.unmake_move(std::stoi(mv_str.substr(2)));
-        else if (mv_str == "test")
-        {
-            print_U64(Bitboard::SoEa_attacks(chess.bb_queens & chess.bb_black, ~chess.bb_occ), true);
-        }
-        else for (Move mv : move_list)
-            if (mv_str == chess.move_fen(mv))
-                chess.make_move(mv);
+        // std::string mv_str;
+        // for (Move mv : move_list)
+        //     std::cout << chess.move_fen(mv) << " ";
+        std::cout << std::endl << pl.eval(chess) << (chess.aci ? " Black to move: " : " White to move: ");
+        Move mv = pl.get_move(chess, 1);
+        std::cout << chess.move_fen(mv) << std::endl;
+        chess.make_move(mv);
+        mgen.init();
+        // std::cin >> mv_str;
+        // if (mv_str.substr(0, 2) == "um" && (std::stoi(mv_str.substr(2)) <= chess.ply_counter))
+            // chess.unmake_move(std::stoi(mv_str.substr(2)));
+        // else if (mv_str.substr(0, 4) == "test")
+            // chess.make_move(pl.get_move(chess, 4));
+        // else for (Move mv : move_list)
+            // if (mv_str == chess.move_fen(mv))
+                // chess.make_move(mv);
     }
     return 0;
 }
@@ -105,16 +102,16 @@ U64 perft_root(Chess &ch, int depth, bool initial_pos, int log_depth)
         nodes += i;
         ch.unmake_move(1);
     }
-    U64 nodes_per_second = nodes;
-    if (perft_timer.elapsed() > 0.001)
-        nodes_per_second = nodes_per_second / (U64) (perft_timer.elapsed() * 1000);
+    double nodes_per_second = (double) nodes;
+    if (perft_timer.elapsed() >= 1)
+        nodes_per_second = nodes_per_second / perft_timer.elapsed();
 
     // test finished, print results
     if (depth > perft_log.depth)
-        perft_log.write(fmt::format("{}: {} moves found in {}s at {} nodes/s.\n",
-            SearchLogger::time_to_string(), nodes, perft_timer.elapsed(), nodes_per_second));
-    std::cout << fmt::format("{}: {} moves found in {}s at {} nodes/s.\n",
-            SearchLogger::time_to_string(), nodes, perft_timer.elapsed(), nodes_per_second);
+        perft_log.write(fmt::format("{}: finished in {}s at {} nodes/s\n{} moves found\n",
+            SearchLogger::time_to_string(), perft_timer.elapsed(), nodes_per_second, nodes));
+    std::cout << fmt::format("{}: finished in {}s at {} nodes/s\n{} moves found\n",
+            SearchLogger::time_to_string(), perft_timer.elapsed(), nodes_per_second, nodes);
 
     // initial position tested, verify results
     if (initial_pos)

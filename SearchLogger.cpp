@@ -16,7 +16,7 @@ SearchLogger::SearchLogger(std::string str, int d)
     depth = d;
     buffer = "";
     fmt::ostream out = fmt::output_file(file_path(),
-        fmt::file::WRONLY | fmt::file::CREATE | fmt::file::TRUNC);
+        (fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND));
 }
 
 /*

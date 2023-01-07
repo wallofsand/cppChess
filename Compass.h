@@ -26,7 +26,7 @@ namespace ch_cst
      */
     const char piece_char[15] = {
         ' ', 'P', 'N', 'B', 'R', 'Q', 'K', '.',
-        '.', 'p', 'n', 'b', 'r', 'q', 'k'
+        '.', 'o', 'n', 'b', 'r', 'q', 'k'
     };
     enum Square {
         a1, b1, c1, d1, e1, f1, g1, h1,
