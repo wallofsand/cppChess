@@ -8,11 +8,9 @@
 
 namespace Bitboard
 {
-    // intersect before west (left) shifts
-    // if the shift amount % 8 != 0
+    // intersect before west (right) shifts
     const U64 NOT_A_FILE = 0xfefefefefefefefe;
-    // intersect befre east (right) shifts
-    // if the shift amount % 8 != 0
+    // intersect before east (left) shifts
     const U64 NOT_H_FILE = 0x7f7f7f7f7f7f7f7f;
     U64 nort_shift_one(U64 bb);
     U64 sout_shift_one(U64 bb);

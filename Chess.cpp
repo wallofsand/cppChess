@@ -45,9 +45,9 @@ void Chess::make_move(Move mv)
             continue;
 
         // remove the old piece
-        *bb_by_piece[i] ^= 1ull << start;
-        *bb_by_color[aci] ^= 1ull << start;
-        bb_occ ^= 1ull << start;
+        *bb_by_piece[i] &= ~(1ull << start);
+        *bb_by_color[aci] &= ~(1ull << start);
+        bb_occ &= ~(1ull << start);
 
         // place the new piece
         *bb_by_piece[i] |= 1ull << end;
@@ -65,14 +65,14 @@ void Chess::make_move(Move mv)
             // kingside castle
             if (end - start == -2)
             {
-                *bb_by_piece[ch_cst::ROOK] ^= 1ull << (start + 3);
-                *bb_by_piece[ch_cst::ROOK] ^= 1ull << (end - 1);
+                *bb_by_piece[ch_cst::ROOK] ^= 1ull << (start | 0b111);
+                *bb_by_piece[ch_cst::ROOK] |= 1ull << (end - 1);
             }
             // queenside castle
             else if (end - start == 2)
             {
-                *bb_by_piece[ch_cst::ROOK] ^= 1ull << (start - 4);
-                *bb_by_piece[ch_cst::ROOK] ^= 1ull << (end + 1);
+                *bb_by_piece[ch_cst::ROOK] ^= 1ull << (start & 0b111000);
+                *bb_by_piece[ch_cst::ROOK] |= 1ull << (end + 1);
             }
             castle_rights &= 3 << (2 * (1 - aci));
         }

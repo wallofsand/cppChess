@@ -12,6 +12,7 @@ class Chess
 public:
     Chess();
     // Chess(const Chess &ch);
+    int aci;
     int ep_square;
     U64 bb_white;
     U64 bb_black;
@@ -24,7 +25,6 @@ public:
     U64 bb_occ;
     U64* bb_by_piece[7] = { nullptr, &bb_pawns, &bb_knights, &bb_bishops, &bb_rooks, &bb_queens, &bb_kings };
     U64* bb_by_color[2] = { &bb_white, &bb_black };
-    int aci;
     int ply_counter;
     std::vector<Move> history;
     int castle_rights;

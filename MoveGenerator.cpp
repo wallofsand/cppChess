@@ -37,7 +37,7 @@ void MoveGenerator::init()
  * @return true if stalemate, checkmate
  * @return false if any legal moves exist
  */
-const bool MoveGenerator::is_game_over()
+bool MoveGenerator::is_game_over()
 {
     return gen_moves().size() == 0;
 }
@@ -168,7 +168,7 @@ void MoveGenerator::find_pins()
             if (Bitboard::num_bits_flipped(pin_ray) == 1)
             {
                 int pinned_piece_sq;
-                for (int shift = 0; shift < 64; shift++)
+                for (int shift = 0; chess.bb_occ >> shift > 0; shift++)
                 {
                     if (pin_ray >> shift == 1)
                     {
@@ -183,12 +183,12 @@ void MoveGenerator::find_pins()
             break;
         }
     }
-    if (pinned_pieces)
-    {
-        std::cout << "Pins exist!" << std::endl;
-        Bitboard::print_binary_string(Bitboard::build_binary_string(pinned_pieces));
-        Bitboard::print_binary_string(Bitboard::build_binary_string(pin_ray_moves));
-    }
+    // if (pinned_pieces)
+    // {
+    //     std::cout << "Pins exist!" << std::endl;
+    //     Bitboard::print_binary_string(Bitboard::build_binary_string(pinned_pieces));
+    //     Bitboard::print_binary_string(Bitboard::build_binary_string(pin_ray_moves));
+    // }
 }
 
 /*
@@ -210,7 +210,7 @@ U64 MoveGenerator::gen_op_attack_mask()
     }
     op_attack_mask |= pattacksEast;
     op_attack_mask |= pattacksWest;
-    for (int sq = 0; sq < 64; sq++)
+    for (int sq = 0; op >> sq; sq++)
     {
         if (!Bitboard::contains_square(op, sq))
             continue;
@@ -245,7 +245,7 @@ U64 MoveGenerator::gen_op_attack_mask()
  * @param color the color index of the king to search for
  * @return the square index of the king (0-63)
  */
-const int MoveGenerator::find_king(int color)
+int MoveGenerator::find_king(int color)
 {
     return 63 - Bitboard::leading_zeros(chess.bb_kings & *chess.bb_by_color[color]);
 }
@@ -255,7 +255,7 @@ const int MoveGenerator::find_king(int color)
  * Remeber to call init() first.
  * @return an unsorted vector of moves
  */
-const std::vector<Move> MoveGenerator::gen_moves()
+std::vector<Move> MoveGenerator::gen_moves()
 {
     std::vector<Move> moves;
     moves = gen_pawn_moves();
@@ -299,7 +299,7 @@ const std::vector<Move> MoveGenerator::gen_moves()
  * Generates legal pawn moves
  * @return an unsorted list of pawn moves
  */
-const std::vector<Move> MoveGenerator::gen_pawn_moves()
+std::vector<Move> MoveGenerator::gen_pawn_moves()
 {
     std::vector<Move> pawn_moves;
     U64 pawns = chess.bb_pawns & *chess.bb_by_color[chess.aci];
@@ -333,7 +333,7 @@ const std::vector<Move> MoveGenerator::gen_pawn_moves()
             pawn_moves.push_back(Move(sq - DIRS[4+2*chess.aci], sq, ch_cst::KNIGHT));
         }
     }
-    for (int sq = (chess.aci) ? 0 : 16; capturesWest >> sq; sq++)
+    for (int sq = (chess.aci) ? 0 : 16; capturesWest >> sq > 0; sq++)
     {
         if (!Bitboard::contains_square(capturesWest, sq))
             continue;
@@ -397,13 +397,14 @@ const std::vector<Move> MoveGenerator::gen_pawn_moves()
     return legal_moves;
 }
 
-const std::vector<Move> MoveGenerator::gen_knight_piece_moves(int sq)
+std::vector<Move> MoveGenerator::gen_knight_piece_moves(int sq)
 {
     std::vector<Move> knight_moves;
     U64 moves = Compass::knight_attacks[sq] & ~*chess.bb_by_color[chess.aci];
     if (!moves || in_double_check)
         return knight_moves;
-    for (int end = std::max(0, sq - 17); end < std::min(64, sq + 18); end++)
+    int end_index = std::min(64, sq + 18);
+    for (int end = std::max(0, sq - 17); end < end_index; end++)
     {
         if (!Bitboard::contains_square(moves, end))
             continue;
@@ -423,7 +424,7 @@ const std::vector<Move> MoveGenerator::gen_knight_piece_moves(int sq)
     return legal_moves;
 }
 
-const std::vector<Move> MoveGenerator::gen_bishop_piece_moves(int sq)
+std::vector<Move> MoveGenerator::gen_bishop_piece_moves(int sq)
 {
     std::vector<Move> bishop_moves;
     if (in_double_check)
@@ -451,7 +452,7 @@ const std::vector<Move> MoveGenerator::gen_bishop_piece_moves(int sq)
     return legal_moves;
 }
 
-const std::vector<Move> MoveGenerator::gen_rook_piece_moves(int sq)
+std::vector<Move> MoveGenerator::gen_rook_piece_moves(int sq)
 {
     // std::vector<Move> rook_moves;
     // U64 rooks = (chess.bb_rooks | chess.bb_queens) & *chess.bb_by_color[chess.aci];
@@ -488,6 +489,7 @@ const std::vector<Move> MoveGenerator::gen_rook_piece_moves(int sq)
     attacks |= Bitboard::sout_attacks(1ull << sq, ~chess.bb_occ);
     attacks |= Bitboard::east_attacks(1ull << sq, ~chess.bb_occ);
     attacks |= Bitboard::west_attacks(1ull << sq, ~chess.bb_occ);
+    attacks &= *chess.bb_by_color[1-chess.aci] & ~chess.bb_occ;
     for (int target_sq = 0; attacks >> target_sq; target_sq++)
     {
         if (*chess.bb_by_color[chess.aci] & 1ull << target_sq)
@@ -507,7 +509,7 @@ const std::vector<Move> MoveGenerator::gen_rook_piece_moves(int sq)
     return legal_moves;
 }
 
-const std::vector<Move> MoveGenerator::gen_king_piece_moves(int sq)
+std::vector<Move> MoveGenerator::gen_king_piece_moves(int sq)
 {
     std::vector<Move> king_moves;
     U64 moves = Compass::king_attacks[sq] & ~*chess.bb_by_color[chess.aci] & ~gen_op_attack_mask();
@@ -537,119 +539,4 @@ const std::vector<Move> MoveGenerator::gen_king_piece_moves(int sq)
         && Bitboard::contains_square(chess.bb_rooks & *chess.bb_by_color[chess.aci], sq + 3))
         king_moves.push_back(Move(sq, sq + 2));
     return king_moves;
-}
-
-const std::string perft_results[] = {
-    "1", "20", "400", "8902", "197281", "4865609", "119060324", "3195901860",
-    "84998978956", "2439530234167", "69352859712417", "2097651003696806",
-    "62854969236701747", "1981066775000396239", "61885021521585529237",
-    "2015099950053364471960"
-};
-
-/*
- * Performance test root method
- * @param chess the starting position to test
- * @param depth number of ply to search
- * @param initial_pos true if we are testing the initial position.
- *        if (initial_pos && depth < 16) we can print known target values.
- *        default: false
- * @param log_depth the depth of nodes to list in log file
- *        default: 0
- */
-U64 MoveGenerator::perft_root(MoveGenerator& perft_gen, Chess &ch, int depth, bool initial_pos, int log_depth)
-{
-    if (!depth)
-        return 1;
-    log_depth = std::min(log_depth, depth);
-    SearchLogger perft_log("perft_log", depth - log_depth);
-    U64 nodes = 0;
-    if (depth > perft_log.depth)
-    {
-        perft_log.write(fmt::format("Starting perft({}) at {}\n",
-            depth, SearchLogger::time_to_string()));
-    }
-    std::cout << "Starting perft(" << depth << ") at "
-            << SearchLogger::time_to_string() << std::endl;
-    Timer perft_timer;
-
-    // main test loop
-    perft_gen.set_chess(ch); 
-    std::vector<Move> moves = perft_gen.gen_moves();
-    for (int mvidx = 0; mvidx < (int) moves.size(); mvidx++)
-    {
-        Move mv = moves.at(mvidx);
-        std::cout << fmt::format("{}/{}:\t{}\t\t", mvidx + 1, moves.size(), ch.move_fen(mv));
-        if (depth > perft_log.depth)
-        {
-            perft_log.buffer = fmt::format("{}/{}:\t{} ", mvidx + 1, moves.size(), ch.move_fen(mv));
-            ch.print_board(false);
-        }
-        ch.make_move(mv);
-        U64 i = perft(perft_gen, ch, depth - 1, perft_log);
-        std::cout << i << std::endl;
-        if (depth == 1 + perft_log.depth)
-            perft_log.write(perft_log.buffer + std::to_string(i) + "\n");
-        nodes += i;
-        ch.unmake_move(1);
-    }
-    U64 nodes_per_second = nodes;
-    if (perft_timer.elapsed() > 0.001)
-        nodes_per_second = nodes_per_second / (U64) (perft_timer.elapsed() * 1000);
-
-    // test finished, print results
-    if (depth > perft_log.depth)
-        perft_log.write(fmt::format("{}: {} moves found in {}s at {} nodes/s.\n",
-            SearchLogger::time_to_string(), nodes, perft_timer.elapsed(), nodes_per_second));
-    std::cout << fmt::format("{}: {} moves found in {}s at {} nodes/s.\n",
-            SearchLogger::time_to_string(), nodes, perft_timer.elapsed(), nodes_per_second);
-
-    // initial position tested, verify results
-    if (initial_pos)
-    {
-        if (depth > perft_log.depth)
-        {
-            perft_log.write(fmt::format("{} moves expected. ", perft_results[depth]));
-            if (nodes != std::stoll(perft_results[depth]))
-                perft_log.write("Uh oh!\n");
-            else
-                perft_log.write("Nice!\n");
-        }
-        std::cout << perft_results[depth] << " moves expected. ";
-        if (nodes != std::stoll(perft_results[depth]))
-            std::cout << "Uh oh!";
-        else
-            std::cout << "Nice!";
-        std::cout << std::endl;
-    }
-    if (depth > perft_log.depth)
-        perft_log.write("\n");
-    return nodes;
-}
-
-/*
- * Performance test recursion method
- * @param chess the current position to search
- * @param depth number of ply remaining in the search
- */
-U64 MoveGenerator::perft(MoveGenerator& perft_gen, Chess& ch, int depth, SearchLogger& perft_log)
-{
-    if (!depth)
-        return 1;
-    U64 nodes = 0;
-    perft_gen.set_chess(ch);
-    std::vector<Move> moves = perft_gen.gen_moves();
-    for (Move mv : moves)
-    {
-        if (depth > perft_log.depth)
-            perft_log.buffer += fmt::format(" {}", ch.move_fen(mv));
-        ch.make_move(mv);
-        U64 i = perft(perft_gen, ch, depth - 1, perft_log);
-        nodes += i;
-        ch.unmake_move(1);
-        if (depth == 1 + perft_log.depth)
-            perft_log.write(perft_log.buffer + " " + std::to_string(i) + "\n");
-        if (depth > perft_log.depth)
-            perft_log.buffer.erase(perft_log.buffer.find_last_of(' '), perft_log.buffer.length());
-    }
-    return nodes;
 }

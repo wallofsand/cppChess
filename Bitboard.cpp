@@ -51,7 +51,7 @@ U64 Bitboard::sout_shift_one(U64 bb)
  */
 U64 Bitboard::east_shift_one(U64 bb)
 {
-    return (bb & NOT_H_FILE) >> 1;
+    return (bb & NOT_H_FILE) << 1;
 }
 
 /*
@@ -317,6 +317,7 @@ void Bitboard::print_binary_string(std::string bbstr, bool fmt)
     }
     if (fmt)
         std::cout << divider << std::endl;
+    std::cout << std::endl;
 }
 
 /*
