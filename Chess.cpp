@@ -105,7 +105,7 @@ void Chess::make_move(Move mv)
     }
 
     ply_counter++;
-    aci = ~aci & 1;
+    aci = 1 - aci;
     history.push_back(mv);
 }
 
@@ -123,37 +123,6 @@ void Chess::unmake_move(int undos)
     {
         make_move(temp[i]);
     }
-}
-
-const std::string Chess::move_fen(Move& mv)
-{
-    using namespace ch_cst;
-    std::string fen = "";
-    int start = mv.start(), end = mv.end();
-    for (int type = PAWN; type <= KING; type++)
-    {
-        if (!Bitboard::contains_square(*bb_by_piece[type], start))
-            continue;
-        if (type != PAWN)
-            fen += piece_char[type];
-        // captures
-        if (Bitboard::contains_square(bb_occ, end))
-            fen += "x";
-        fen += square_string[end];
-        // castling
-        if (type == KING && (start - end == 2 || start - end == -2))
-        {
-            // short castle
-            fen = "O-O";
-            // long castle
-            if (start - end == 2)
-                fen += "-O";
-        }
-        // promotions
-        if (mv.promote())
-            fen += "=" + piece_char[mv.promote()];
-    }
-    return fen;
 }
 
 const void Chess::print_board(bool fmt)
@@ -175,5 +144,6 @@ const void Chess::print_board(bool fmt)
             continue;
         board += '.';
     }
+    std::cout << std::endl;
     Bitboard::print_binary_string(board, fmt);
 }

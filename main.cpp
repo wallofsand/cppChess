@@ -2,14 +2,14 @@
 #include "Move.h"
 #include "MoveGenerator.h"
 #include "Player.h"
+#include "SearchLogger.h"
 #include <iostream>
 
 using namespace ch_cst;
 
 // U64 perft_root(Chess& chess, int depth, bool initial_position, int log_depth = 0);
 // U64 perft(MoveGenerator& perft_gen, Chess& chess, int depth, SearchLogger& perft_log);
-void print_board(Chess ch, bool fmt = true);
-void print_U64(U64 bb, bool fmt = true);
+void print_U64(U64 bb, bool fmt = false);
 U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth);
 U64 perft(Chess& ch, int depth, SearchLogger& perft_log);
 
@@ -27,28 +27,63 @@ int main()
     Player pl;
 
     bool playing = true;
-    MoveGenerator mgen(chess);
-    while (playing && !mgen.is_game_over())
+    std::string last_move = "";
+    while (playing)
     {
-        std::vector<Move> move_list = mgen.gen_moves();
+        MoveGenerator mgen;
+        std::vector<Move> move_list = mgen.gen_moves(chess);
+        std::string mv_str;
+
         chess.print_board(true);
-        // std::string mv_str;
-        // for (Move mv : move_list)
-        //     std::cout << chess.move_fen(mv) << " ";
-        std::cout << std::endl << pl.eval(chess) << (chess.aci ? " Black to move: " : " White to move: ");
-        Move mv = pl.get_move(chess, 1);
-        std::cout << chess.move_fen(mv) << std::endl;
-        chess.make_move(mv);
-        mgen.init();
-        // std::cin >> mv_str;
-        // if (mv_str.substr(0, 2) == "um" && (std::stoi(mv_str.substr(2)) <= chess.ply_counter))
-            // chess.unmake_move(std::stoi(mv_str.substr(2)));
-        // else if (mv_str.substr(0, 4) == "test")
-            // chess.make_move(pl.get_move(chess, 4));
-        // else for (Move mv : move_list)
-            // if (mv_str == chess.move_fen(mv))
-                // chess.make_move(mv);
+        if (chess.ply_counter)
+            std::cout << ((chess.ply_counter - 1) / 2) + 1 << (chess.ply_counter % 2 == 1 ? ". " : ".. ") << last_move << std::endl;
+
+        std::cout << fmt::format("check: {}, eval: {}\n", mgen.in_check, pl.eval(chess));
+        for (Move mv : move_list)
+            std::cout << mgen.move_san(chess, mv) << " ";
+        std::cout << std::endl;
+        std::vector<Move> ordered_moves = pl.order_moves_by_piece(chess, move_list);
+        for (Move mv : ordered_moves)
+            std::cout << mgen.move_san(chess, mv) << " ";
+        std::cout << fmt::format("\n{} ", (chess.aci ? "Black to move:" :" White to move: "));
+        std::cin >> mv_str;
+        if (mv_str.substr(0, 2) == "um")
+        {
+            int undos = 0;
+            while (undos < 1 || undos > chess.ply_counter)
+                std::cin >> undos;
+            chess.unmake_move(undos);
+        }
+        else if (mv_str.length() == 1)
+        {
+            Move engine_move = pl.get_move(chess, std::stoi(mv_str));
+            last_move = mgen.move_san(chess, engine_move);
+            chess.make_move(engine_move);
+        }
+        else if (mv_str == "aim")
+        {
+            int depth = 0;
+            while (depth < 1 || depth > 5)
+                std::cin >> depth;
+            Move engine_move = pl.get_move(chess, depth);
+            last_move = mgen.move_san(chess, engine_move);
+            chess.make_move(engine_move);
+        }
+        else if (mv_str == "test")
+        {
+        }
+        else if (mv_str == "eval")
+            std::cout << pl.eval(chess) << std::endl;
+        else if (mv_str == "end") playing = false;
+        else for (Move mv : move_list)
+            if (mv_str == mgen.move_san(chess, mv))
+            {
+                chess.make_move(mv);
+                break;
+            }
+        if (mgen.is_game_over(chess)) playing = false;
     }
+    chess.print_board(true);
     return 0;
 }
 
@@ -67,7 +102,7 @@ void print_U64(U64 bb, bool fmt)
  * @param log_depth the depth of nodes to list in log file
  *        default: 0
  */
-U64 perft_root(Chess &ch, int depth, bool initial_pos, int log_depth)
+U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth)
 {
     if (!depth)
         return 1;
@@ -84,15 +119,15 @@ U64 perft_root(Chess &ch, int depth, bool initial_pos, int log_depth)
     Timer perft_timer;
 
     // main test loop
-    MoveGenerator perft_gen(ch);
-    std::vector<Move> moves = perft_gen.gen_moves();
+    MoveGenerator perft_gen;
+    std::vector<Move> moves = perft_gen.gen_moves(ch);
     for (int mvidx = 0; mvidx < (int) moves.size(); mvidx++)
     {
         Move mv = moves.at(mvidx);
-        std::cout << fmt::format("{}/{}:\t{}\t\t", mvidx + 1, moves.size(), ch.move_fen(mv));
+        std::cout << fmt::format("{}/{}:\t{}\t\t", mvidx + 1, moves.size(), perft_gen.move_san(ch, mv));
         if (depth > perft_log.depth)
         {
-            perft_log.buffer = fmt::format("{}/{}:\t{} ", mvidx + 1, moves.size(), ch.move_fen(mv));
+            perft_log.buffer = fmt::format("{}/{}:\t{} ", mvidx + 1, moves.size(), perft_gen.move_san(ch, mv));
         }
         ch.make_move(mv);
         U64 i = perft(ch, depth - 1, perft_log);
@@ -146,13 +181,13 @@ U64 perft(Chess& ch, int depth, SearchLogger& perft_log)
     if (!depth)
         return 1;
     U64 nodes = 0;
-    MoveGenerator perft_gen(ch);
-    std::vector<Move> moves = perft_gen.gen_moves();
+    MoveGenerator perft_gen;
+    std::vector<Move> moves = perft_gen.gen_moves(ch);
     for (Move mv : moves)
     {
         // std::cout << mv << std::endl;
         if (depth > perft_log.depth)
-            perft_log.buffer += fmt::format(" {}", ch.move_fen(mv));
+            perft_log.buffer += fmt::format(" {}", perft_gen.move_san(ch, mv));
         ch.make_move(mv);
         U64 i = perft(ch, depth - 1, perft_log);
         nodes += i;

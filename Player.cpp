@@ -2,10 +2,11 @@
 
 Move Player::get_move(Chess& ch, int depth)
 {
-    MoveGenerator mgen(ch);
+    depth = std::max(depth, 1);
+    MoveGenerator mgen;
     float high_score = -99.99f;
     Move best_move = Move(0, 0);
-    std::vector<Move> moves = mgen.gen_moves();
+    std::vector<Move> moves = mgen.gen_moves(ch);
     // moves = order_moves_by_piece(ch, moves);
     if (moves.size() == 1)
         return moves.at(0);
@@ -13,7 +14,7 @@ Move Player::get_move(Chess& ch, int depth)
     for (Move m : moves)
     {
         ch.make_move(m);
-        float score = nega_max(ch, depth, nodes, high_score);
+        float score = -nega_max(ch, depth - 1, nodes, -99.99f, -high_score);
         if (score > high_score)
         {
             high_score = score;
@@ -38,8 +39,8 @@ float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta
         return eval(ch);
         // return quiescence_search(ch, depth, nodes, alpha, beta);
     nodes++;
-    MoveGenerator mgen(ch);
-    std::vector<Move> moves = mgen.gen_moves();
+    MoveGenerator mgen;
+    std::vector<Move> moves = mgen.gen_moves(ch);
     // moves = order_moves_by_piece(ch, moves);
     if (!moves.size())
         return eval(ch);
@@ -49,7 +50,7 @@ float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta
         float score = -nega_max(ch, depth - 1, nodes, -beta, -alpha);
         ch.unmake_move(1);
         if (score >= beta)
-            return score;
+            return beta;
         alpha = std::max(alpha, score);
     }
     return alpha;
@@ -61,9 +62,9 @@ float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta
 float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, float beta)
 {
     nodes++;
-    MoveGenerator mgen(ch);
+    MoveGenerator mgen;
     float stand_pat = eval(ch, depth);
-    std::vector<Move> moves = mgen.gen_moves();
+    std::vector<Move> moves = mgen.gen_moves(ch);
     if (!moves.size() || stand_pat > beta)
         return stand_pat;
 
@@ -116,8 +117,8 @@ float Player::eval(Chess& ch, int mate_offset)
     float material_score = 0;
     float positional_score = 0;
     const float MATE_IN_ZERO = 99.99f;
-    MoveGenerator eval_gen(ch);
-    std::vector<Move> moves = eval_gen.gen_moves();
+    MoveGenerator eval_gen;
+    std::vector<Move> moves = eval_gen.gen_moves(ch);
 
     if (!moves.size())
     {
@@ -146,10 +147,9 @@ float Player::eval(Chess& ch, int mate_offset)
 
     // mobility score:
     float mobility_score = (float) moves.size();
-    ch.aci = ~ch.aci & 1;
-    eval_gen.init();
-    mobility_score -= eval_gen.gen_moves().size();
-    ch.aci = ~ch.aci & 1;
+    ch.aci = 1 - ch.aci;
+    mobility_score -= eval_gen.gen_moves(ch).size();
+    ch.aci = 1 - ch.aci;
     mobility_score *= var_mobility_weight;
     score += mobility_score;
 

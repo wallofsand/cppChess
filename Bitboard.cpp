@@ -317,7 +317,6 @@ void Bitboard::print_binary_string(std::string bbstr, bool fmt)
     }
     if (fmt)
         std::cout << divider << std::endl;
-    std::cout << std::endl;
 }
 
 /*

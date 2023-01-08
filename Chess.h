@@ -33,7 +33,6 @@ public:
     void make_move(Move mv);
     void unmake_move(int undos);
     const void print_board(bool fmt = false);
-    const std::string move_fen(Move& mv);
     void build_bitboards();
 private:
 };

@@ -18,7 +18,7 @@ public:
     std::vector<Move> order_moves_by_piece(Chess& ch, std::vector<Move>);
 private:
     const float var_middlegame_weight = 32;
-    const float var_mobility_weight = 0.01;
+    const float var_mobility_weight = 0.01f;
     const float var_piece_value[7] = { 0, 1, 2.8f, 3, 5, 9.7f, 99.99f };
 };
 
