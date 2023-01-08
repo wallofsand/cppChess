@@ -122,7 +122,7 @@ float Player::eval(Chess& ch, int mate_offset)
 
     if (!moves.size())
     {
-        if(eval_gen.in_check)
+        if(ch.in_check)
         {
             // black wins, eval low
             if (ch.aci) return -(MATE_IN_ZERO + mate_offset);

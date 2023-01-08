@@ -5,6 +5,8 @@ Chess::Chess()
     aci = 0;
     ply_counter = 0;
     castle_rights = 0b1111;
+    in_check = false;
+    in_double_check = false;
     build_bitboards();
     std::vector<Move> history;
 }

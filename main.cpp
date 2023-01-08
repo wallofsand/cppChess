@@ -26,6 +26,12 @@ int main()
     Chess chess;
     Player pl;
 
+    // chess.make_move(Move(Square::e2,Square::f3));
+    // chess.make_move(Move(Square::e7,Square::d6));
+    // chess.make_move(Move(Square::d1,Square::e2));
+    // MoveGenerator test_gen;
+    // test_gen.gen_moves(chess);
+
     bool playing = true;
     std::string last_move = "";
     while (playing)
@@ -38,13 +44,10 @@ int main()
         if (chess.ply_counter)
             std::cout << ((chess.ply_counter - 1) / 2) + 1 << (chess.ply_counter % 2 == 1 ? ". " : ".. ") << last_move << std::endl;
 
-        std::cout << fmt::format("check: {}, eval: {}\n", mgen.in_check, pl.eval(chess));
+        std::cout << fmt::format("eval: {}\n", pl.eval(chess));
         for (Move mv : move_list)
             std::cout << mgen.move_san(chess, mv) << " ";
         std::cout << std::endl;
-        std::vector<Move> ordered_moves = pl.order_moves_by_piece(chess, move_list);
-        for (Move mv : ordered_moves)
-            std::cout << mgen.move_san(chess, mv) << " ";
         std::cout << fmt::format("\n{} ", (chess.aci ? "Black to move:" :" White to move: "));
         std::cin >> mv_str;
         if (mv_str.substr(0, 2) == "um")
@@ -71,6 +74,8 @@ int main()
         }
         else if (mv_str == "test")
         {
+            mgen.check_exists(chess);
+            std::cout << chess.in_check << std::endl;
         }
         else if (mv_str == "eval")
             std::cout << pl.eval(chess) << std::endl;

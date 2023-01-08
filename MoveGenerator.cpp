@@ -1,5 +1,11 @@
 #include "MoveGenerator.h"
 
+MoveGenerator::MoveGenerator()
+{
+    bool in_check = false;
+    bool in_double_check = false;
+}
+
 /*
  * Method to determine whether a game has ended.
  * Must call AFTER init(): we use gen_moves().size() to determine state.
@@ -11,12 +17,12 @@ bool MoveGenerator::is_game_over(Chess& chess)
     return gen_moves(chess).size() == 0;
 }
 
-void MoveGenerator::check_exists(Chess& chess, bool& check_flag, bool& double_flag)
+void MoveGenerator::check_exists(Chess& chess)
 {
     using namespace directions;
     U64 bb_king = chess.bb_kings & *chess.bb_by_color[chess.aci];
-    check_flag = false;
-    double_flag = false;
+    chess.in_check = false;
+    chess.in_double_check = false;
     check_ray = 0;
     if (!(bb_king & op_attack_mask))
         return;
@@ -27,8 +33,8 @@ void MoveGenerator::check_exists(Chess& chess, bool& check_flag, bool& double_fl
     U64 attackers = chess.bb_knights & op & Compass::knight_attacks[ksq];
     if (attackers)
     {
-        this->check_ray |= 1ull << (63 - Bitboard::leading_zeros(attackers));
-        this->check_method(in_check, in_double_check);
+        check_ray |= 1ull << (63 - Bitboard::leading_zeros(attackers));
+        check_method(chess);
     }
 
     // pawns
@@ -36,13 +42,13 @@ void MoveGenerator::check_exists(Chess& chess, bool& check_flag, bool& double_fl
     if (attackers & op & chess.bb_pawns)
     {
         this->check_ray |= 1ull << (63 - Bitboard::leading_zeros(attackers));
-        this->check_method(in_check, in_double_check);
+        this->check_method(chess);
     }
     attackers = Bitboard::gen_shift(bb_king & Bitboard::NOT_A_FILE, DIRS[5 + 2 * (chess.aci)]);
     if (attackers & op & chess.bb_pawns)
     {
         this->check_ray |= 1ull << (63 - Bitboard::leading_zeros(attackers));
-        this->check_method(in_check, in_double_check);
+        this->check_method(chess);
     }
 
 
@@ -51,62 +57,62 @@ void MoveGenerator::check_exists(Chess& chess, bool& check_flag, bool& double_fl
     if (attackers & (chess.bb_queens | chess.bb_bishops) & op)
     {
         this->check_ray = attackers;
-        this->check_method(in_check, in_double_check);
+        this->check_method(chess);
     }
     attackers = Bitboard::NoWe_attacks(bb_king, ~chess.bb_occ);
-    if (!double_flag && attackers & (chess.bb_queens | chess.bb_bishops) & op)
+    if (!chess.in_double_check && attackers & (chess.bb_queens | chess.bb_bishops) & op)
     {
         this->check_ray = attackers;
-        this->check_method(in_check, in_double_check);
+        this->check_method(chess);
     }
     attackers = Bitboard::SoEa_attacks(bb_king, ~chess.bb_occ);
-    if (!double_flag && attackers & (chess.bb_queens | chess.bb_bishops) & op)
+    if (!chess.in_double_check && attackers & (chess.bb_queens | chess.bb_bishops) & op)
     {
         this->check_ray = attackers;
-        this->check_method(in_check, in_double_check);
+        this->check_method(chess);
     }
     attackers = Bitboard::SoWe_attacks(bb_king, ~chess.bb_occ);
-    if (!double_flag && attackers & (chess.bb_queens | chess.bb_bishops) & op)
+    if (!chess.in_double_check && attackers & (chess.bb_queens | chess.bb_bishops) & op)
     {
-        this->check_ray = attackers;
-        this->check_method(in_check, in_double_check);
+        check_ray = attackers;
+        check_method(chess);
     }
 
     // rooks
     attackers = Bitboard::nort_attacks(bb_king, ~chess.bb_occ);
-    if (!double_flag && attackers & (chess.bb_queens | chess.bb_rooks) & op)
+    if (!chess.in_double_check && attackers & (chess.bb_queens | chess.bb_rooks) & op)
     {
-        this->check_ray = attackers;
-        this->check_method(in_check, in_double_check);
+        check_ray = attackers;
+        check_method(chess);
     }
     attackers = Bitboard::sout_attacks(bb_king, ~chess.bb_occ);
-    if (!double_flag && attackers & (chess.bb_queens | chess.bb_rooks) & op)
+    if (!chess.in_double_check && attackers & (chess.bb_queens | chess.bb_rooks) & op)
     {
-        this->check_ray = attackers;
-        this->check_method(in_check, in_double_check);
+        check_ray = attackers;
+        check_method(chess);
     }
     attackers = Bitboard::east_attacks(bb_king, ~chess.bb_occ);
-    if (!double_flag && attackers & (chess.bb_queens | chess.bb_bishops) & op)
+    if (!chess.in_double_check && attackers & (chess.bb_queens | chess.bb_bishops) & op)
     {
-        this->check_ray = attackers;
-        this->check_method(in_check, in_double_check);
+        check_ray = attackers;
+        check_method(chess);
     }
     attackers = Bitboard::west_attacks(bb_king, ~chess.bb_occ);
-    if (!double_flag && attackers & (chess.bb_queens | chess.bb_bishops) & op)
+    if (!chess.in_double_check && attackers & (chess.bb_queens | chess.bb_bishops) & op)
     {
-        this->check_ray = attackers;
-        this->check_method(in_check, in_double_check);
+        check_ray = attackers;
+        check_method(chess);
     }
 }
 
-void MoveGenerator::check_method(bool& check_flag, bool& double_flag)
+void MoveGenerator::check_method(Chess& chess)
 {
-    if (check_flag)
+    if (chess.in_check)
     {
-        double_flag = true;
+        chess.in_double_check = true;
         return;
     }
-    check_flag = true;
+    chess.in_check = true;
 }
 
 // setup method to get pins in a position
@@ -231,8 +237,10 @@ int MoveGenerator::find_king(Chess& chess, int color)
  */
 std::vector<Move> MoveGenerator::gen_moves(Chess& chess)
 {
-    op_attack_mask = gen_op_attack_mask(chess);
-    check_exists(chess, in_check, in_double_check);
+    chess.in_check = false;
+    chess.in_double_check = false;
+    this->op_attack_mask = gen_op_attack_mask(chess);
+    this->check_exists(chess);
     find_pins(chess);
     std::vector<Move> moves = gen_pawn_moves(chess);
     for (int sq = 0; *chess.bb_by_color[chess.aci] >> sq; sq++)
@@ -280,7 +288,7 @@ std::vector<Move> MoveGenerator::gen_pawn_moves(Chess& chess)
     using namespace directions;
     std::vector<Move> pawn_moves;
     U64 pawns = chess.bb_pawns & *chess.bb_by_color[chess.aci];
-    if (!pawns || in_double_check)
+    if (!pawns || chess.in_double_check)
         return pawn_moves;
     U64 op = *chess.bb_by_color[1 - chess.aci];
     // pawn captures
@@ -362,7 +370,7 @@ std::vector<Move> MoveGenerator::gen_pawn_moves(Chess& chess)
             || Compass::file_xindex(find_king(chess, chess.aci)) == Compass::file_xindex(sq))
             pawn_moves.push_back(Move(sq - 2 * PAWN_DIR[chess.aci], sq));
     }
-    if (!in_check)
+    if (!chess.in_check)
         return pawn_moves;
     std::vector<Move> legal_moves;
     for (Move m : pawn_moves)
@@ -378,7 +386,7 @@ std::vector<Move> MoveGenerator::gen_knight_piece_moves(Chess& chess, int sq)
 {
     std::vector<Move> knight_moves;
     U64 moves = Compass::knight_attacks[sq] & ~*chess.bb_by_color[chess.aci];
-    if (!moves || in_double_check)
+    if (!moves || chess.in_double_check)
         return knight_moves;
     int end_index = std::min(64, sq + 18);
     for (int end = std::max(0, sq - 17); end < end_index; end++)
@@ -390,7 +398,7 @@ std::vector<Move> MoveGenerator::gen_knight_piece_moves(Chess& chess, int sq)
             continue;
         knight_moves.push_back(Move(sq, end));
     }
-    if (!in_check)
+    if (!chess.in_check)
         return knight_moves;
     std::vector<Move> legal_moves;
     for (Move m : knight_moves)
@@ -404,7 +412,7 @@ std::vector<Move> MoveGenerator::gen_knight_piece_moves(Chess& chess, int sq)
 std::vector<Move> MoveGenerator::gen_bishop_piece_moves(Chess& chess, int sq)
 {
     std::vector<Move> bishop_moves;
-    if (in_double_check)
+    if (chess.in_double_check)
         return bishop_moves;
     U64 attacks = Bitboard::NoEa_attacks(1ull << sq, ~chess.bb_occ);
     attacks |= Bitboard::NoWe_attacks(1ull << sq, ~chess.bb_occ);
@@ -418,7 +426,7 @@ std::vector<Move> MoveGenerator::gen_bishop_piece_moves(Chess& chess, int sq)
             continue;
         bishop_moves.push_back(Move(sq, target_sq));
     }
-    if (!in_check)
+    if (!chess.in_check)
         return bishop_moves;
     std::vector<Move> legal_moves;
     for (Move m : bishop_moves)
@@ -432,7 +440,7 @@ std::vector<Move> MoveGenerator::gen_bishop_piece_moves(Chess& chess, int sq)
 std::vector<Move> MoveGenerator::gen_rook_piece_moves(Chess& chess, int sq)
 {
     std::vector<Move> rook_moves;
-    if (in_double_check)
+    if (chess.in_double_check)
         return rook_moves;
     U64 attacks = Bitboard::nort_attacks(1ull << sq, ~chess.bb_occ);
     attacks |= Bitboard::sout_attacks(1ull << sq, ~chess.bb_occ);
@@ -446,7 +454,7 @@ std::vector<Move> MoveGenerator::gen_rook_piece_moves(Chess& chess, int sq)
             continue;
         rook_moves.push_back(Move(sq, target_sq));
     }
-    if (!in_check)
+    if (!chess.in_check)
         return rook_moves;
     std::vector<Move> legal_moves;
     for (Move m : rook_moves)
@@ -474,14 +482,14 @@ std::vector<Move> MoveGenerator::gen_king_piece_moves(Chess& chess, int sq)
     // castling
     // wh:QuKi bl:QuKi
     // queenside castle
-    if (!in_check && chess.castle_rights & 2 << 2 * chess.aci
+    if (!chess.in_check && ((chess.castle_rights & 2) << 2 * chess.aci)
             && !Bitboard::contains_square(chess.bb_occ | op_attack_mask, sq - 1)
             && !Bitboard::contains_square(chess.bb_occ | op_attack_mask, sq - 2)
             && !Bitboard::contains_square(chess.bb_occ, sq - 3)
             && Bitboard::contains_square(chess.bb_rooks & *chess.bb_by_color[chess.aci], sq - 4))
         king_moves.push_back(Move(sq, sq - 2));
     // kingside castle
-    if (!in_check && chess.castle_rights & 1 << 2 * chess.aci
+    if (!chess.in_check && ((chess.castle_rights & 1) << 2 * chess.aci)
             && !Bitboard::contains_square(chess.bb_occ | op_attack_mask, sq + 1)
             && !Bitboard::contains_square(chess.bb_occ | op_attack_mask, sq + 2)
             && Bitboard::contains_square(chess.bb_rooks & *chess.bb_by_color[chess.aci], sq + 3))
@@ -538,5 +546,14 @@ std::string MoveGenerator::move_san(Chess& chess, Move& mv)
     // promotions
     if (mv.promote())
         san += "=" + piece_char[mv.promote()];
+
+    // check
+    chess.make_move(mv);
+    MoveGenerator check_gen;
+    check_gen.gen_moves(chess);
+    if (chess.in_check)
+        san += "+";
+    chess.unmake_move(1);
+
     return san;
 }
