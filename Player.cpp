@@ -3,11 +3,11 @@
 Move Player::get_move(Chess& ch, int depth)
 {
     depth = std::max(depth, 1);
-    MoveGenerator mgen;
+    MoveGenerator mgen(ch);
     float high_score = -99.99f;
     Move best_move = Move(0, 0);
-    std::vector<Move> moves = mgen.gen_moves(ch);
-    // moves = order_moves_by_piece(ch, moves);
+    std::vector<Move> moves = mgen.gen_moves();
+    moves = order_moves_by_piece(ch, moves);
     if (moves.size() == 1)
         return moves.at(0);
     U64 nodes = 0;
@@ -36,12 +36,12 @@ Move Player::get_move(Chess& ch, int depth)
 float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta)
 {
     if (!depth)
-        return eval(ch);
-        // return quiescence_search(ch, depth, nodes, alpha, beta);
+        return quiescence_search(ch, depth, nodes, alpha, beta);
+        // return eval(ch);
     nodes++;
-    MoveGenerator mgen;
-    std::vector<Move> moves = mgen.gen_moves(ch);
-    // moves = order_moves_by_piece(ch, moves);
+    MoveGenerator mgen(ch);
+    std::vector<Move> moves = mgen.gen_moves();
+    moves = order_moves_by_piece(ch, moves);
     if (!moves.size())
         return eval(ch);
     for (Move mv : moves)
@@ -62,9 +62,9 @@ float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta
 float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, float beta)
 {
     nodes++;
-    MoveGenerator mgen;
+    MoveGenerator mgen(ch);
     float stand_pat = eval(ch, depth);
-    std::vector<Move> moves = mgen.gen_moves(ch);
+    std::vector<Move> moves = mgen.gen_moves();
     if (!moves.size() || stand_pat > beta)
         return stand_pat;
 
@@ -81,7 +81,7 @@ float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, f
     // make captures until no captures remain, then eval
     for (Move mv : moves)
     {
-        if (!Bitboard::contains_square(ch.bb_occ, mv.end()) && mv.end() != ch.ep_square)
+        if (!BB::contains_square(ch.bb_occ, mv.end()) && mv.end() != ch.ep_square)
             continue;
         nodes++;
         ch.make_move(mv);
@@ -104,7 +104,7 @@ std::vector<Move> Player::order_moves_by_piece(Chess& ch, std::vector<Move> move
     {
         for (Move mv: moves)
         {
-            if (!Bitboard::contains_square(*ch.bb_by_piece[piece], mv.start()))
+            if (!BB::contains_square(*ch.bb_piece[piece], mv.start()))
                 continue;
             ordered.push_back(mv);
         }
@@ -117,12 +117,12 @@ float Player::eval(Chess& ch, int mate_offset)
     float material_score = 0;
     float positional_score = 0;
     const float MATE_IN_ZERO = 99.99f;
-    MoveGenerator eval_gen;
-    std::vector<Move> moves = eval_gen.gen_moves(ch);
+    MoveGenerator eval_gen(ch);
+    std::vector<Move> moves = eval_gen.gen_moves();
 
     if (!moves.size())
     {
-        if(ch.in_check)
+        if(eval_gen.in_check)
         {
             // black wins, eval low
             if (ch.aci) return -(MATE_IN_ZERO + mate_offset);
@@ -134,13 +134,13 @@ float Player::eval(Chess& ch, int mate_offset)
     } else {
         // game isn't over, eval the position
         // endgame interpolation
-        float middlegame_weight = Bitboard::num_bits_flipped(ch.bb_occ) / var_middlegame_weight;
+        float middlegame_weight = BB::num_bits_flipped(ch.bb_occ) / var_middlegame_weight;
         for (int sq = 0; sq < 64; sq++) {
-            if (!Bitboard::contains_square(ch.bb_occ, sq))
+            if (!BB::contains_square(ch.bb_occ, sq))
                 continue;
             int piece = ch.piece_at(sq);
-            material_score += var_piece_value[piece] * (1 - (2 * Bitboard::contains_square(ch.bb_black, sq)));
-            positional_score += PieceLocationTables::complex_read(piece, sq, middlegame_weight, Bitboard::contains_square(ch.bb_black, sq)) * (1 - (2 * Bitboard::contains_square(ch.bb_black, sq)));
+            material_score += var_piece_value[piece] * (1 - (2 * BB::contains_square(ch.bb_black, sq)));
+            positional_score += PieceLocationTables::complex_read(piece, sq, middlegame_weight, BB::contains_square(ch.bb_black, sq)) * (1 - (2 * BB::contains_square(ch.bb_black, sq)));
         }
     }
     float score = material_score + (positional_score / 100.0f);
@@ -148,7 +148,7 @@ float Player::eval(Chess& ch, int mate_offset)
     // mobility score:
     float mobility_score = (float) moves.size();
     ch.aci = 1 - ch.aci;
-    mobility_score -= eval_gen.gen_moves(ch).size();
+    mobility_score -= eval_gen.gen_moves().size();
     ch.aci = 1 - ch.aci;
     mobility_score *= var_mobility_weight;
     score += mobility_score;

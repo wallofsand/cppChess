@@ -8,7 +8,7 @@ class Move
 public:
     Move(int s, int e);
     Move(int s, int e, int type);
-    friend std::ostream& operator<<(std::ostream& outS, Move& mv);
+    const friend std::ostream& operator<<(std::ostream& outS, Move& mv);
     const int start();
     const int end();
     const int promote();

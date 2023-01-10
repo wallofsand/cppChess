@@ -23,13 +23,12 @@ public:
     U64 bb_queens;
     U64 bb_kings;
     U64 bb_occ;
-    U64* bb_by_piece[7] = { nullptr, &bb_pawns, &bb_knights, &bb_bishops, &bb_rooks, &bb_queens, &bb_kings };
-    U64* bb_by_color[2] = { &bb_white, &bb_black };
+    U64* bb_piece[7] = { nullptr, &bb_pawns, &bb_knights, &bb_bishops, &bb_rooks, &bb_queens, &bb_kings };
+    U64* bb_color[2] = { &bb_white, &bb_black };
     int ply_counter;
-    bool in_check;
-    bool in_double_check;
     std::vector<Move> history;
     int piece_at(int sq);
+    int color_at(int sq);
     // bl:QuKi wh:QuKi
     int castle_rights;
     void make_move(Move mv);

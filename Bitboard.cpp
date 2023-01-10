@@ -5,7 +5,7 @@
  * @param sq square index 0-63
  * @return true if the bit at sq is set
  */
-bool Bitboard::contains_square(U64 bb, int sq)
+bool BB::contains_square(U64 bb, int sq)
 {
     return (bb & 1ull << sq) != 0;
 }
@@ -14,7 +14,7 @@ bool Bitboard::contains_square(U64 bb, int sq)
  * @param bb any bitboard
  * @return the number of bits set in bb
  */
-int Bitboard::num_bits_flipped(U64 bb)
+int BB::num_bits_flipped(U64 bb)
 {
     int count = 0;
     for (int i = 0; bb >> i; i++)
@@ -29,7 +29,7 @@ int Bitboard::num_bits_flipped(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::nort_shift_one(U64 bb)
+U64 BB::nort_shift_one(U64 bb)
 {
     return bb << 8;
 }
@@ -39,7 +39,7 @@ U64 Bitboard::nort_shift_one(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::sout_shift_one(U64 bb)
+U64 BB::sout_shift_one(U64 bb)
 {
     return bb >> 8;
 }
@@ -49,7 +49,7 @@ U64 Bitboard::sout_shift_one(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::east_shift_one(U64 bb)
+U64 BB::east_shift_one(U64 bb)
 {
     return (bb & NOT_H_FILE) << 1;
 }
@@ -59,7 +59,7 @@ U64 Bitboard::east_shift_one(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::west_shift_one(U64 bb)
+U64 BB::west_shift_one(U64 bb)
 {
     return (bb & NOT_A_FILE) >> 1;
 }
@@ -69,7 +69,7 @@ U64 Bitboard::west_shift_one(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::NoEa_shift_one(U64 bb)
+U64 BB::NoEa_shift_one(U64 bb)
 {
     return (bb & NOT_H_FILE) << 9;
 }
@@ -79,7 +79,7 @@ U64 Bitboard::NoEa_shift_one(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::NoWe_shift_one(U64 bb)
+U64 BB::NoWe_shift_one(U64 bb)
 {
     return (bb & NOT_A_FILE) << 7;
 }
@@ -89,7 +89,7 @@ U64 Bitboard::NoWe_shift_one(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::SoEa_shift_one(U64 bb)
+U64 BB::SoEa_shift_one(U64 bb)
 {
     return (bb & NOT_H_FILE) >> 7;
 }
@@ -99,7 +99,7 @@ U64 Bitboard::SoEa_shift_one(U64 bb)
  * @param bb any bitboard
  * @return shifted bitboard
  */
-U64 Bitboard::SoWe_shift_one(U64 bb)
+U64 BB::SoWe_shift_one(U64 bb)
 {
     return (bb & NOT_A_FILE) >> 9;
 }
@@ -110,7 +110,7 @@ U64 Bitboard::SoWe_shift_one(U64 bb)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::nort_occl_fill(U64 gen, U64 empty)
+U64 BB::nort_occl_fill(U64 gen, U64 empty)
 {
     gen |= empty & (gen << 8);
     empty = empty & (empty << 8);
@@ -126,7 +126,7 @@ U64 Bitboard::nort_occl_fill(U64 gen, U64 empty)
  * @param empty bitboard of empty squares
  * @return shifted bitboard
  */
-U64 Bitboard::sout_occl_fill(U64 gen, U64 empty)
+U64 BB::sout_occl_fill(U64 gen, U64 empty)
 {
     gen |= empty & (gen >> 8);
     empty = empty & (empty >> 8);
@@ -142,9 +142,9 @@ U64 Bitboard::sout_occl_fill(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::east_occl_fill(U64 gen, U64 empty)
+U64 BB::east_occl_fill(U64 gen, U64 empty)
 {
-    empty &= NOT_H_FILE;
+    empty &= NOT_A_FILE;
     gen |= empty & (gen << 1);
     empty = empty & (empty << 1);
     gen |= empty & (gen << 2);
@@ -159,9 +159,9 @@ U64 Bitboard::east_occl_fill(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::west_occl_fill(U64 gen, U64 empty)
+U64 BB::west_occl_fill(U64 gen, U64 empty)
 {
-    empty &= NOT_A_FILE;
+    empty &= NOT_H_FILE;
     gen |= empty & (gen >> 1);
     empty = empty & (empty >> 1);
     gen |= empty & (gen >> 2);
@@ -176,9 +176,9 @@ U64 Bitboard::west_occl_fill(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::NoEa_occl_fill(U64 gen, U64 empty)
+U64 BB::NoEa_occl_fill(U64 gen, U64 empty)
 {
-    empty &= NOT_H_FILE;
+    empty &= NOT_A_FILE;
     gen |= empty & (gen << 9);
     empty = empty & (empty << 9);
     gen |= empty & (gen << 18);
@@ -193,9 +193,9 @@ U64 Bitboard::NoEa_occl_fill(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::NoWe_occl_fill(U64 gen, U64 empty)
+U64 BB::NoWe_occl_fill(U64 gen, U64 empty)
 {
-    empty &= NOT_A_FILE;
+    empty &= NOT_H_FILE;
     gen |= empty & (gen << 7);
     empty = empty & (empty << 7);
     gen |= empty & (gen << 14);
@@ -210,9 +210,9 @@ U64 Bitboard::NoWe_occl_fill(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::SoEa_occl_fill(U64 gen, U64 empty)
+U64 BB::SoEa_occl_fill(U64 gen, U64 empty)
 {
-    empty &= NOT_H_FILE;
+    empty &= NOT_A_FILE;
     gen |= empty & (gen >> 7);
     empty = empty & (empty >> 7);
     gen |= empty & (gen >> 14);
@@ -227,9 +227,9 @@ U64 Bitboard::SoEa_occl_fill(U64 gen, U64 empty)
  * @param empty set of empty bits
  * @return shifted bitboard
  */
-U64 Bitboard::SoWe_occl_fill(U64 gen, U64 empty)
+U64 BB::SoWe_occl_fill(U64 gen, U64 empty)
 {
-    empty &= NOT_A_FILE;
+    empty &= NOT_H_FILE;
     gen |= empty & (gen >> 9);
     empty = empty & (empty >> 9);
     gen |= empty & (gen >> 18);
@@ -238,14 +238,14 @@ U64 Bitboard::SoWe_occl_fill(U64 gen, U64 empty)
     return gen;
 }
 
-U64 Bitboard::nort_attacks(U64 rooks, U64 empty) { return nort_shift_one(nort_occl_fill(rooks, empty)); }
-U64 Bitboard::sout_attacks(U64 rooks, U64 empty) { return sout_shift_one(sout_occl_fill(rooks, empty)); }
-U64 Bitboard::east_attacks(U64 rooks, U64 empty) { return east_shift_one(east_occl_fill(rooks, empty)); }
-U64 Bitboard::west_attacks(U64 rooks, U64 empty) { return west_shift_one(west_occl_fill(rooks, empty)); }
-U64 Bitboard::NoEa_attacks(U64 bishops, U64 empty) { return NoEa_shift_one(NoEa_occl_fill(bishops, empty)); }
-U64 Bitboard::NoWe_attacks(U64 bishops, U64 empty) { return NoWe_shift_one(NoWe_occl_fill(bishops, empty)); }
-U64 Bitboard::SoEa_attacks(U64 bishops, U64 empty) { return SoEa_shift_one(SoEa_occl_fill(bishops, empty)); }
-U64 Bitboard::SoWe_attacks(U64 bishops, U64 empty) { return SoWe_shift_one(SoWe_occl_fill(bishops, empty)); }
+U64 BB::nort_attacks(U64 rooks, U64 empty) { return nort_shift_one(nort_occl_fill(rooks, empty)); }
+U64 BB::sout_attacks(U64 rooks, U64 empty) { return sout_shift_one(sout_occl_fill(rooks, empty)); }
+U64 BB::east_attacks(U64 rooks, U64 empty) { return east_shift_one(east_occl_fill(rooks, empty)); }
+U64 BB::west_attacks(U64 rooks, U64 empty) { return west_shift_one(west_occl_fill(rooks, empty)); }
+U64 BB::NoEa_attacks(U64 bishops, U64 empty) { return NoEa_shift_one(NoEa_occl_fill(bishops, empty)); }
+U64 BB::NoWe_attacks(U64 bishops, U64 empty) { return NoWe_shift_one(NoWe_occl_fill(bishops, empty)); }
+U64 BB::SoEa_attacks(U64 bishops, U64 empty) { return SoEa_shift_one(SoEa_occl_fill(bishops, empty)); }
+U64 BB::SoWe_attacks(U64 bishops, U64 empty) { return SoWe_shift_one(SoWe_occl_fill(bishops, empty)); }
 
 /*
  * generalized shift
@@ -256,11 +256,25 @@ U64 Bitboard::SoWe_attacks(U64 bishops, U64 empty) { return SoWe_shift_one(SoWe_
  *          right if negative
  * @return shifted bitboard
  */
-U64 Bitboard::gen_shift(U64 bb, int s)
+U64 BB::gen_shift(U64 bb, int s)
 {
     char left = (char) s;
     char right = -((char) (s >> 8) & left);
     return (bb >> right) << (right + left);
+}
+
+/*
+ * Method to print a uint64_t
+ * @param bb any bitboard
+ * @param fmt true if a pretty frame should print
+ */
+void BB::print_U64(U64 bb, std::string name, bool fmt)
+{
+    if (name != "")
+    {
+        std::cout << name << ":" << std::endl;
+    }
+    BB::print_binary_string(BB::build_binary_string(bb), fmt);
 }
 
 /*
@@ -269,9 +283,9 @@ U64 Bitboard::gen_shift(U64 bb, int s)
  * @param bb any bitboard
  * @return a string of the binary representation of bb
  */
-std::string Bitboard::build_binary_string(U64 bb)
+std::string BB::build_binary_string(U64 bb)
 {
-    int leading_zero_count = leading_zeros(bb);
+    int leading_zero_count = lead_0s(bb);
     std::string zeros = "";
     for (int i = 0; i < leading_zero_count; i++)
         zeros.append("0");
@@ -297,7 +311,7 @@ std::string Bitboard::build_binary_string(U64 bb)
  * @param bbstr any string of length 64
  * @param fmt true to print fancy output
  */
-void Bitboard::print_binary_string(std::string bbstr, bool fmt)
+void BB::print_binary_string(std::string bbstr, bool fmt)
 {
     // we want to print the binary as 8 8-bit words
     // the words are printed forewards but in reverse order
@@ -324,7 +338,7 @@ void Bitboard::print_binary_string(std::string bbstr, bool fmt)
  * @param any bitboard
  * @return the number of leading zeros
  */
-int Bitboard::leading_zeros(U64 bb)
+int BB::lead_0s(U64 bb)
 {
     if (!bb) return 64;
     int count = 0;

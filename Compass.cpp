@@ -52,6 +52,37 @@ const U64 Compass::build_ray(int sq[2])
     return 0;
 }
 
+// Method to return a bitboard of the ray
+// from start (exclusive) through colinear square end
+const U64 Compass::ray_square(int start, int end, U64 empty)
+{
+    U64 ray = BB::nort_attacks(1ull << start, ~empty);
+    if (BB::contains_square(ray, end))
+        return ray;
+    ray = BB::NoEa_attacks(1ull << start, ~empty);
+    if (BB::contains_square(ray, end))
+        return ray;
+    ray = BB::east_attacks(1ull << start, ~empty);
+    if (BB::contains_square(ray, end))
+        return ray;
+    ray = BB::SoEa_attacks(1ull << start, ~empty);
+    if (BB::contains_square(ray, end))
+        return ray;
+    ray = BB::sout_attacks(1ull << start, ~empty);
+    if (BB::contains_square(ray, end))
+        return ray;
+    ray = BB::SoWe_attacks(1ull << start, ~empty);
+    if (BB::contains_square(ray, end))
+        return ray;
+    ray = BB::west_attacks(1ull << start, ~empty);
+    if (BB::contains_square(ray, end))
+        return ray;
+    ray = BB::NoWe_attacks(1ull << start, ~empty);
+    if (BB::contains_square(ray, end))
+        return ray;
+    return 0ull;
+}
+
 void Compass::compute_edge_distances()
 {
     for (int sq = 0; sq < 64; sq++)

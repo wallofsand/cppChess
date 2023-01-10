@@ -6,7 +6,7 @@
 
 #define U64 uint64_t
 
-namespace Bitboard
+namespace BB
 {
     // intersect before west (right) shifts
     const U64 NOT_A_FILE = 0xfefefefefefefefe;
@@ -38,9 +38,10 @@ namespace Bitboard
     U64 SoWe_attacks(U64 bishops, U64 empty);
     bool contains_square(U64 bb, int sq);
     int num_bits_flipped(U64 bb);
-    std::string build_binary_string(U64 bb);
+    void print_U64(U64 bb, std::string name = "", bool fmt = false);
     void print_binary_string(std::string bbstr, bool fmt = false);
-    int leading_zeros(U64 num);
+    std::string build_binary_string(U64 bb);
+    int lead_0s(U64 bb);
     U64 gen_shift(U64 bb, int s);
 }
 

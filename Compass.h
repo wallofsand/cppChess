@@ -69,6 +69,7 @@ public:
     static void init_compass();
     const static U64 build_ray(int sq, int dir_index);
     const static U64 build_ray(int sq[2]);
+    const static U64 ray_square(int start, int end, U64 empty = 0ull);
     const static int get_dir_start_index(int piece);
     const static int get_dir_end_index(int piece);
     const static int square_from_string(std::string str);

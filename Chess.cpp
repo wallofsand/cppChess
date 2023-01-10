@@ -4,9 +4,8 @@ Chess::Chess()
 {
     aci = 0;
     ply_counter = 0;
+    ep_square = -1;
     castle_rights = 0b1111;
-    in_check = false;
-    in_double_check = false;
     build_bitboards();
     std::vector<Move> history;
 }
@@ -27,75 +26,92 @@ void Chess::build_bitboards()
     bb_occ     = bb_white                 | bb_black;
 }
 
+/*
+ * Method to return the piece type on a square, if any
+ * @param sq the square index to check
+ * @return the piece type (1 - 6) or 0 if no piece is found
+ */
 int Chess::piece_at(int sq)
 {
     for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
     {
-        if (Bitboard::contains_square(*bb_by_piece[piece], sq))
+        if (BB::contains_square(*bb_piece[piece], sq))
             return piece;
     }
     return 0;
 }
 
+/*
+ * Method to return the color of a piece on a square, if any
+ * @param sq the square index to check
+ * @return 0 for white, 1 for black, -1 if no piece is found
+ */
+int Chess::color_at(int sq)
+{
+    if (BB::contains_square(bb_white, sq)) return ch_cst::WHITE_INDEX;
+    if (BB::contains_square(bb_black, sq)) return ch_cst::BLACK_INDEX;
+    return -1;
+}
+
 void Chess::make_move(Move mv)
 {
-    ep_square = 0;
     int start = mv.start();
     int end = mv.end();
     bool castle = false;
 
-    for (int i = ch_cst::PAWN; i <= ch_cst::KING; i++)
+    for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
     {
         // remove captured pieces
-        *bb_by_piece[i] &= ~(1ull << end);
-        *bb_by_color[1 - aci] &= ~(1ull << end);
+        *bb_piece[piece] &= ~(1ull << end);
+        *bb_color[1 - aci] &= ~(1ull << end);
 
         // is this type of piece is moving?
-        if (!Bitboard::contains_square(*bb_by_piece[i], start))
+        if (!BB::contains_square(*bb_piece[piece], start))
             continue;
 
         // remove the old piece
-        *bb_by_piece[i] &= ~(1ull << start);
-        *bb_by_color[aci] &= ~(1ull << start);
-        bb_occ &= ~(1ull << start);
+        *bb_piece[piece] &= ~(1ull << start);
+        *bb_color[aci] &= ~(1ull << start);
 
         // place the new piece
-        *bb_by_piece[i] |= 1ull << end;
-        *bb_by_color[aci] |= 1ull << end;
-        bb_occ |= 1ull << end;
+        *bb_piece[piece] |= 1ull << end;
+        *bb_color[aci] |= 1ull << end;
+
+        // ep capture
+        if (piece == ch_cst::PAWN && end == ep_square)
+        {
+            bb_pawns &= ~(1ull << (end - directions::PAWN_DIR[aci]));
+            *bb_color[1 - aci] &= ~(1ull << (end - directions::PAWN_DIR[aci]));
+        }
 
         // update ep square
-        if (i == ch_cst::PAWN && (start - end) % 16 == 0)
+        if (piece == ch_cst::PAWN && (start - end) % 16 == 0)
             ep_square = start + directions::PAWN_DIR[aci];
+        else ep_square = -1;
 
-        if (i == ch_cst::KING)
+        if (piece == ch_cst::KING)
         {
             // handle castles
             // kingside castle
             if (end - start == 2 && castle_rights & 1 << (2 * aci))
             {
-                *bb_by_piece[ch_cst::ROOK] ^= 1ull << (start | 0b111);
-                *bb_by_piece[ch_cst::ROOK] |= 1ull << (end - 1);
-                *bb_by_color[aci] ^= 1ull << (start | 0b111);
-                *bb_by_color[aci] |= 1ull << (end - 1);
-                bb_occ ^= 1ull << (start | 0b111);
-                bb_occ |= 1ull << (end - 1);
+                *bb_piece[ch_cst::ROOK] &= ~(1ull << (start | 0b111));
+                *bb_piece[ch_cst::ROOK] |= 1ull << (end - 1);
+                *bb_color[aci] &= ~(1ull << (start | 0b111));
+                *bb_color[aci] |= 1ull << (end - 1);
             }
             // queenside castle
             else if (end - start == -2 && castle_rights & 2 << (2 * aci))
             {
-                *bb_by_piece[ch_cst::ROOK] ^= 1ull << (start & 0b111000);
-                *bb_by_piece[ch_cst::ROOK] |= 1ull << (end + 1);
-                *bb_by_color[aci] ^= 1ull << (start & 0b111000);
-                *bb_by_color[aci] |= 1ull << (end + 1);
-                bb_occ ^= 1ull << (start & 0b111000);
-                bb_occ |= 1ull << (end + 1);
-                
+                *bb_piece[ch_cst::ROOK] &= ~(1ull << (start & 0b111000));
+                *bb_piece[ch_cst::ROOK] |= 1ull << (end + 1);
+                *bb_color[aci] &= ~(1ull << (start & 0b111000));
+                *bb_color[aci] |= 1ull << (end + 1);
             }
             // update castle rights
             castle_rights &= 3 << (2 * (1 - aci));
         }
-        else if (i == ch_cst::ROOK)
+        else if (piece == ch_cst::ROOK)
         {
             // queenside rook moved
             if (Compass::rank_yindex(start) == 0)
@@ -104,6 +120,7 @@ void Chess::make_move(Move mv)
             else if (Compass::rank_yindex(start) == 7)
                 castle_rights &= ~(1 << 2 * aci);
         }
+    bb_occ = bb_white | bb_black;
     }
 
     ply_counter++;
@@ -118,10 +135,11 @@ void Chess::unmake_move(int undos)
         temp.push_back(m);
     history.clear();
     aci = 0;
+    ep_square = -1;
     ply_counter = 0;
     castle_rights = 0b1111;
     build_bitboards();
-    for (int i = 0; i < temp.size() - undos; i++)
+    for (int i = 0; i < (int) temp.size() - undos; i++)
     {
         make_move(temp[i]);
     }
@@ -135,17 +153,14 @@ const void Chess::print_board(bool fmt)
         for (int color = 0; color < 2; color++)
         {
             for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
-            {
-                if (Bitboard::contains_square(*bb_by_piece[piece] & *bb_by_color[color], sq))
-                {
+                if (BB::contains_square(*bb_piece[piece] & *bb_color[color], sq))
                     board += ch_cst::piece_char[piece | (color << 3)];
-                }
-            }
         }
-        if (board.length() > sq)
-            continue;
-        board += '.';
+        if ((int) board.length() > sq) continue;
+        else if (sq == ep_square) board += "e";
+        else if (Compass::file_xindex(sq) % 2 == Compass::rank_yindex(sq) % 2) board += ".";
+        else board += " ";
     }
     std::cout << std::endl;
-    Bitboard::print_binary_string(board, fmt);
+    BB::print_binary_string(board, fmt);
 }
