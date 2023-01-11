@@ -2,6 +2,7 @@
 
 Move Player::get_move(Chess& ch, int depth)
 {
+    Timer search_timer;
     depth = std::max(depth, 1);
     MoveGenerator mgen(ch);
     float high_score = -99.99f;
@@ -22,6 +23,10 @@ Move Player::get_move(Chess& ch, int depth)
        }
         ch.unmake_move(1);
     }
+    double nodes_per_second = (double) nodes;
+    if (search_timer.elapsed() >= 1)
+        nodes_per_second = nodes_per_second / search_timer.elapsed();
+    std::cout << "n/s: " << nodes_per_second << "\n";
     return best_move;
 }
 
