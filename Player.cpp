@@ -87,13 +87,16 @@ float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, f
         ch.make_move(mv);
         score = -quiescence_search(ch, depth - 1, nodes, -beta, -alpha);
         ch.unmake_move(1);
-        if (score >= beta) {
+        if (score >= beta)
+        {
+            std::cout << "Q: " << depth;
             return beta;
         }
         if (score > alpha) {
             alpha = score;
         }
     }
+    std::cout << "Q: " << depth;
     return alpha;
 }
 
