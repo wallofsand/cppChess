@@ -5,7 +5,7 @@ U64 Compass::king_attacks[64];
 uint8_t Compass::rook_rows256x8[256][8];
 int Compass::edge_distance64x8[64][8];
 
-void Compass::init_compass()
+Compass::Compass()
 {
     // init stuff
     compute_edge_distances();

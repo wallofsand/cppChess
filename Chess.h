@@ -4,6 +4,7 @@
 #include "Move.h"
 #include "Bitboard.h"
 #include "Compass.h"
+#include "TTable.h"
 #include <string>
 #include <vector>
 
@@ -11,7 +12,6 @@ class Chess
 {
 public:
     Chess();
-    // Chess(const Chess &ch);
     int aci;
     int ep_square;
     U64 bb_white;
@@ -35,7 +35,9 @@ public:
     void unmake_move(int undos);
     const void print_board(bool fmt = false);
     void build_bitboards();
+    const long hash();
 private:
+    int size;
 };
 
 #endif

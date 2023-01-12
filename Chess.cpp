@@ -26,6 +26,26 @@ void Chess::build_bitboards()
     bb_occ     = bb_white                 | bb_black;
 }
 
+const long Chess::hash()
+{
+    // who's turn is it?
+    long h = 0l ^ (aci * TTable::black_to_move);
+    // board representation
+    for (int sq = 0; sq < 64; sq++)
+        h ^= (bb_occ >> sq & 1) * TTable::sq_color_type_64x2x6[sq][color_at(sq)][piece_at(sq)];
+    // is there an en passant?
+    h ^= ep_square ? TTable::ep_file[ep_square & 7] : 0l;
+    // white castling
+    h ^= ((castle_rights >> 1) & 1) * TTable::castle_rights[0][1];
+    h ^= (castle_rights & 1) * TTable::castle_rights[0][0];
+    // black castling
+    h ^= ((castle_rights >> 3) & 1) * TTable::castle_rights[ch_cst::BLACK_INDEX][1];
+    h ^= ((castle_rights >> 2) & 1) * TTable::castle_rights[ch_cst::BLACK_INDEX][0];
+    return h;
+}
+
+
+
 /*
  * Method to return the piece type on a square, if any
  * @param sq the square index to check
@@ -161,6 +181,5 @@ const void Chess::print_board(bool fmt)
         else if (Compass::file_xindex(sq) % 2 == Compass::rank_yindex(sq) % 2) board += ".";
         else board += " ";
     }
-    std::cout << std::endl;
     BB::print_binary_string(board, fmt);
 }

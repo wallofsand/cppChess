@@ -8,6 +8,9 @@ namespace PieceLocationTables
 {
     const int read(const int table[64], int sq, bool is_black);
     const float complex_read(int type, int sq, float middlegame_weight, bool is_black);
+    const int* middlegame_piece_tables(int type);
+    const int* endgame_piece_tables(int type);
+
     const int pawns[64] = {
         0, 0, 0, 0, 0, 0, 0, 0,
         50, 50, 50, 50, 50, 50, 50, 50,
@@ -72,8 +75,6 @@ namespace PieceLocationTables
         -30, 0, 10, 15, 15, 10, 0, -30,
         -40, -20, -5, -5, -5, -5, -20, -40,
         -50, -30, -10, -10, -10, -10, -30, -50 };
-    const int* middlegame_piece_tables[];
-    const int* endgame_piece_tables[];
 }
 
 #endif

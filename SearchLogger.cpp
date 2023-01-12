@@ -4,10 +4,10 @@ using namespace ch_cst;
 
 const std::string SearchLogger::file_path()
 {
-    // return "C:/Users/graha/Documents/GitHub/cppChess/logs/"
-            // + name + "_" + SearchLogger::date_to_string() + ".txt";
-    return "C:/Users/graha/OneDrive/Documents/Github/cppChess/logs/"
+    return "C:/Users/graha/Documents/GitHub/cppChess/logs/"
             + name + "_" + SearchLogger::date_to_string() + ".txt";
+    // return "C:/Users/graha/OneDrive/Documents/Github/cppChess/logs/"
+    //         + name + "_" + SearchLogger::date_to_string() + ".txt";
 }
 
 SearchLogger::SearchLogger(std::string str, int d)
@@ -16,7 +16,7 @@ SearchLogger::SearchLogger(std::string str, int d)
     depth = d;
     buffer = "";
     fmt::ostream out = fmt::output_file(file_path(),
-        (fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND));
+        (fmt::file::WRONLY | fmt::file::CREATE | fmt::file::TRUNC));
 }
 
 /*
@@ -27,6 +27,12 @@ const void SearchLogger::write(std::string text)
     fmt::ostream out = fmt::output_file(file_path(),
         fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND);
     out.print(text);
+}
+
+void SearchLogger::log_position(std::string mv_txt)
+{
+    buffer += ", " + mv_txt;
+    write(buffer);
 }
 
 /*

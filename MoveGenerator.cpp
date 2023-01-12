@@ -33,21 +33,15 @@ void MoveGenerator::checks_exist(bool test)
     int ksq = find_king(ch.aci);
 
     // knights
-    U64 attackers = (ch.bb_knights & op) & Compass::knight_attacks[ksq];
+    U64 attackers = ch.bb_knights & op & Compass::knight_attacks[ksq];
     if (attackers)
     {
-        check_ray |= 1ull << (63 - BB::lead_0s(attackers));
+        check_ray |= attackers & 0-attackers;
         check_method();
     }
 
     // pawns
-    attackers = BB::gen_shift(king & BB::NOT_H_FILE, DIRS[4 + 2 * (ch.aci)]);
-    if (attackers & op & ch.bb_pawns)
-    {
-        check_ray |= 1ull << (63 - BB::lead_0s(attackers));
-        check_method();
-    }
-    attackers = BB::gen_shift(king & BB::NOT_A_FILE, DIRS[5 + 2 * (ch.aci)]);
+    attackers = BB::gen_shift(king & BB::NOT_H_FILE, DIRS[4 + 2 * (ch.aci)]) | BB::gen_shift(king & BB::NOT_A_FILE, DIRS[5 + 2 * (ch.aci)]);
     if (attackers & op & ch.bb_pawns)
     {
         check_ray |= 1ull << (63 - BB::lead_0s(attackers));
@@ -169,30 +163,36 @@ U64 MoveGenerator::gen_op_attack_mask(bool test)
     U64 mask = Compass::king_attacks[find_king(1-ch.aci)];
     U64 op = *ch.bb_color[1-ch.aci];
     U64 empty = ~ch.bb_occ | (ch.bb_kings & *ch.bb_color[ch.aci]);
+
     // pawn attacks
-    // white, shift north
-    U64 pattacksWest = BB::NoWe_shift_one(ch.bb_pawns & op);
-    U64 pattacksEast = BB::NoEa_shift_one(ch.bb_pawns & op);
-    if (!ch.aci)
-    { // black, shift south
-        pattacksWest = BB::SoWe_shift_one(ch.bb_pawns & op);
-        pattacksEast = BB::SoEa_shift_one(ch.bb_pawns & op);
-    }
+    U64 pattacksWest = ch.aci ? BB::NoWe_shift_one(ch.bb_pawns & op) : BB::SoWe_shift_one(ch.bb_pawns & op);
+    U64 pattacksEast = ch.aci ? BB::NoEa_shift_one(ch.bb_pawns & op) : BB::SoEa_shift_one(ch.bb_pawns & op);
     mask |= pattacksEast;
     mask |= pattacksWest;
-    U64 sliders = (ch.bb_rooks | ch.bb_queens) & op;
-    mask |= BB::nort_attacks(sliders, empty);
-    mask |= BB::sout_attacks(sliders, empty);
-    mask |= BB::east_attacks(sliders, empty);
-    mask |= BB::west_attacks(sliders, empty);
-    sliders = (ch.bb_bishops | ch.bb_queens) & op;
-    mask |= BB::NoEa_attacks(sliders, empty);
-    mask |= BB::NoWe_attacks(sliders, empty);
-    mask |= BB::SoEa_attacks(sliders, empty);
-    mask |= BB::SoWe_attacks(sliders, empty);
-    for (int sq = 0; (ch.bb_knights & op) >> sq; sq++)
-        if (BB::contains_square(ch.bb_knights & op, sq))
-            mask |= Compass::knight_attacks[sq];
+
+    // rooks & queens
+    U64 attackers = (ch.bb_rooks | ch.bb_queens) & op;
+    mask |= BB::nort_attacks(attackers, empty);
+    mask |= BB::sout_attacks(attackers, empty);
+    mask |= BB::east_attacks(attackers, empty);
+    mask |= BB::west_attacks(attackers, empty);
+
+    // bishops & queens
+    attackers = (ch.bb_bishops | ch.bb_queens) & op;
+    mask |= BB::NoEa_attacks(attackers, empty);
+    mask |= BB::NoWe_attacks(attackers, empty);
+    mask |= BB::SoEa_attacks(attackers, empty);
+    mask |= BB::SoWe_attacks(attackers, empty);
+
+    // knights
+    attackers = ch.bb_knights & op;
+    while (attackers)
+    {
+        // x & -x masks the LS1B
+        mask |= Compass::knight_attacks[63 - BB::lead_0s(attackers & 0-attackers)];
+        // now clear that LS1B
+        attackers &= attackers - 1;
+    }
     return mask;
 }
 

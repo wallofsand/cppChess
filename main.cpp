@@ -1,14 +1,8 @@
-#include "Chess.h"
-#include "Move.h"
-#include "MoveGenerator.h"
 #include "Player.h"
-#include "SearchLogger.h"
 #include <iostream>
 
 using namespace ch_cst;
 
-// U64 perft_root(Chess& chess, int depth, bool initial_position, int log_depth = 0);
-// U64 perft(MoveGenerator& perft_gen, Chess& chess, int depth, SearchLogger& perft_log);
 U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth);
 U64 perft(Chess& ch, int depth, SearchLogger& perft_log);
 
@@ -21,7 +15,8 @@ const std::string perft_results[] = {
 
 int main()
 {
-    Compass::init_compass();
+    Compass();
+    TTable();
     Chess chess;
     Player pl;
 
@@ -32,17 +27,18 @@ int main()
     bool playing = true;
     std::string last_move = "";
     MoveGenerator mgen(chess);
+    U64 nodes = 0;
     while (playing)
     {
         std::vector<Move> move_list = mgen.gen_moves();
         chess.print_board(true);
-
+        fmt::print("hash: {} w: {} h: {} c: {}\neval: {} n/s: {}\n",
+            chess.hash(), TTable::writes, TTable::hits, TTable::clashes, pl.eval(chess), nodes);
         if (chess.ply_counter)
-            std::cout << ((chess.ply_counter - 1) / 2) + 1 << (chess.ply_counter % 2 == 1 ? ". " : ".. ") << last_move << std::endl;
-        std::cout << fmt::format("eval: {}\n", pl.eval(chess));
+            fmt::print("{}{} {}\n", ((chess.ply_counter - 1) / 2) + 1, chess.ply_counter % 2 == 1 ? ". " : ".. ", last_move);
         for (Move mv : move_list)
-            std::cout << mgen.move_san(mv) << " ";
-        std::cout << fmt::format("\n{} ", chess.aci ? "Black to move:" :"White to move: ");
+            fmt::print("{} ", mgen.move_san(mv));
+        fmt::print("\n{} ", chess.aci ? "Black to move:" :"White to move: ");
 
         std::string mv_str;
         std::cin >> mv_str;
@@ -56,19 +52,21 @@ int main()
         }
         else if (mv_str.length() == 1)
         {
-            Move engine_move = pl.get_move(chess, std::stoi(mv_str));
+            int depth = (int) mv_str[0] - 48;
+            if (depth < 0 || depth > 9) continue;
+            SearchLogger sl("search_log", 1);
+            Move engine_move = pl.get_move(chess, sl, depth, nodes, false);
             last_move = mgen.move_san(engine_move);
             chess.make_move(engine_move);
         }
         else if (mv_str == "aim")
         {
             int depth = 0;
-            while (depth < 1 || depth > 5)
+            while (depth < 1 || depth > 6)
                 std::cin >> depth;
-            Move engine_move = pl.get_move(chess, depth);
-            last_move = Compass::string_from_square(engine_move.start()) + " "
-                      + Compass::string_from_square(engine_move.end());
-            last_move += " " + mgen.move_san(engine_move);
+            SearchLogger sl("search_log", 1);
+            Move engine_move = pl.get_move(chess, sl, depth, nodes, false);
+            last_move = mgen.move_san(engine_move);
             chess.make_move(engine_move);
         }
         else if (mv_str == "perft")
@@ -82,18 +80,22 @@ int main()
         {
             mgen.gen_moves(true);
         }
-        else if (mv_str == "eval")
-            std::cout << pl.eval(chess) << std::endl;
         else if (mv_str == "end") playing = false;
         else for (Move mv : move_list)
             if (mv_str == mgen.move_san(mv))
             {
+                last_move = mgen.move_san(mv);
                 chess.make_move(mv);
                 break;
             }
         if (mgen.is_game_over(false)) playing = false;
     }
     chess.print_board(true);
+
+    // for (int idx = 0; idx < TTable::DEFAULT_SIZE; idx++)
+    //     if (TTable::read(idx).key && TTable::read(idx).flag != 1)
+    //         fmt::print("{}: {}\n", idx, TTable::read(idx).to_string());
+
     return 0;
 }
 

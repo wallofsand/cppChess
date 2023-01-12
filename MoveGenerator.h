@@ -16,7 +16,7 @@ public:
     bool is_game_over(bool test);
     int find_king(int color);
     std::vector<Move> gen_moves(bool test = false);
-    std::string MoveGenerator::move_san(Move& mv);
+    std::string move_san(Move& mv);
     void checks_exist(bool test);
     void init(bool test);
     bool in_check = false;

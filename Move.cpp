@@ -11,6 +11,11 @@ Move::Move(int start_sq, int end_sq, int type)
     data = type << 12 | end_sq << 6 | start_sq;
 }
 
+Move::Move(const Move& m)
+{
+    data = m.data;
+}
+
 const int Move::start()
 {
     return data & 63;

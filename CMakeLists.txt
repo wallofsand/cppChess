@@ -9,7 +9,8 @@ add_executable(cppChess
     Bitboard.cpp Chess.cpp
     Move.cpp MoveGenerator.cpp
     Player.cpp SearchLogger.cpp
-    PieceLocationTables.cpp)
+    PieceLocationTables.cpp
+    TTable.cpp)
 
 add_subdirectory(fmt EXCLUDE_FROM_ALL)
 target_link_libraries(cppChess PRIVATE fmt::fmt)

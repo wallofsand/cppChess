@@ -1,6 +1,6 @@
 #include "Player.h"
 
-Move Player::get_move(Chess& ch, int depth)
+Move Player::get_move(Chess& ch, SearchLogger& search_log, int depth, U64& nodes, bool test)
 {
     Timer search_timer;
     depth = std::max(depth, 1);
@@ -11,11 +11,21 @@ Move Player::get_move(Chess& ch, int depth)
     moves = order_moves_by_piece(ch, moves);
     if (moves.size() == 1)
         return moves.at(0);
-    U64 nodes = 0;
+    nodes = 0;
+
+    // hash the position and check the t-table for a best move
+    // long zhash = ch.hash();
+    // if the stored depth was >= remaining search depth, use that result
+    // if (TTable::read(zhash).depth >= depth)
+    // {
+    //     TTable::hits++;
+    //     return TTable::read(zhash).best;
+    // }
+
     for (Move m : moves)
     {
         ch.make_move(m);
-        float score = -nega_max(ch, depth - 1, nodes, -99.99f, -high_score);
+        float score = -nega_max(ch, search_log, depth - 1, nodes, -99.99f, -high_score, test);
         if (score > high_score)
         {
             high_score = score;
@@ -23,10 +33,9 @@ Move Player::get_move(Chess& ch, int depth)
        }
         ch.unmake_move(1);
     }
-    double nodes_per_second = (double) nodes;
-    if (search_timer.elapsed() >= 1)
-        nodes_per_second = nodes_per_second / search_timer.elapsed();
-    std::cout << "n/s: " << nodes_per_second << "\n";
+    // if (search_timer.elapsed() >= 1)
+    //     nodes = nodes / search_timer.elapsed();
+    // TTable::entry(zhash, depth, Position::FLAG_ALPHA, high_score, best_move);
     return best_move;
 }
 
@@ -38,11 +47,31 @@ Move Player::get_move(Chess& ch, int depth)
  * @param b the minimum eval allowed by the opponent
  * @return the eval of the most favorable end node
  */
-float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta)
+float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& nodes, float alpha, float beta, bool test)
 {
-    if (!depth)
-        return quiescence_search(ch, depth, nodes, alpha, beta);
-        // return eval(ch);
+    // hash the position and check the t-table for a best move
+    // long zhash = ch.hash();
+    // if the stored depth was >= remaining search depth, use that result
+    if (!depth) // || TTable::read(zhash).depth >= depth)
+    {
+        // Position prev = TTable::read(zhash);
+        // TTable::hits++;
+        // if (prev.flag == Position::FLAG_EXACT)
+        //     return TTable::read(zhash).score;
+        // else if (prev.flag == Position::FLAG_ALPHA && prev.score <= alpha)
+        //     return alpha;
+        // else if (prev.flag == Position::FLAG_BETA && prev.score >= beta)
+        //     return beta;
+        // TTable::hits--;
+        if (!depth)
+        {
+            float score = eval(ch, depth, test);
+            // float score = quiescence_search(ch, search_log, depth, nodes, alpha, beta, test);
+            // TTable::entry(zhash, depth, Position::FLAG_EXACT, score);
+            return score;
+        }
+    }
+
     nodes++;
     MoveGenerator mgen(ch);
     std::vector<Move> moves = mgen.gen_moves();
@@ -52,26 +81,46 @@ float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta
     for (Move mv : moves)
     {
         ch.make_move(mv);
-        float score = -nega_max(ch, depth - 1, nodes, -beta, -alpha);
+        float score = -nega_max(ch, search_log, depth - 1, nodes, -beta, -alpha, test);
         ch.unmake_move(1);
         if (score >= beta)
+        {
+            // TTable::entry(zhash, depth, Position::FLAG_BETA, beta);
             return beta;
+        }
         alpha = std::max(alpha, score);
     }
+    // TTable::entry(zhash, depth, Position::FLAG_ALPHA, alpha);
     return alpha;
 }
 
 /*
  *
  */
-float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, float beta)
+float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int depth, U64& nodes, float alpha, float beta, bool test)
 {
     nodes++;
     MoveGenerator mgen(ch);
-    float stand_pat = eval(ch, depth);
+    float stand_pat = eval(ch, depth, test);
     std::vector<Move> moves = mgen.gen_moves();
     if (!moves.size() || stand_pat > beta)
         return stand_pat;
+
+    // hash the position and check the t-table for a best move
+    // long zhash = ch.hash();
+    // if the stored depth was >= remaining search depth, use that result
+    // if (TTable::read(zhash).depth >= depth)
+    // {
+    //     Position prev = TTable::read(zhash);
+    //     TTable::hits++;
+    //     if (prev.flag == Position::FLAG_EXACT)
+    //         return TTable::read(zhash).score;
+    //     else if (prev.flag == Position::FLAG_ALPHA && prev.score <= alpha)
+    //         return alpha;
+    //     else if (prev.flag == Position::FLAG_BETA && prev.score >= beta)
+    //         return beta;
+    //     TTable::hits--;
+    // }
 
     // Delta pruning: if a huge swing (> 1 queen)
     // is not enough to improve the position, give up
@@ -79,10 +128,8 @@ float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, f
     if (stand_pat < alpha - DELTA)
         return alpha;
 
-    if (stand_pat > alpha)
-        alpha = stand_pat;
-    float score = stand_pat;
-    // moves = order_moves_by_piece(ch, moves);
+    alpha = std::max(alpha, stand_pat);
+    moves = order_moves_by_piece(ch, moves);
     // make captures until no captures remain, then eval
     for (Move mv : moves)
     {
@@ -90,18 +137,12 @@ float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, f
             continue;
         nodes++;
         ch.make_move(mv);
-        score = -quiescence_search(ch, depth - 1, nodes, -beta, -alpha);
+        float score = -quiescence_search(ch, search_log, depth - 1, nodes, -beta, -alpha, test);
         ch.unmake_move(1);
         if (score >= beta)
-        {
-            std::cout << "Q: " << depth;
             return beta;
-        }
-        if (score > alpha) {
-            alpha = score;
-        }
+        alpha = std::max(alpha, score);
     }
-    std::cout << "Q: " << depth;
     return alpha;
 }
 
@@ -120,7 +161,7 @@ std::vector<Move> Player::order_moves_by_piece(Chess& ch, std::vector<Move> move
     return ordered;
 }
 
-float Player::eval(Chess& ch, int mate_offset)
+float Player::eval(Chess& ch, int mate_offset, bool test)
 {
     float material_score = 0;
     float positional_score = 0;
@@ -128,6 +169,7 @@ float Player::eval(Chess& ch, int mate_offset)
     MoveGenerator eval_gen(ch);
     std::vector<Move> moves = eval_gen.gen_moves();
 
+    // is the game over?
     if (!moves.size())
     {
         if(eval_gen.in_check)
