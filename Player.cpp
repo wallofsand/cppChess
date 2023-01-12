@@ -33,9 +33,9 @@ Move Player::get_move(Chess& ch, SearchLogger& search_log, int depth, U64& nodes
        }
         ch.unmake_move(1);
     }
-    // if (search_timer.elapsed() >= 1)
-    //     nodes = nodes / search_timer.elapsed();
-    // TTable::entry(zhash, depth, Position::FLAG_ALPHA, high_score, best_move);
+    if (search_timer.elapsed() >= 1)
+        nodes = nodes / search_timer.elapsed();
+    // TTable::add_item(zhash, depth, Entry::FLAG_ALPHA, high_score, best_move);
     return best_move;
 }
 
@@ -54,20 +54,20 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& node
     // if the stored depth was >= remaining search depth, use that result
     if (!depth) // || TTable::read(zhash).depth >= depth)
     {
-        // Position prev = TTable::read(zhash);
+        // Entry prev = TTable::read(zhash);
         // TTable::hits++;
-        // if (prev.flag == Position::FLAG_EXACT)
+        // if (prev.flag == Entry::FLAG_EXACT)
         //     return TTable::read(zhash).score;
-        // else if (prev.flag == Position::FLAG_ALPHA && prev.score <= alpha)
+        // else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
         //     return alpha;
-        // else if (prev.flag == Position::FLAG_BETA && prev.score >= beta)
+        // else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
         //     return beta;
         // TTable::hits--;
         if (!depth)
         {
             float score = eval(ch, depth, test);
             // float score = quiescence_search(ch, search_log, depth, nodes, alpha, beta, test);
-            // TTable::entry(zhash, depth, Position::FLAG_EXACT, score);
+            // TTable::add_item(zhash, depth, Entry::FLAG_EXACT, score);
             return score;
         }
     }
@@ -85,12 +85,12 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& node
         ch.unmake_move(1);
         if (score >= beta)
         {
-            // TTable::entry(zhash, depth, Position::FLAG_BETA, beta);
+            // TTable::add_item(zhash, depth, Entry::FLAG_BETA, beta);
             return beta;
         }
         alpha = std::max(alpha, score);
     }
-    // TTable::entry(zhash, depth, Position::FLAG_ALPHA, alpha);
+    // TTable::add_item(zhash, depth, Entry::FLAG_ALPHA, alpha);
     return alpha;
 }
 
@@ -111,13 +111,13 @@ float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int depth, 
     // if the stored depth was >= remaining search depth, use that result
     // if (TTable::read(zhash).depth >= depth)
     // {
-    //     Position prev = TTable::read(zhash);
+    //     Entry prev = TTable::read(zhash);
     //     TTable::hits++;
-    //     if (prev.flag == Position::FLAG_EXACT)
+    //     if (prev.flag == Entry::FLAG_EXACT)
     //         return TTable::read(zhash).score;
-    //     else if (prev.flag == Position::FLAG_ALPHA && prev.score <= alpha)
+    //     else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
     //         return alpha;
-    //     else if (prev.flag == Position::FLAG_BETA && prev.score >= beta)
+    //     else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
     //         return beta;
     //     TTable::hits--;
     // }
@@ -185,12 +185,25 @@ float Player::eval(Chess& ch, int mate_offset, bool test)
         // game isn't over, eval the position
         // endgame interpolation
         float middlegame_weight = BB::num_bits_flipped(ch.bb_occ) / var_middlegame_weight;
-        for (int sq = 0; sq < 64; sq++) {
-            if (!BB::contains_square(ch.bb_occ, sq))
-                continue;
-            int piece = ch.piece_at(sq);
-            material_score += var_piece_value[piece] * (1 - (2 * BB::contains_square(ch.bb_black, sq)));
-            positional_score += PieceLocationTables::complex_read(piece, sq, middlegame_weight, BB::contains_square(ch.bb_black, sq)) * (1 - (2 * BB::contains_square(ch.bb_black, sq)));
+        U64 pieces = ch.bb_white;
+        while (pieces)
+        {
+            // x & -x masks the LS1B
+            int sq = 63 - (BB::lead_0s(pieces & 0-pieces));
+            material_score += var_piece_value[ch.piece_at(sq)];
+            positional_score += PieceLocationTables::complex_read(ch.piece_at(sq), sq, middlegame_weight, false);
+            // now clear that LS1B
+            pieces &= pieces - 1;
+        }
+        pieces = ch.bb_black;
+        while (pieces)
+        {
+            // x & -x masks the LS1B
+            int sq = 63 - (BB::lead_0s(pieces & 0-pieces));
+            material_score -= var_piece_value[ch.piece_at(sq)];
+            positional_score -= PieceLocationTables::complex_read(ch.piece_at(sq), sq, middlegame_weight, true) ;
+            // now clear that LS1B
+            pieces &= pieces - 1;
         }
     }
     float score = material_score + (positional_score / 100.0f);
@@ -205,7 +218,7 @@ float Player::eval(Chess& ch, int mate_offset, bool test)
 
     // round to the nearest hundreth
     score = std::round(score * 100) / 100.0f;
-    // System.out.printf("mobility: %+-7.2f | score: %+-7.2f | ratio: %+-7.2f\n", mob, score, mob/score);
+    if (test) fmt::print("mobility: {} | score: {} | ratio: {}\n", mobility_score, score, mobility_score/score);
     // adjust the eval so the player to move is positive
     return (ch.aci) ? -score : score;
 }
@@ -610,7 +623,7 @@ public class QuiescencePlayer extends Player {
                 System.out.printf(" at %.0f nodes/sec%n", speed);
             }
         }
-        ttable.makePosition(zhash, depth, Position.flagALPHA, alpha, bestMove);
+        ttable.makePosition(zhash, depth, Entry.flagALPHA, alpha, bestMove);
         return bestMove;
     }
 
@@ -620,14 +633,14 @@ public class QuiescencePlayer extends Player {
         long zhash = Zobrist.hash(test);
         if (depth <= 0 || mgen.moves.size() == 0 || mgen.gameOver != -1) {
             if (ttable.containsPosition(zhash)) {
-                Position p0 = ttable.table[(int) Math.abs(zhash % ttable.getSize())];
+                Entry p0 = ttable.table[(int) Math.abs(zhash % ttable.getSize())];
                 if (p0.depth >= depth) {
 //					Zobrist.incrementHits();
-                    if (p0.flag == Position.flagEXACT)
+                    if (p0.flag == Entry.flagEXACT)
                         return p0.eval;
-                    else if (p0.flag == Position.flagALPHA && p0.eval <= alpha)
+                    else if (p0.flag == Entry.flagALPHA && p0.eval <= alpha)
                         return alpha;
-                    else if (p0.flag == Position.flagBETA && p0.eval >= beta)
+                    else if (p0.flag == Entry.flagBETA && p0.eval >= beta)
                         return beta;
 //					Zobrist.decrementHits();
                 }
@@ -638,20 +651,20 @@ public class QuiescencePlayer extends Player {
                 float score = quiescence(depth, alpha, beta);
                 // replace this eval call with a quiescence search
                 // float score = evalMaterial(mgen, depth);
-                ttable.makePosition(zhash, depth, Position.flagEXACT, score, null);
+                ttable.makePosition(zhash, depth, Entry.flagEXACT, score, null);
                 return score;
             }
         }
         // if the stored depth was >= remaining search depth, use that result
         if (ttable.containsPosition(zhash) && ttable.getDepth(zhash) >= depth) {
-            Position p0 = ttable.table[(int) Math.abs(zhash % ttable.getSize())];
+            Entry p0 = ttable.table[(int) Math.abs(zhash % ttable.getSize())];
             if (p0.depth >= depth) {
 //				Zobrist.incrementHits();
-                if (p0.flag == Position.flagEXACT)
+                if (p0.flag == Entry.flagEXACT)
                     return p0.eval;
-                else if (p0.flag == Position.flagALPHA && p0.eval <= alpha)
+                else if (p0.flag == Entry.flagALPHA && p0.eval <= alpha)
                     return alpha;
-                else if (p0.flag == Position.flagBETA && p0.eval >= beta)
+                else if (p0.flag == Entry.flagBETA && p0.eval >= beta)
                     return beta;
 //				Zobrist.decrementHits();
             }
@@ -666,7 +679,7 @@ public class QuiescencePlayer extends Player {
             float score = -negaMax(depth - 1, -beta, -alpha);
             test.unmakeMove();
             if (score >= beta) {
-                ttable.makePosition(zhash, depth, Position.flagBETA, beta, null);
+                ttable.makePosition(zhash, depth, Entry.flagBETA, beta, null);
                 return score;
             }
             if (score > alpha) {
@@ -674,7 +687,7 @@ public class QuiescencePlayer extends Player {
                 alpha = score;
             }
         }
-        ttable.makePosition(zhash, depth, Position.flagALPHA, alpha, bestMove);
+        ttable.makePosition(zhash, depth, Entry.flagALPHA, alpha, bestMove);
         return alpha;
     }
 
@@ -697,14 +710,14 @@ public class QuiescencePlayer extends Player {
         long zhash = Zobrist.hash(test);
         // if the ttable stored the position at greater depth, use that result
         if (ttable.containsPosition(zhash) && ttable.getDepth(zhash) >= depth) {
-            Position p0 = ttable.table[(int) Math.abs(zhash % ttable.getSize())];
+            Entry p0 = ttable.table[(int) Math.abs(zhash % ttable.getSize())];
             if (p0.depth >= depth) {
 //				Zobrist.incrementHits();
-                if (p0.flag == Position.flagEXACT)
+                if (p0.flag == Entry.flagEXACT)
                     return p0.eval;
-                else if (p0.flag == Position.flagALPHA && p0.eval <= alpha)
+                else if (p0.flag == Entry.flagALPHA && p0.eval <= alpha)
                     return alpha;
-                else if (p0.flag == Position.flagBETA && p0.eval >= beta)
+                else if (p0.flag == Entry.flagBETA && p0.eval >= beta)
                     return beta;
 //				Zobrist.decrementHits();
             }
@@ -722,14 +735,14 @@ public class QuiescencePlayer extends Player {
             score = -quiescence(depth - 1, -beta, -alpha);
             test.unmakeMove();
             if (score >= beta) {
-                ttable.makePosition(zhash, depth, Position.flagBETA, beta, null);
+                ttable.makePosition(zhash, depth, Entry.flagBETA, beta, null);
                 return beta;
             }
             if (score > alpha) {
                 alpha = score;
             }
         }
-        ttable.makePosition(zhash, depth, Position.flagALPHA, alpha, null);
+        ttable.makePosition(zhash, depth, Entry.flagALPHA, alpha, null);
         return score;
     }
 

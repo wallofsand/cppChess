@@ -9,10 +9,10 @@
 
 typedef std::mt19937_64 MyRNG;
 
-struct Position
+struct Entry
 {
-    Position() : key(0), depth(0), flag(0), score(0) {}
-    Position(long k, int d, int f, float score) : key(k), depth(d), flag(f), score(score) {}
+    Entry() : key(0), depth(0), flag(0), score(0) {}
+    Entry(long k, int d, int f, float score) : key(k), depth(d), flag(f), score(score) {}
     long key;
     int depth;
     int flag;
@@ -34,10 +34,12 @@ public:
     TTable();
 
     static const int DEFAULT_SIZE = 64000;
-    static const U64 seed_val = 3229840203366374022ll;
-    // static const U64 seed_val = 1397063171404053109;
+    static const U64 seed_val = 15375420585056461361ull;
+    // static const U64 seed_val = 3229840203366374022ull;
+    // static const U64 seed_val = 1397063171404053109ull;
     // the Mersenne Twister with a popular choice of parameters
     static MyRNG rng;
+    static std::uniform_int_distribution<U64> U64_dist;
     static long black_to_move;
     // array of random bitstrings for each piece at each square
     // pawns are special case: first "rank" is used for white ep-able pawns
@@ -48,11 +50,12 @@ public:
     // file 0 - 7 of ep square
     static long ep_file[8];
     static long hits, clashes, writes;
-    static void entry(long key, int depth, int flag, float score);
-    static void entry(long key, int depth, int flag, float score, Move mv);
-    static Position read(long key);
+    static void add_item(long key, int depth, int flag, float score);
+    static void add_item(long key, int depth, int flag, float score, Move mv);
+    static Entry read(long key);
+    static void rand_test(int n);
 private:
-    static Position table[DEFAULT_SIZE];
+    static Entry table[DEFAULT_SIZE];
 };
 
 #endif
@@ -64,28 +67,28 @@ private:
 // public class TranspositionTable {
 
 // 	private int size;
-// 	Position[] table;
+// 	Entry[] table;
 
 // 	TranspositionTable(int size) {
 // 		this.size = size;
-// 		this.table = new Position[size];
+// 		this.table = new Entry[size];
 // 	}
 
-// 	// create an entry to store in the table
-// 	Position makePosition(long zobrist, int depthRemaining, int isExactScore, float score, Move m) {
+// 	// create an add_item to store in the table
+// 	Entry makePosition(long zobrist, int depthRemaining, int isExactScore, float score, Move m) {
 // //		Zobrist.incrementWrites();
-// 		table[(int) Math.abs(zobrist % getSize())] = new Position(zobrist, depthRemaining, isExactScore, score, m);
+// 		table[(int) Math.abs(zobrist % getSize())] = new Entry(zobrist, depthRemaining, isExactScore, score, m);
 // 		return table[(int) Math.abs(zobrist % getSize())];
 // 	}
 
 // 	// return a value stored in the transposition table
-// 	Position getPosition(long hash) {
+// 	Entry getPosition(long hash) {
 // 		return table[(int) Math.abs(hash % getSize())];
 // 	}
 
 // 	// method to 
-// 	void add(Position newPos) {
-// 		Position p0 = table[(int) Math.abs(newPos.key % getSize())];
+// 	void add(Entry newPos) {
+// 		Entry p0 = table[(int) Math.abs(newPos.key % getSize())];
 // 		if (p0 == null || p0.key == newPos.key) {
 // 			table[(int) Math.abs(newPos.key % getSize())] = newPos;
 // //			Zobrist.incrementWrites();
@@ -110,7 +113,7 @@ private:
 // 	}
 
 // 	boolean containsPosition(long hash) { // should we record clashes here?
-// 		Position p0 = getPosition(hash);
+// 		Entry p0 = getPosition(hash);
 // 		if (p0 == null) return false;
 // 		else if (p0.key == hash) return true;
 // //		Zobrist.incrementClashes();
@@ -119,13 +122,13 @@ private:
 // 	}
 
 // 	float probeTable(long hash, int depth, float alpha, float beta) {
-// 		Position p0 = table[(int) Math.abs(hash % getSize())];
+// 		Entry p0 = table[(int) Math.abs(hash % getSize())];
 // 		if (p0.depth >= depth) {
-// 			if (p0.flag == Position.flagEXACT)
+// 			if (p0.flag == Entry.flagEXACT)
 // 				return p0.eval;
-// 			else if (p0.flag == Position.flagALPHA && p0.eval <= alpha)
+// 			else if (p0.flag == Entry.flagALPHA && p0.eval <= alpha)
 // 				return alpha;
-// 			else if (p0.flag == Position.flagBETA && p0.eval >= beta)
+// 			else if (p0.flag == Entry.flagBETA && p0.eval >= beta)
 // 				return beta;
 // 		}
 // 		return beta;

@@ -26,15 +26,15 @@ void Chess::build_bitboards()
     bb_occ     = bb_white                 | bb_black;
 }
 
-const long Chess::hash()
+const U64 Chess::hash()
 {
     // who's turn is it?
-    long h = 0l ^ (aci * TTable::black_to_move);
+    U64 h = 0l ^ (aci * TTable::black_to_move);
     // board representation
     for (int sq = 0; sq < 64; sq++)
         h ^= (bb_occ >> sq & 1) * TTable::sq_color_type_64x2x6[sq][color_at(sq)][piece_at(sq)];
     // is there an en passant?
-    h ^= ep_square ? TTable::ep_file[ep_square & 7] : 0l;
+    h ^= ep_square ? TTable::ep_file[ep_square & 7] : 0ull;
     // white castling
     h ^= ((castle_rights >> 1) & 1) * TTable::castle_rights[0][1];
     h ^= (castle_rights & 1) * TTable::castle_rights[0][0];
@@ -77,7 +77,7 @@ void Chess::make_move(Move mv)
 {
     int start = mv.start();
     int end = mv.end();
-    bool castle = false;
+    // bool castle = false;
 
     for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
     {
@@ -129,7 +129,7 @@ void Chess::make_move(Move mv)
                 *bb_color[aci] |= 1ull << (end + 1);
             }
             // update castle rights
-            castle_rights &= 3 << (2 * (1 - aci));
+            castle_rights &= ~(3 << (2 * aci));
         }
         else if (piece == ch_cst::ROOK)
         {

@@ -35,7 +35,7 @@ public:
     void unmake_move(int undos);
     const void print_board(bool fmt = false);
     void build_bitboards();
-    const long hash();
+    const U64 hash();
 private:
     int size;
 };

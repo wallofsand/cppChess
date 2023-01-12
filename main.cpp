@@ -31,6 +31,7 @@ int main()
     while (playing)
     {
         std::vector<Move> move_list = mgen.gen_moves();
+        fmt::print("\n");
         chess.print_board(true);
         fmt::print("hash: {} w: {} h: {} c: {}\neval: {} n/s: {}\n",
             chess.hash(), TTable::writes, TTable::hits, TTable::clashes, pl.eval(chess), nodes);
@@ -89,8 +90,8 @@ int main()
                 break;
             }
         if (mgen.is_game_over(false)) playing = false;
+        if (!playing) chess.print_board(true);
     }
-    chess.print_board(true);
 
     // for (int idx = 0; idx < TTable::DEFAULT_SIZE; idx++)
     //     if (TTable::read(idx).key && TTable::read(idx).flag != 1)

@@ -467,14 +467,14 @@ std::vector<Move> MoveGenerator::gen_king_piece_moves(int sq, bool test)
     // castling
     // wh:QuKi bl:QuKi
     // queenside castle
-    if (!in_check && ((ch.castle_rights & 2) << 2 * ch.aci)
+    if (!in_check && ch.castle_rights & 2 << 2 * ch.aci
             && !BB::contains_square(ch.bb_occ | op_attack_mask, sq - 1)
             && !BB::contains_square(ch.bb_occ | op_attack_mask, sq - 2)
             && !BB::contains_square(ch.bb_occ, sq - 3)
             && BB::contains_square(ch.bb_rooks & *ch.bb_color[ch.aci], sq - 4))
         king_moves.push_back(Move(sq, sq - 2));
     // kingside castle
-    if (!in_check && ((ch.castle_rights & 1) << 2 * ch.aci)
+    if (!in_check && ch.castle_rights & 1 << 2 * ch.aci
             && !BB::contains_square(ch.bb_occ | op_attack_mask, sq + 1)
             && !BB::contains_square(ch.bb_occ | op_attack_mask, sq + 2)
             && BB::contains_square(ch.bb_rooks & *ch.bb_color[ch.aci], sq + 3))
