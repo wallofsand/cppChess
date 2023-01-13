@@ -28,19 +28,22 @@ int main()
     std::string last_move = "";
     MoveGenerator mgen(chess);
     U64 nodes = 0;
+    Timer game_timer;
     while (playing)
     {
         std::vector<Move> move_list = mgen.gen_moves();
         fmt::print("\n");
         chess.print_board(true);
-        fmt::print("hash: {} w: {} h: {} c: {}\neval: {} n/s: {}\n",
-            chess.hash(), TTable::writes, TTable::hits, TTable::clashes, pl.eval(chess), nodes);
+        fmt::print("hash: {} w: {} h: {} c: {}\neval: {} nodes: {} n/s: {:0.0f}\n",
+            chess.hash(), TTable::writes, TTable::hits, TTable::clashes,
+            pl.eval(chess), nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f);
         if (chess.ply_counter)
             fmt::print("{}{} {}\n", ((chess.ply_counter - 1) / 2) + 1, chess.ply_counter % 2 == 1 ? ". " : ".. ", last_move);
         for (Move mv : move_list)
             fmt::print("{} ", mgen.move_san(mv));
         fmt::print("\n{} ", chess.aci ? "Black to move:" :"White to move: ");
 
+        game_timer.reset();
         std::string mv_str;
         std::cin >> mv_str;
 
@@ -56,6 +59,7 @@ int main()
             int depth = (int) mv_str[0] - 48;
             if (depth < 0 || depth > 9) continue;
             SearchLogger sl("search_log", 1);
+            game_timer.reset();
             Move engine_move = pl.get_move(chess, sl, depth, nodes, false);
             last_move = mgen.move_san(engine_move);
             chess.make_move(engine_move);
@@ -66,6 +70,7 @@ int main()
             while (depth < 1 || depth > 6)
                 std::cin >> depth;
             SearchLogger sl("search_log", 1);
+            game_timer.reset();
             Move engine_move = pl.get_move(chess, sl, depth, nodes, false);
             last_move = mgen.move_san(engine_move);
             chess.make_move(engine_move);
@@ -93,9 +98,8 @@ int main()
         if (!playing) chess.print_board(true);
     }
 
-    // for (int idx = 0; idx < TTable::DEFAULT_SIZE; idx++)
-    //     if (TTable::read(idx).key && TTable::read(idx).flag != 1)
-    //         fmt::print("{}: {}\n", idx, TTable::read(idx).to_string());
+    for (int idx = 0; idx < TTable::DEFAULT_SIZE; idx++)
+        if (TTable::bin[idx]) fmt::print("{}: {}, ", idx, TTable::bin[idx]);
 
     return 0;
 }

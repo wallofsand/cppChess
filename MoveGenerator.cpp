@@ -521,9 +521,9 @@ std::string MoveGenerator::move_san(Move& mv)
     // castling
     if (piece == KING && (start - end == 2 || start - end == -2))
     {
-        // short castle
+        // Kingside castle
         san = "O-O";
-        // long castle
+        // Queenside castle
         if (start - end == 2)
             san += "-O";
     }

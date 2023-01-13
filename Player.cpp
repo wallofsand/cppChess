@@ -13,9 +13,9 @@ Move Player::get_move(Chess& ch, SearchLogger& search_log, int depth, U64& nodes
         return moves.at(0);
     nodes = 0;
 
-    // hash the position and check the t-table for a best move
-    // long zhash = ch.hash();
-    // if the stored depth was >= remaining search depth, use that result
+    // // hash the position and check the t-table for a best move
+    // U64 zhash = ch.hash();
+    // // if the stored depth was >= remaining search depth, use that result
     // if (TTable::read(zhash).depth >= depth)
     // {
     //     TTable::hits++;
@@ -33,8 +33,6 @@ Move Player::get_move(Chess& ch, SearchLogger& search_log, int depth, U64& nodes
        }
         ch.unmake_move(1);
     }
-    if (search_timer.elapsed() >= 1)
-        nodes = nodes / search_timer.elapsed();
     // TTable::add_item(zhash, depth, Entry::FLAG_ALPHA, high_score, best_move);
     return best_move;
 }
@@ -50,24 +48,24 @@ Move Player::get_move(Chess& ch, SearchLogger& search_log, int depth, U64& nodes
 float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& nodes, float alpha, float beta, bool test)
 {
     // hash the position and check the t-table for a best move
-    // long zhash = ch.hash();
+    U64 zhash = ch.hash();
     // if the stored depth was >= remaining search depth, use that result
-    if (!depth) // || TTable::read(zhash).depth >= depth)
+    if (!depth || TTable::read(zhash).depth >= depth)
     {
-        // Entry prev = TTable::read(zhash);
-        // TTable::hits++;
-        // if (prev.flag == Entry::FLAG_EXACT)
-        //     return TTable::read(zhash).score;
-        // else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
-        //     return alpha;
-        // else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
-        //     return beta;
-        // TTable::hits--;
+        Entry prev = TTable::read(zhash);
+        TTable::hits++;
+        if (prev.flag == Entry::FLAG_EXACT)
+            return TTable::read(zhash).score;
+        else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
+            return alpha;
+        else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
+            return beta;
+        TTable::hits--;
         if (!depth)
         {
             float score = eval(ch, depth, test);
             // float score = quiescence_search(ch, search_log, depth, nodes, alpha, beta, test);
-            // TTable::add_item(zhash, depth, Entry::FLAG_EXACT, score);
+            TTable::add_item(zhash, depth, Entry::FLAG_EXACT, score);
             return score;
         }
     }
@@ -85,12 +83,12 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& node
         ch.unmake_move(1);
         if (score >= beta)
         {
-            // TTable::add_item(zhash, depth, Entry::FLAG_BETA, beta);
+            TTable::add_item(zhash, depth, Entry::FLAG_BETA, beta);
             return beta;
         }
         alpha = std::max(alpha, score);
     }
-    // TTable::add_item(zhash, depth, Entry::FLAG_ALPHA, alpha);
+    TTable::add_item(zhash, depth, Entry::FLAG_ALPHA, alpha);
     return alpha;
 }
 
@@ -107,20 +105,20 @@ float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int depth, 
         return stand_pat;
 
     // hash the position and check the t-table for a best move
-    // long zhash = ch.hash();
+    U64 zhash = ch.hash();
     // if the stored depth was >= remaining search depth, use that result
-    // if (TTable::read(zhash).depth >= depth)
-    // {
-    //     Entry prev = TTable::read(zhash);
-    //     TTable::hits++;
-    //     if (prev.flag == Entry::FLAG_EXACT)
-    //         return TTable::read(zhash).score;
-    //     else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
-    //         return alpha;
-    //     else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
-    //         return beta;
-    //     TTable::hits--;
-    // }
+    if (TTable::read(zhash).depth >= depth)
+    {
+        Entry prev = TTable::read(zhash);
+        TTable::hits++;
+        if (prev.flag == Entry::FLAG_EXACT)
+            return TTable::read(zhash).score;
+        else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
+            return alpha;
+        else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
+            return beta;
+        TTable::hits--;
+    }
 
     // Delta pruning: if a huge swing (> 1 queen)
     // is not enough to improve the position, give up

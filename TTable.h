@@ -12,8 +12,8 @@ typedef std::mt19937_64 MyRNG;
 struct Entry
 {
     Entry() : key(0), depth(0), flag(0), score(0) {}
-    Entry(long k, int d, int f, float score) : key(k), depth(d), flag(f), score(score) {}
-    long key;
+    Entry(U64 k, int d, int f, float score) : key(k), depth(d), flag(f), score(score) {}
+    U64 key;
     int depth;
     int flag;
     float score;
@@ -33,27 +33,27 @@ class TTable
 public:
     TTable();
 
-    static const int DEFAULT_SIZE = 64000;
+    static const int DEFAULT_SIZE = 127997;
     static const U64 seed_val = 15375420585056461361ull;
     // static const U64 seed_val = 3229840203366374022ull;
     // static const U64 seed_val = 1397063171404053109ull;
     // the Mersenne Twister with a popular choice of parameters
     static MyRNG rng;
     static std::uniform_int_distribution<U64> U64_dist;
-    static long black_to_move;
+    static U64 black_to_move;
     // array of random bitstrings for each piece at each square
     // pawns are special case: first "rank" is used for white ep-able pawns
     // while the second "rank" is used for black's ep-able pawns
-    static long sq_color_type_64x2x6[64][2][6];
-    // short: 0, long: 1
-    static long castle_rights[2][2];
+    static U64 sq_color_type_64x2x6[64][2][6];
+    // Kingside: 0, Queenside: 1
+    static U64 castle_rights[2][2];
     // file 0 - 7 of ep square
-    static long ep_file[8];
-    static long hits, clashes, writes;
-    static void add_item(long key, int depth, int flag, float score);
-    static void add_item(long key, int depth, int flag, float score, Move mv);
-    static Entry read(long key);
+    static U64 ep_file[8];
+    static U64 hits, clashes, writes;
+    static void add_item(U64 key, int depth, int flag, float score);
+    static Entry read(U64 key);
     static void rand_test(int n);
+    static int bin[DEFAULT_SIZE];
 private:
     static Entry table[DEFAULT_SIZE];
 };
