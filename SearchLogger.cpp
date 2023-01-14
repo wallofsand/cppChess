@@ -4,10 +4,10 @@ using namespace ch_cst;
 
 const std::string SearchLogger::file_path()
 {
-    return "C:/Users/graha/Documents/GitHub/cppChess/logs/"
-            + name + "_" + SearchLogger::date_to_string() + ".txt";
-    // return "C:/Users/graha/OneDrive/Documents/Github/cppChess/logs/"
+    // return "C:/Users/graha/Documents/GitHub/cppChess/logs/"
     //         + name + "_" + SearchLogger::date_to_string() + ".txt";
+    return "C:/Users/graha/OneDrive/Documents/Github/cppChess/logs/"
+            + name + "_" + SearchLogger::date_to_string() + ".txt";
 }
 
 SearchLogger::SearchLogger(std::string str, int d)

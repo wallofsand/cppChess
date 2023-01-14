@@ -319,12 +319,12 @@ const void BB::print_binary_string(std::string bbstr, bool fmt)
     // we want to print the binary as 8 8-bit words
     // the words are printed forewards but in reverse order
     // since the printing happens top-to-bottom on the screen
-    std::string divider = "!---!---!---!---!---!---!---!---!\n";
+    std::string divider = "|---|---|---|---|---|---|---|---|\n";
     for (int file = 7; file >= 0; file--)
     {
-        fmt::print("{}", fmt ? divider + "! " : "");
+        fmt::print("{}", fmt ? divider + "| " : "");
         for (int rank = 0; rank < 8; rank++)
-            fmt::print("{}{}", bbstr[(file<<3) + rank], fmt ? " ! " : "");
+            fmt::print("{}{}", bbstr[(file<<3) + rank], fmt ? " | " : "");
         fmt::print("\n");
     }
     fmt::print("{}", fmt ? divider : "");

@@ -16,7 +16,7 @@ const std::string perft_results[] = {
 int main()
 {
     Compass();
-    TTable();
+    // TTable();
     Chess chess;
     Player pl;
 
@@ -44,7 +44,7 @@ int main()
         fmt::print("\n{} ", chess.aci ? "Black to move:" :"White to move: ");
 
         game_timer.reset();
-        std::string mv_str;
+        std::string mv_str = "";
         std::cin >> mv_str;
 
         if (mv_str.substr(0, 2) == "um" && chess.ply_counter > 0)
@@ -85,7 +85,7 @@ int main()
         else if (mv_str == "test")
         {
             mgen.gen_moves(true);
-            pl.eval(chess, move_list, 0, true);
+            // pl.eval(chess, move_list, 0, true);
         }
         else if (mv_str == "end") playing = false;
         else for (Move mv : move_list)

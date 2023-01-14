@@ -27,8 +27,8 @@ public:
     U64* bb_color[2] = { &bb_white, &bb_black };
     int ply_counter;
     std::vector<Move> history;
-    int piece_at(int sq);
-    int color_at(int sq);
+    const int piece_at(int sq);
+    const int color_at(int sq);
     // bl:QuKi wh:QuKi
     int castle_rights;
     void make_move(Move mv);
@@ -36,6 +36,7 @@ public:
     const void print_board(bool fmt = false);
     void build_bitboards();
     const U64 hash();
+    U64 zhash;
 private:
     int size;
 };

@@ -15,7 +15,7 @@ void MoveGenerator::init(bool test)
  */
 bool MoveGenerator::is_game_over(bool test)
 {
-    return gen_moves(test).size() == 0;
+    return gen_moves().size() == 0;
 }
 
 void MoveGenerator::checks_exist(bool test)
@@ -120,38 +120,71 @@ void MoveGenerator::find_pins(bool test)
     U64 en_bishops = (ch.bb_bishops | ch.bb_queens) & *ch.bb_color[1 - ch.aci];
     U64 king = ch.bb_kings & *ch.bb_color[ch.aci];
 
+    // // North
+    // U64 ray = BB::nort_attacks(king, ~*ch.bb_color[1 - ch.aci]);
+    // if (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
+    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
+    // // East
+    // ray = BB::east_attacks(king, ~*ch.bb_color[1 - ch.aci]);
+    // if (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
+    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
+    // // South
+    // ray = BB::sout_attacks(king, ~*ch.bb_color[1 - ch.aci]);
+    // if (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
+    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
+    // // West
+    // ray = BB::west_attacks(king, ~*ch.bb_color[1 - ch.aci]);
+    // if (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
+    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
+    // // NorthEast
+    // ray = BB::NoEa_attacks(king, ~*ch.bb_color[1 - ch.aci]);
+    // if (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
+    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
+    // // NorthWest
+    // ray = BB::NoWe_attacks(king, ~*ch.bb_color[1 - ch.aci]);
+    // if (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
+    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
+    // // SouthEast
+    // ray = BB::SoEa_attacks(king, ~*ch.bb_color[1 - ch.aci]);
+    // if (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
+    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
+    // // SouthWest
+    // ray = BB::SoWe_attacks(king, ~*ch.bb_color[1 - ch.aci]);
+    // if (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
+    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
+
     // North
     U64 ray = BB::nort_attacks(king, ~*ch.bb_color[1 - ch.aci]);
     pinned_pieces |= (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-            ? ray & ray & *ch.bb_color[ch.aci] : 0ll;
+            ? ray & ray & *ch.bb_color[ch.aci] : 0ull;
     // East
     ray = BB::east_attacks(king, ~*ch.bb_color[1 - ch.aci]);
     pinned_pieces |= (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-            ? ray & *ch.bb_color[ch.aci] : 0ll;
+            ? ray & *ch.bb_color[ch.aci] : 0ull;
     // South
     ray = BB::sout_attacks(king, ~*ch.bb_color[1 - ch.aci]);
     pinned_pieces |= (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-            ? ray & *ch.bb_color[ch.aci] : 0ll;
+            ? ray & *ch.bb_color[ch.aci] : 0ull;
     // West
     ray = BB::west_attacks(king, ~*ch.bb_color[1 - ch.aci]);
     pinned_pieces |= (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-            ? ray & *ch.bb_color[ch.aci] : 0ll;
+            ? ray & *ch.bb_color[ch.aci] : 0ull;
     // NorthEast
     ray = BB::NoEa_attacks(king, ~*ch.bb_color[1 - ch.aci]);
     pinned_pieces |= (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-            ? ray & *ch.bb_color[ch.aci] : 0ll;
+            ? ray & *ch.bb_color[ch.aci] : 0ull;
     // NorthWest
     ray = BB::NoWe_attacks(king, ~*ch.bb_color[1 - ch.aci]);
     pinned_pieces |= (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-            ? ray & *ch.bb_color[ch.aci] : 0ll;
+            ? ray & *ch.bb_color[ch.aci] : 0ull;
     // SouthEast
     ray = BB::SoEa_attacks(king, ~*ch.bb_color[1 - ch.aci]);
     pinned_pieces |= (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-            ? ray & *ch.bb_color[ch.aci] : 0ll;
+            ? ray & *ch.bb_color[ch.aci] : 0ull;
     // SouthWest
     ray = BB::SoWe_attacks(king, ~*ch.bb_color[1 - ch.aci]);
     pinned_pieces |= (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-            ? ray & *ch.bb_color[ch.aci] : 0ll;
+            ? ray & *ch.bb_color[ch.aci] : 0ull;
 
     // if (test && pinned_pieces)
     // {
@@ -214,7 +247,6 @@ int MoveGenerator::find_king(int color)
 
 /*
  * Method to get the legal moves in a position.
- * Remeber to call init() first.
  * @return an unsorted vector of moves
  */
 std::vector<Move> MoveGenerator::gen_moves(bool test)
@@ -278,18 +310,16 @@ std::vector<Move> MoveGenerator::gen_pawn_moves(bool test)
     U64 op = *ch.bb_color[1 - ch.aci];
 
     // pawn captures
-    U64 captures_west = ch.aci
-                        ? BB::SoWe_shift_one(pawns) & (op | 1ull << ch.ep_square)
-                        : BB::NoWe_shift_one(pawns) & (op | 1ull << ch.ep_square);
-    U64 captures_east = ch.aci
-                        ? BB::SoEa_shift_one(pawns) & (op | 1ull << ch.ep_square)
-                        : BB::NoEa_shift_one(pawns) & (op | 1ull << ch.ep_square);
+    U64 captures_west = (ch.aci) ? BB::SoWe_shift_one(pawns) & (op | 1ull << ch.ep_square) : BB::NoWe_shift_one(pawns) & (op | 1ull << ch.ep_square);
+    U64 captures_east = (ch.aci) ? BB::SoEa_shift_one(pawns) & (op | 1ull << ch.ep_square) : BB::NoEa_shift_one(pawns) & (op | 1ull << ch.ep_square);
 
     // eastern captures
-    for (int end_sq = (ch.aci) ? 0 : 16; captures_east >> end_sq; end_sq++)
+    while (captures_east)
     {
-        if (!BB::contains_square(captures_east, end_sq))
-            continue;
+        // x & -x masks the LS1B
+        int end_sq = 63 - BB::lead_0s(captures_east & 0-captures_east);
+        // now clear that LS1B
+        captures_east &= captures_east - 1;
         if (BB::contains_square(pinned_pieces, end_sq - DIRS[4+2*ch.aci])
                 && !BB::contains_square(Compass::ray_square(find_king(ch.aci), end_sq), end_sq))
             continue;
@@ -297,7 +327,8 @@ std::vector<Move> MoveGenerator::gen_pawn_moves(bool test)
             pawn_moves.push_back(Move(end_sq - DIRS[4+2*ch.aci], end_sq));
         else // pawn promotions
         {
-            pawn_moves.push_back(Move(end_sq - DIRS[4+2*ch.aci], end_sq, ch_cst::QUEEN));
+            pawn_moves.push_back(Move(end_sq - DIRS[4+2*ch.aci],
+             end_sq, ch_cst::QUEEN));
             pawn_moves.push_back(Move(end_sq - DIRS[4+2*ch.aci], end_sq, ch_cst::ROOK));
             pawn_moves.push_back(Move(end_sq - DIRS[4+2*ch.aci], end_sq, ch_cst::BISHOP));
             pawn_moves.push_back(Move(end_sq - DIRS[4+2*ch.aci], end_sq, ch_cst::KNIGHT));
@@ -305,10 +336,12 @@ std::vector<Move> MoveGenerator::gen_pawn_moves(bool test)
     }
 
     // western captures
-    for (int end_sq = (ch.aci) ? 0 : 16; captures_west >> end_sq > 0; end_sq++)
+    while (captures_west)
     {
-        if (!BB::contains_square(captures_west, end_sq))
-            continue;
+        // x & -x masks the LS1B
+        int end_sq = 63 - BB::lead_0s(captures_west & 0-captures_west);
+        // now clear that LS1B
+        captures_west &= captures_west - 1;
         if (BB::contains_square(pinned_pieces, end_sq - DIRS[5+2*ch.aci])
                 && !BB::contains_square(Compass::ray_square(find_king(ch.aci), end_sq), end_sq))
             continue;
@@ -326,20 +359,19 @@ std::vector<Move> MoveGenerator::gen_pawn_moves(bool test)
         }
     }
 
-    // pawn moves
-    // white to move
-    U64 pawn_advances = (pawns << 8) & ~ch.bb_occ;
-    pawn_advances |= ((pawn_advances & 255ull << 16) << 8) & ~ch.bb_occ;
-    if (ch.aci)
+    // pawn pushes
+    U64 pawn_advances = ch.aci
+            ? (pawns >> 8) & ~ch.bb_occ
+            : (pawns << 8) & ~ch.bb_occ;
+    pawn_advances |= ch.aci
+            ? ((pawn_advances & 255ull << 40) >> 8) & ~ch.bb_occ
+            : ((pawn_advances & 255ull << 16) << 8) & ~ch.bb_occ;
+    while (pawn_advances)
     {
-        // black to move
-        pawn_advances = (pawns >> 8) & ~ch.bb_occ;
-        pawn_advances |= ((pawn_advances & 255ull << 40) >> 8) & ~ch.bb_occ;
-    }
-    for (int end_sq = (ch.aci) ? 0 : 16; pawn_advances >> end_sq; end_sq++)
-    {
-        if (!BB::contains_square(pawn_advances, end_sq))
-            continue;
+        // x & -x masks the LS1B
+        int end_sq = 63 - BB::lead_0s(pawn_advances & 0-pawn_advances);
+         // now clear that LS1B
+        pawn_advances &= pawn_advances - 1;
         if (BB::contains_square(pawns, end_sq - PAWN_DIR[ch.aci])
                 && (!BB::contains_square(pinned_pieces, end_sq - PAWN_DIR[ch.aci])
                     || Compass::file_xindex(find_king(ch.aci)) == Compass::file_xindex(end_sq)))
@@ -406,6 +438,8 @@ std::vector<Move> MoveGenerator::gen_bishop_piece_moves(int start, bool test)
     ts |= BB::SoEa_attacks(ss, ~ch.bb_occ);
     ts |= BB::SoWe_attacks(ss, ~ch.bb_occ);
     ts &= *ch.bb_color[1-ch.aci] | ~ch.bb_occ;
+
+    if (test) BB::print_U64(ts, "bishop targets");
 
     while (ts)
     {

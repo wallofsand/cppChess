@@ -37,15 +37,15 @@ void TTable::add_item(U64 key, int depth, int flag, float score)
     if (prev_entry.flag && prev_entry.key != key)
     {
         clashes++;
-        bin[abs(key % DEFAULT_SIZE)]++;
+        bin[std::abs((int) key % DEFAULT_SIZE)]++;
     }
-    table[abs(key % DEFAULT_SIZE)] = Entry(key, depth, flag, score);
+    table[std::abs((int) key % DEFAULT_SIZE)] = Entry(key, depth, flag, score);
     writes++;
 }
 
 Entry TTable::read(U64 key)
 {
-    return table[abs(key % DEFAULT_SIZE)];
+    return table[std::abs((int) key % DEFAULT_SIZE)];
 }
 
 void TTable::rand_test(int n)
@@ -53,7 +53,7 @@ void TTable::rand_test(int n)
     for (int i = 0; i < n; i++)
     {
         U64 val = U64_dist(rng);
-        bin[abs(val % DEFAULT_SIZE)]++;
+        bin[std::abs((int) val % DEFAULT_SIZE)]++;
     }
     float avg;
     float dev;

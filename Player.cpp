@@ -8,29 +8,25 @@ Move Player::get_move(Chess& ch, SearchLogger& search_log, int depth, U64& nodes
     float high_score = -99.99f;
     Move best_move = Move(0, 0);
     std::vector<Move> moves = mgen.gen_moves();
-    moves = order_moves_by_piece(ch, moves);
     if (moves.size() == 1)
         return moves.at(0);
+    moves = order_moves_by_piece(ch, moves);
     nodes = 0;
 
     // // hash the position and check the t-table for a best move
-    // U64 zhash = ch.hash();
     // // if the stored depth was >= remaining search depth, use that result
-    // if (TTable::read(zhash).depth >= depth)
+    // if (TTable::read(ch.zhash).depth >= depth)
     // {
     //     TTable::hits++;
-    //     return TTable::read(zhash).best;
+    //     return TTable::read(ch.zhash).best;
     // }
 
     for (Move m : moves)
     {
         ch.make_move(m);
         float score = -nega_max(ch, search_log, depth - 1, nodes, -99.99f, -high_score, test);
-        if (score > high_score)
-        {
-            high_score = score;
-            best_move = m;
-       }
+        best_move = score > high_score ? m : best_move;
+        high_score = std::max(score, high_score);
         ch.unmake_move(1);
     }
     // TTable::add_item(zhash, depth, Entry::FLAG_ALPHA, high_score, best_move);
@@ -49,15 +45,14 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& node
 {
     MoveGenerator mgen(ch);
     std::vector<Move> moves = mgen.gen_moves();
-    // hash the position and check the t-table for a best move
-    U64 zhash = ch.hash();
+    // check the t-table for a best move
     // if the stored depth was >= remaining search depth, use that result
-    if (!depth || TTable::read(zhash).depth >= depth)
+    if (!depth || TTable::read(ch.zhash).depth >= depth)
     {
-        Entry prev = TTable::read(zhash);
+        Entry prev = TTable::read(ch.zhash);
         TTable::hits++;
         if (prev.flag == Entry::FLAG_EXACT)
-            return TTable::read(zhash).score;
+            return TTable::read(ch.zhash).score;
         else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
             return alpha;
         else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
@@ -65,16 +60,17 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& node
         TTable::hits--;
         if (!depth)
         {
-            float score = eval(ch, moves, depth, test);
-            // float score = quiescence_search(ch, search_log, depth, nodes, alpha, beta, test);
-            TTable::add_item(zhash, depth, Entry::FLAG_EXACT, score);
+            // float score = eval(ch, moves, depth, test);
+            float score = quiescence_search(ch, search_log, depth, nodes, alpha, beta, test);
+            TTable::add_item(ch.zhash, depth, Entry::FLAG_EXACT, score);
             return score;
         }
     }
 
-    nodes++;
     if (!moves.size())
         return eval(ch, moves);
+
+    nodes++;
     moves = order_moves_by_piece(ch, moves);
     for (Move mv : moves)
     {
@@ -83,12 +79,12 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& node
         ch.unmake_move(1);
         if (score >= beta)
         {
-            TTable::add_item(zhash, depth, Entry::FLAG_BETA, beta);
+            TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta);
             return beta;
         }
         alpha = std::max(alpha, score);
     }
-    TTable::add_item(zhash, depth, Entry::FLAG_ALPHA, alpha);
+    TTable::add_item(ch.zhash, depth, Entry::FLAG_ALPHA, alpha);
     return alpha;
 }
 
@@ -97,22 +93,19 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& node
  */
 float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int depth, U64& nodes, float alpha, float beta, bool test)
 {
-    nodes++;
     MoveGenerator mgen(ch);
     std::vector<Move> moves = mgen.gen_moves();
     float stand_pat = eval(ch, moves, depth, test);
     if (!moves.size() || stand_pat > beta)
         return stand_pat;
 
-    // hash the position and check the t-table for a best move
-    U64 zhash = ch.hash();
     // if the stored depth was >= remaining search depth, use that result
-    if (TTable::read(zhash).depth >= depth)
+    if (TTable::read(ch.zhash).depth >= depth)
     {
-        Entry prev = TTable::read(zhash);
+        Entry prev = TTable::read(ch.zhash);
         TTable::hits++;
         if (prev.flag == Entry::FLAG_EXACT)
-            return TTable::read(zhash).score;
+            return TTable::read(ch.zhash).score;
         else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
             return alpha;
         else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
@@ -126,6 +119,7 @@ float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int depth, 
     if (stand_pat < alpha - DELTA)
         return alpha;
 
+    nodes++;
     alpha = std::max(alpha, stand_pat);
     moves = order_moves_by_piece(ch, moves);
     // make captures until no captures remain, then eval
@@ -209,7 +203,7 @@ float Player::eval(Chess& ch, std::vector<Move> moves, int mate_offset, bool tes
 
     // mobility score:
     ch.aci = 1 - ch.aci;
-    float mobility_score = moves.size() - eval_gen.gen_moves().size();
+    float mobility_score = (float) moves.size() - eval_gen.gen_moves().size();
     ch.aci = 1 - ch.aci;
     mobility_score *= var_mobility_weight;
     score += mobility_score;

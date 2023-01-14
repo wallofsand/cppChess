@@ -8,6 +8,7 @@ Chess::Chess()
     castle_rights = 0b1111;
     build_bitboards();
     std::vector<Move> history;
+    zhash = hash();
 }
 
 /*
@@ -29,10 +30,19 @@ void Chess::build_bitboards()
 const U64 Chess::hash()
 {
     // who's turn is it?
-    U64 h = 0l ^ (aci * TTable::black_to_move);
+    U64 h = 0ll ^ (aci * TTable::black_to_move);
     // board representation
-    for (int sq = 0; sq < 64; sq++)
-        h ^= (bb_occ >> sq & 1) * TTable::sq_color_type_64x2x6[sq][color_at(sq)][piece_at(sq)];
+    U64 pieces = bb_occ;
+
+    while (pieces)
+    {
+        // x & -x masks the LS1B
+        int sq = 63 - BB::lead_0s(pieces & 0-pieces);
+        h ^= TTable::sq_color_type_64x2x6[sq][color_at(sq)][piece_at(sq)];
+        // now clear that LS1B
+        pieces &= pieces - 1;
+    }
+
     // is there an en passant?
     h ^= ep_square ? TTable::ep_file[ep_square & 7] : 0ull;
     // white castling
@@ -44,14 +54,12 @@ const U64 Chess::hash()
     return h;
 }
 
-
-
 /*
  * Method to return the piece type on a square, if any
  * @param sq the square index to check
  * @return the piece type (1 - 6) or 0 if no piece is found
  */
-int Chess::piece_at(int sq)
+const int Chess::piece_at(int sq)
 {
     for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
     {
@@ -66,7 +74,7 @@ int Chess::piece_at(int sq)
  * @param sq the square index to check
  * @return 0 for white, 1 for black, -1 if no piece is found
  */
-int Chess::color_at(int sq)
+const int Chess::color_at(int sq)
 {
     if (BB::contains_square(bb_white, sq)) return ch_cst::WHITE_INDEX;
     if (BB::contains_square(bb_black, sq)) return ch_cst::BLACK_INDEX;
@@ -77,74 +85,93 @@ void Chess::make_move(Move mv)
 {
     int start = mv.start();
     int end = mv.end();
-    // bool castle = false;
+    if (ep_square >= 0) zhash ^= TTable::ep_file[Compass::file_xindex(ep_square)];
 
-    for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
+    // Captured piece
+    int piece = piece_at(end);
+    if (piece)
     {
         // remove captured pieces
+        zhash ^= TTable::sq_color_type_64x2x6[end][1-aci][piece];
         *bb_piece[piece] &= ~(1ull << end);
         *bb_color[1 - aci] &= ~(1ull << end);
+    }
 
-        // is this type of piece is moving?
-        if (!BB::contains_square(*bb_piece[piece], start))
-            continue;
+    // Moving piece
+    piece = piece_at(start);
+    // remove the old piece
+    *bb_piece[piece] &= ~(1ull << start);
+    *bb_color[aci] &= ~(1ull << start);
+    zhash ^= TTable::sq_color_type_64x2x6[start][aci][piece];
 
-        // remove the old piece
-        *bb_piece[piece] &= ~(1ull << start);
-        *bb_color[aci] &= ~(1ull << start);
+    // place the new piece
+    *bb_piece[piece] |= 1ull << end;
+    *bb_color[aci] |= 1ull << end;
+    zhash ^= TTable::sq_color_type_64x2x6[end][aci][piece];
 
-        // place the new piece
-        *bb_piece[piece] |= 1ull << end;
-        *bb_color[aci] |= 1ull << end;
+    // ep capture
+    if (piece == ch_cst::PAWN && end == ep_square)
+    {
+        bb_pawns &= ~(1ull << (end - directions::PAWN_DIR[aci]));
+        *bb_color[1 - aci] &= ~(1ull << (end - directions::PAWN_DIR[aci]));
+        zhash ^= TTable::sq_color_type_64x2x6[end - directions::PAWN_DIR[aci]][1-aci][ch_cst::PAWN];
+    }
 
-        // ep capture
-        if (piece == ch_cst::PAWN && end == ep_square)
+    // update ep square
+    if (piece == ch_cst::PAWN && (start - end) % 16 == 0)
+    {
+        ep_square = start + directions::PAWN_DIR[aci];
+        zhash ^= TTable::ep_file[Compass::file_xindex(ep_square)];
+    } else ep_square = -1;
+
+    if (piece == ch_cst::KING)
+    {
+        // handle castles
+        // kingside castle
+        if (end - start == 2 && castle_rights & 1 << (2 * aci))
         {
-            bb_pawns &= ~(1ull << (end - directions::PAWN_DIR[aci]));
-            *bb_color[1 - aci] &= ~(1ull << (end - directions::PAWN_DIR[aci]));
+            *bb_piece[ch_cst::ROOK] &= ~(1ull << (start | 0b111));
+            *bb_piece[ch_cst::ROOK] |= 1ull << (end - 1);
+            *bb_color[aci] &= ~(1ull << (start | 0b111));
+            *bb_color[aci] |= 1ull << (end - 1);
+            zhash ^= TTable::sq_color_type_64x2x6[start|0b111][aci][ch_cst::ROOK];
+            zhash ^= TTable::sq_color_type_64x2x6[end-1][aci][ch_cst::ROOK];
         }
-
-        // update ep square
-        if (piece == ch_cst::PAWN && (start - end) % 16 == 0)
-            ep_square = start + directions::PAWN_DIR[aci];
-        else ep_square = -1;
-
-        if (piece == ch_cst::KING)
+        // queenside castle
+        else if (end - start == -2 && castle_rights & 2 << (2 * aci))
         {
-            // handle castles
-            // kingside castle
-            if (end - start == 2 && castle_rights & 1 << (2 * aci))
-            {
-                *bb_piece[ch_cst::ROOK] &= ~(1ull << (start | 0b111));
-                *bb_piece[ch_cst::ROOK] |= 1ull << (end - 1);
-                *bb_color[aci] &= ~(1ull << (start | 0b111));
-                *bb_color[aci] |= 1ull << (end - 1);
-            }
-            // queenside castle
-            else if (end - start == -2 && castle_rights & 2 << (2 * aci))
-            {
-                *bb_piece[ch_cst::ROOK] &= ~(1ull << (start & 0b111000));
-                *bb_piece[ch_cst::ROOK] |= 1ull << (end + 1);
-                *bb_color[aci] &= ~(1ull << (start & 0b111000));
-                *bb_color[aci] |= 1ull << (end + 1);
-            }
-            // update castle rights
-            castle_rights &= ~(3 << (2 * aci));
+            *bb_piece[ch_cst::ROOK] &= ~(1ull << (start & 0b111000));
+            *bb_piece[ch_cst::ROOK] |= 1ull << (end + 1);
+            *bb_color[aci] &= ~(1ull << (start & 0b111000));
+            *bb_color[aci] |= 1ull << (end + 1);
+            zhash ^= TTable::sq_color_type_64x2x6[start&0b111000][aci][ch_cst::ROOK];
+            zhash ^= TTable::sq_color_type_64x2x6[end+1][aci][ch_cst::ROOK];
         }
-        else if (piece == ch_cst::ROOK)
+        // update castle rights
+        zhash ^= castle_rights & 1 << 2 * aci ? TTable::castle_rights[aci][0] : 0ll;
+        zhash ^= castle_rights & 2 << 2 * aci ? TTable::castle_rights[aci][1] : 0ll;
+        castle_rights &= ~(3 << (2 * aci));
+    }
+    else if (piece == ch_cst::ROOK)
+    {
+        // queenside rook moved
+        if (castle_rights & 1 << 2 * aci && Compass::rank_yindex(start) == 0)
         {
-            // queenside rook moved
-            if (Compass::rank_yindex(start) == 0)
-                castle_rights &= ~(2 << 2 * aci);
-            // kingside rook moved
-            else if (Compass::rank_yindex(start) == 7)
-                castle_rights &= ~(1 << 2 * aci);
+            zhash ^= TTable::castle_rights[aci][1];
+            castle_rights &= ~(2 << 2 * aci);
+        }
+        // kingside rook moved
+        else if (castle_rights & 1 << 2 * aci && Compass::rank_yindex(start) == 7)
+        {
+            zhash ^= TTable::castle_rights[aci][0];
+            castle_rights &= ~(1 << 2 * aci);
         }
     bb_occ = bb_white | bb_black;
     }
 
     ply_counter++;
     aci = 1 - aci;
+    zhash ^= TTable::black_to_move;
     history.push_back(mv);
 }
 
@@ -159,6 +186,7 @@ void Chess::unmake_move(int undos)
     ply_counter = 0;
     castle_rights = 0b1111;
     build_bitboards();
+    zhash = hash();
     for (int i = 0; i < (int) temp.size() - undos; i++)
     {
         make_move(temp[i]);
