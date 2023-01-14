@@ -15,8 +15,8 @@ public:
     float iterative_search(Chess& ch, SearchLogger& search_log, int depth, bool test = false);
     float nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);
     float quiescence_search(Chess& ch, SearchLogger& search_log, int depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);
-    float eval(Chess& ch, int mate_offset = 0, bool test = false);
-    float eval(Chess& ch, SearchLogger& search_log, int mate_offset = 0, bool test = false);
+    float eval(Chess& ch, std::vector<Move> moves, int mate_offset = 0, bool test = false);
+    float eval(Chess& ch, std::vector<Move> moves, SearchLogger& search_log, int mate_offset = 0, bool test = false);
     std::vector<Move> order_moves_by_piece(Chess& ch, std::vector<Move>);
 private:
     const float var_middlegame_weight = 32;

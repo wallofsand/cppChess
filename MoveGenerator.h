@@ -11,7 +11,7 @@
 class MoveGenerator
 {
 public:
-    MoveGenerator(Chess& ch);
+    inline MoveGenerator(Chess& c) : ch(c) {}
     Chess& ch;
     bool is_game_over(bool test);
     int find_king(int color);

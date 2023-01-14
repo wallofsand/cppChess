@@ -36,7 +36,7 @@ int main()
         chess.print_board(true);
         fmt::print("hash: {} w: {} h: {} c: {}\neval: {} nodes: {} n/s: {:0.0f}\n",
             chess.hash(), TTable::writes, TTable::hits, TTable::clashes,
-            pl.eval(chess), nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f);
+            pl.eval(chess, move_list), nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f);
         if (chess.ply_counter)
             fmt::print("{}{} {}\n", ((chess.ply_counter - 1) / 2) + 1, chess.ply_counter % 2 == 1 ? ". " : ".. ", last_move);
         for (Move mv : move_list)
@@ -85,6 +85,7 @@ int main()
         else if (mv_str == "test")
         {
             mgen.gen_moves(true);
+            pl.eval(chess, move_list, 0, true);
         }
         else if (mv_str == "end") playing = false;
         else for (Move mv : move_list)

@@ -47,6 +47,8 @@ Move Player::get_move(Chess& ch, SearchLogger& search_log, int depth, U64& nodes
  */
 float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& nodes, float alpha, float beta, bool test)
 {
+    MoveGenerator mgen(ch);
+    std::vector<Move> moves = mgen.gen_moves();
     // hash the position and check the t-table for a best move
     U64 zhash = ch.hash();
     // if the stored depth was >= remaining search depth, use that result
@@ -63,7 +65,7 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& node
         TTable::hits--;
         if (!depth)
         {
-            float score = eval(ch, depth, test);
+            float score = eval(ch, moves, depth, test);
             // float score = quiescence_search(ch, search_log, depth, nodes, alpha, beta, test);
             TTable::add_item(zhash, depth, Entry::FLAG_EXACT, score);
             return score;
@@ -71,11 +73,9 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int depth, U64& node
     }
 
     nodes++;
-    MoveGenerator mgen(ch);
-    std::vector<Move> moves = mgen.gen_moves();
-    moves = order_moves_by_piece(ch, moves);
     if (!moves.size())
-        return eval(ch);
+        return eval(ch, moves);
+    moves = order_moves_by_piece(ch, moves);
     for (Move mv : moves)
     {
         ch.make_move(mv);
@@ -99,8 +99,8 @@ float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int depth, 
 {
     nodes++;
     MoveGenerator mgen(ch);
-    float stand_pat = eval(ch, depth, test);
     std::vector<Move> moves = mgen.gen_moves();
+    float stand_pat = eval(ch, moves, depth, test);
     if (!moves.size() || stand_pat > beta)
         return stand_pat;
 
@@ -159,13 +159,12 @@ std::vector<Move> Player::order_moves_by_piece(Chess& ch, std::vector<Move> move
     return ordered;
 }
 
-float Player::eval(Chess& ch, int mate_offset, bool test)
+float Player::eval(Chess& ch, std::vector<Move> moves, int mate_offset, bool test)
 {
     float material_score = 0;
     float positional_score = 0;
     const float MATE_IN_ZERO = 99.99f;
     MoveGenerator eval_gen(ch);
-    std::vector<Move> moves = eval_gen.gen_moves();
 
     // is the game over?
     if (!moves.size())
@@ -205,11 +204,12 @@ float Player::eval(Chess& ch, int mate_offset, bool test)
         }
     }
     float score = material_score + (positional_score / 100.0f);
+    // adjust the eval so the player to move is positive
+    score = ch.aci ? -score : score;
 
     // mobility score:
-    float mobility_score = (float) moves.size();
     ch.aci = 1 - ch.aci;
-    mobility_score -= eval_gen.gen_moves().size();
+    float mobility_score = moves.size() - eval_gen.gen_moves().size();
     ch.aci = 1 - ch.aci;
     mobility_score *= var_mobility_weight;
     score += mobility_score;
@@ -217,8 +217,7 @@ float Player::eval(Chess& ch, int mate_offset, bool test)
     // round to the nearest hundreth
     score = std::round(score * 100) / 100.0f;
     if (test) fmt::print("mobility: {} | score: {} | ratio: {}\n", mobility_score, score, mobility_score/score);
-    // adjust the eval so the player to move is positive
-    return (ch.aci) ? -score : score;
+    return score;
 }
 
 /*
