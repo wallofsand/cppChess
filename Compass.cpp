@@ -3,7 +3,7 @@
 U64 Compass::knight_attacks[64];
 U64 Compass::king_attacks[64];
 uint8_t Compass::rook_rows256x8[256][8];
-int Compass::edge_distance64x8[64][8];
+int8_t Compass::edge_distance64x8[64][8];
 
 Compass::Compass()
 {
@@ -99,8 +99,8 @@ void Compass::compute_edge_distances()
         edge_distance64x8[sq][3] = wstep;
         edge_distance64x8[sq][4] = nstep < estep ? nstep : estep;
         edge_distance64x8[sq][5] = nstep < wstep ? nstep : wstep;
-        edge_distance64x8[sq][6] = sstep < wstep ? sstep : wstep;
-        edge_distance64x8[sq][7] = sstep < estep ? sstep : estep;
+        edge_distance64x8[sq][6] = sstep < estep ? sstep : estep;
+        edge_distance64x8[sq][7] = sstep < wstep ? sstep : wstep;
     }
 }
 
@@ -159,15 +159,15 @@ void Compass::compute_rook_attacks()
 
 void Compass::compute_king_attacks()
 {
-    for (int sq = 0; sq < 64; sq++)
+    for (int king_sq = 0; king_sq < 64; king_sq++)
     {
-        king_attacks[sq] = 0b0;
+        king_attacks[king_sq] = 0ull;
         for (int dir_idx = get_dir_start_index(ch_cst::KING); dir_idx < get_dir_end_index(ch_cst::KING); dir_idx++)
         {
             int dir = directions::DIRS[dir_idx];
-            if (edge_distance64x8[sq][dir_idx] == 0)
+            if (edge_distance64x8[king_sq][dir_idx] == 0)
                 continue;
-            king_attacks[sq] |= 1ull << (sq + dir);
+            king_attacks[king_sq] |= 1ull << (king_sq + dir);
         }
     }
 }

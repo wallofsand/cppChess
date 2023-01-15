@@ -2,17 +2,17 @@
 
 MyRNG TTable::rng;
 std::uniform_int_distribution<U64> TTable::U64_dist;
-U64 TTable::black_to_move, TTable::hits, TTable::clashes, TTable::writes;
+U64 TTable::black_to_move, TTable::hits, TTable::collisions, TTable::writes;
 U64 TTable::sq_color_type_64x2x6[64][2][6];
 U64 TTable::castle_rights[2][2];
 U64 TTable::ep_file[8];
-int TTable::bin[DEFAULT_SIZE];
+// int TTable::bin[DEFAULT_SIZE];
 Entry TTable::table[TTable::DEFAULT_SIZE];
 
 TTable::TTable()
 {
     TTable::hits = 0;
-    TTable::clashes = 0;
+    TTable::collisions = 0;
     TTable::writes = 0;
     // e.g. keep one global instance (per thread)
     TTable::rng.seed(seed_val);
@@ -29,40 +29,66 @@ TTable::TTable()
                 TTable::sq_color_type_64x2x6[sq][color][type] = U64_dist(rng);
 }
 
-void TTable::add_item(U64 key, int depth, int flag, float score)
+/*
+ * Method to calculate how full the transposition table is
+ * @return the percent of Entries in the t-table that have been written too
+ */
+const float TTable::fill_ratio()
 {
-    Entry prev_entry = read(key);
-    if (depth < 3 || prev_entry.flag && prev_entry.key == key && prev_entry.depth >= depth)
-        return;
-    if (prev_entry.flag && prev_entry.key != key)
+    float num_elements = 0;
+    for (Entry e : table)
     {
-        clashes++;
-        bin[std::abs((int) key % DEFAULT_SIZE)]++;
+        if (e.flag) num_elements++;
     }
-    table[std::abs((int) key % DEFAULT_SIZE)] = Entry(key, depth, flag, score);
+    return num_elements / DEFAULT_SIZE;
+}
+
+const int TTable::hash_index(U64 key)
+{
+    return std::abs((int) key % DEFAULT_SIZE);
+}
+
+void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score)
+{
+    int index = hash_index(key);
+    // if hash_index(key) is full, find the next empty index
+    while (read(index).flag != 0 && read(index).key != key)
+        index++;
+    // record a collision
+    if (index != hash_index(key))
+        collisions++;
+    // if the position is already searched to a greater depth, do not write
+    if (read(index).flag && read(index).depth >= depth)
+        return;
+    table[index] = Entry(key, depth, flag, score);
     writes++;
 }
 
-Entry TTable::read(U64 key)
+const Entry TTable::probe(U64 key)
 {
-    return table[std::abs((int) key % DEFAULT_SIZE)];
+    int index = hash_index(key);
+    while (read(index).flag && read(index).key != key)
+        index++;
+    return read(index);
 }
 
-void TTable::rand_test(int n)
+const Entry TTable::read(U64 key)
 {
-    for (int i = 0; i < n; i++)
-    {
-        U64 val = U64_dist(rng);
-        bin[std::abs((int) val % DEFAULT_SIZE)]++;
-    }
-    float avg;
-    float dev;
-    for (int idx = 0; idx < DEFAULT_SIZE; idx++)
-    {
-        // fmt::print("{}: {}\t|", idx, bin[idx]);
-        avg = (avg + bin[idx]) / 2.0f;
-        dev = (dev + abs(avg - bin[idx])) / 2.0f;
-    }
-    fmt::print("avg: {}\ndev: {}\n", avg, dev);
-    fmt::print("{}\n", U64_dist(rng));
+    return table[hash_index(key)];
 }
+
+// void TTable::rand_test(int n)
+// {
+//     for (int i = 0; i < n; i++)
+//         bin[hash_index(U64_dist(rng))]++;
+//     float avg = 0;
+//     float dev = 0;
+//     for (int idx = 0; idx < DEFAULT_SIZE; idx++)
+//     {
+//         // fmt::print("{}: {}\t|", idx, bin[idx]);
+//         avg = (avg + bin[idx]) / 2.0f;
+//         dev = (dev + abs(avg - bin[idx])) / 2.0f;
+//     }
+//     fmt::print("avg: {}\ndev: {}\n", avg, dev);
+//     fmt::print("{}\n", U64_dist(rng));
+// }

@@ -1,8 +1,6 @@
 #include "Player.h"
 #include <iostream>
 
-using namespace ch_cst;
-
 U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth);
 U64 perft(Chess& ch, int depth, SearchLogger& perft_log);
 
@@ -16,43 +14,48 @@ const std::string perft_results[] = {
 int main()
 {
     Compass();
-    // TTable();
-    Chess chess;
+    TTable();
+    Chess ch;
     Player pl;
 
-    // chess.make_move(Move(Square::c2, Square::c3));
-    // chess.make_move(Move(Square::a7, Square::a6));
-    // chess.make_move(Move(Square::d1, Square::a4));
+    // ch.make_move(Move(Square::c2, Square::c3));
+    // ch.make_move(Move(Square::a7, Square::a6));
+    // ch.make_move(Move(Square::d1, Square::a4));
 
     bool playing = true;
-    std::string last_move = "";
-    MoveGenerator mgen(chess);
+    int human = 2;
+    std::string last_move = "test";
     U64 nodes = 0;
     Timer game_timer;
     while (playing)
     {
+        MoveGenerator mgen(ch);
         std::vector<Move> move_list = mgen.gen_moves();
-        fmt::print("\n");
-        chess.print_board(true);
-        fmt::print("hash: {} w: {} h: {} c: {}\neval: {} nodes: {} n/s: {:0.0f}\n",
-            chess.hash(), TTable::writes, TTable::hits, TTable::clashes,
-            pl.eval(chess, move_list), nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f);
-        if (chess.ply_counter)
-            fmt::print("{}{} {}\n", ((chess.ply_counter - 1) / 2) + 1, chess.ply_counter % 2 == 1 ? ". " : ".. ", last_move);
-        for (Move mv : move_list)
-            fmt::print("{} ", mgen.move_san(mv));
-        fmt::print("\n{} ", chess.aci ? "Black to move:" :"White to move: ");
+        if (ch.aci == human || (human != 0 && human != 1))
+        {
+            fmt::print("\n");
+            ch.print_board(true);
+            fmt::print("hash: {:0>16x}\nwrites: {} hits: {} collisions: {} fill: {:0.2f}\neval: {} nodes: {} n/s: {:0.0f}\n",
+                ch.zhash,
+                TTable::writes, TTable::hits, TTable::collisions, TTable::fill_ratio(),
+                pl.eval(ch, move_list), nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f);
+            if (ch.ply_counter)
+                fmt::print("{}{} {}\n", ((ch.ply_counter - 1) / 2) + 1, ch.ply_counter % 2 == 1 ? ". " : ".. ", last_move);
+            for (Move mv : move_list)
+                fmt::print("{} ", mgen.move_san(mv));
+            fmt::print("\n{} ", ch.aci ? "Black to move: " : "White to move: ");
+        }
 
         game_timer.reset();
-        std::string mv_str = "";
-        std::cin >> mv_str;
+        std::string mv_str = "3";
+        if (ch.aci == human) std::cin >> mv_str;
 
-        if (mv_str.substr(0, 2) == "um" && chess.ply_counter > 0)
+        if (mv_str.substr(0, 2) == "um" && ch.ply_counter > 0)
         {
             int undos = 0;
-            while (undos < 1 || undos > chess.ply_counter)
+            while (undos < 1 || undos > ch.ply_counter)
                 std::cin >> undos;
-            chess.unmake_move(undos);
+            ch.unmake_move(undos);
         }
         else if (mv_str.length() == 1)
         {
@@ -60,9 +63,9 @@ int main()
             if (depth < 0 || depth > 9) continue;
             SearchLogger sl("search_log", 1);
             game_timer.reset();
-            Move engine_move = pl.get_move(chess, sl, depth, nodes, false);
+            Move engine_move = pl.get_move(ch, sl, depth, nodes, false);
             last_move = mgen.move_san(engine_move);
-            chess.make_move(engine_move);
+            ch.make_move(engine_move);
         }
         else if (mv_str == "aim")
         {
@@ -71,36 +74,36 @@ int main()
                 std::cin >> depth;
             SearchLogger sl("search_log", 1);
             game_timer.reset();
-            Move engine_move = pl.get_move(chess, sl, depth, nodes, false);
+            Move engine_move = pl.get_move(ch, sl, depth, nodes, false);
             last_move = mgen.move_san(engine_move);
-            chess.make_move(engine_move);
+            ch.make_move(engine_move);
         }
         else if (mv_str == "perft")
         {
             int depth = 0;
             while (depth < 1)
                 std::cin >> depth;
-            perft_root(chess, depth, chess.ply_counter == 0, 1);
+            perft_root(ch, depth, ch.ply_counter == 0, 1);
         }
         else if (mv_str == "test")
         {
             mgen.gen_moves(true);
-            // pl.eval(chess, move_list, 0, true);
+            // pl.eval(ch, move_list, 0, true);
         }
         else if (mv_str == "end") playing = false;
         else for (Move mv : move_list)
             if (mv_str == mgen.move_san(mv))
             {
                 last_move = mgen.move_san(mv);
-                chess.make_move(mv);
+                ch.make_move(mv, true );
                 break;
             }
         if (mgen.is_game_over(false)) playing = false;
-        if (!playing) chess.print_board(true);
+        if (!playing) ch.print_board(true);
     }
 
-    for (int idx = 0; idx < TTable::DEFAULT_SIZE; idx++)
-        if (TTable::bin[idx]) fmt::print("{}: {}, ", idx, TTable::bin[idx]);
+    // for (int idx = 0; idx < TTable::DEFAULT_SIZE; idx++)
+    //     if (TTable::bin[idx]) fmt::print("{}: {}, ", idx, TTable::bin[idx]);
 
     return 0;
 }
@@ -184,7 +187,7 @@ U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth)
 
 /*
  * Performance test recursion method
- * @param chess the current position to search
+ * @param ch the current position to search
  * @param depth number of ply remaining in the search
  */
 U64 perft(Chess& ch, int depth, SearchLogger& perft_log)

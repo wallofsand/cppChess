@@ -439,7 +439,7 @@ std::vector<Move> MoveGenerator::gen_bishop_piece_moves(int start, bool test)
     ts |= BB::SoWe_attacks(ss, ~ch.bb_occ);
     ts &= *ch.bb_color[1-ch.aci] | ~ch.bb_occ;
 
-    if (test) BB::print_U64(ts, "bishop targets");
+    if (test) BB::print_U64(ch.bb_occ, "occupancy");
 
     while (ts)
     {

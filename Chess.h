@@ -12,6 +12,7 @@ class Chess
 {
 public:
     Chess();
+    Chess(Chess& ch);
     int aci;
     int ep_square;
     U64 bb_white;
@@ -31,11 +32,11 @@ public:
     const int color_at(int sq);
     // bl:QuKi wh:QuKi
     int castle_rights;
-    void make_move(Move mv);
+    void make_move(Move mv, bool test = false);
     void unmake_move(int undos);
     const void print_board(bool fmt = false);
     void build_bitboards();
-    const U64 hash();
+    void hash();
     U64 zhash;
 private:
     int size;

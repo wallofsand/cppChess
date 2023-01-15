@@ -66,7 +66,7 @@ public:
     static U64 knight_attacks[64];
     static U64 king_attacks[64];
     static uint8_t rook_rows256x8[256][8];
-    static int edge_distance64x8[64][8];
+    static int8_t edge_distance64x8[64][8];
     const static U64 build_ray(int sq, int dir_index);
     const static U64 build_ray(int sq[2]);
     const static U64 ray_square(int start, int end, U64 empty = 0ull);
