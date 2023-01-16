@@ -15,7 +15,7 @@ void MoveGenerator::init(bool test)
  */
 bool MoveGenerator::is_game_over(bool test)
 {
-    return gen_moves().size() == 0;
+    return gen_moves().size() == 0 || ch.repetitions() > 2;
 }
 
 void MoveGenerator::checks_exist(bool test)
@@ -558,6 +558,13 @@ std::string MoveGenerator::move_san(Move& mv)
     }
     san += square_string[end];
 
+    // promotions
+    if (mv.promote())
+    {
+        san += "=";
+        san += piece_char[mv.promote()];
+    }
+
     // castling
     if (piece == KING && (start - end == 2 || start - end == -2))
     {
@@ -567,10 +574,6 @@ std::string MoveGenerator::move_san(Move& mv)
         if (start - end == 2)
             san += "-O";
     }
-
-    // promotions
-    if (mv.promote())
-        san += "=" + piece_char[mv.promote()];
 
     // check
     ch.make_move(mv);

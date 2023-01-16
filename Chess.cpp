@@ -119,7 +119,7 @@ void Chess::make_move(Move mv, bool test)
     zhash ^= TTable::sq_color_type_64x2x6[start][aci][piece];
 
     // place the moving piece
-    *bb_piece[piece] |= 1ull << end;
+    *bb_piece[mv.promote() ? mv.promote() : piece] |= 1ull << end;
     *bb_color[aci] |= 1ull << end;
     zhash ^= TTable::sq_color_type_64x2x6[end][aci][piece];
 
@@ -138,6 +138,7 @@ void Chess::make_move(Move mv, bool test)
         zhash ^= TTable::ep_file[Compass::file_xindex(ep_square)];
     } else ep_square = -1;
 
+    // castles, disable castle rights
     if (piece == ch_cst::KING)
     {
         // handle castles
@@ -205,6 +206,18 @@ void Chess::unmake_move(int undos)
     {
         make_move(temp[i]);
     }
+}
+
+const int Chess::repetitions()
+{
+    int count = 0;
+    Chess test;
+    for (Move m : history)
+    {
+        count += (zhash == test.zhash);
+        test.make_move(m);
+    }
+    return count;
 }
 
 const void Chess::print_board(bool fmt)

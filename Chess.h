@@ -1,9 +1,9 @@
 #ifndef CHESS_H
 #define CHESS_H
 
-#include "Move.h"
 #include "Bitboard.h"
 #include "Compass.h"
+#include "Move.h"
 #include "TTable.h"
 #include <string>
 #include <vector>
@@ -35,6 +35,7 @@ public:
     void make_move(Move mv, bool test = false);
     void unmake_move(int undos);
     const void print_board(bool fmt = false);
+    const int repetitions();
     void build_bitboards();
     void hash();
     U64 zhash;

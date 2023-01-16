@@ -11,12 +11,14 @@ typedef std::mt19937_64 MyRNG;
 
 struct Entry
 {
-    Entry() : key(0), depth(0), flag(0), score(0) {}
-    Entry(U64 k, int8_t d, uint8_t f, float score) : key(k), depth(d), flag(f), score(score) {}
+    Entry() : key(0), depth(0), flag(0), score(0), best(Move(0, 0)) {}
+    Entry(U64 k, int8_t d, uint8_t f, float score) : key(k), depth(d), flag(f), score(score), best(Move(0, 0)) {}
+    Entry(U64 k, int8_t d, uint8_t f, float score, Move& move) : key(k), depth(d), flag(f), score(score), best(move) {}
     U64 key;
     int8_t depth;
     uint8_t flag;
     float score;
+    Move best;
     inline const std::string to_string()
     { return fmt::format("key: {} depth: {} flag: {} score: {}",
         key, depth, flag, score); };
@@ -51,7 +53,7 @@ public:
     static U64 hits, collisions, writes;
     static const float fill_ratio();
     static const int hash_index(U64 key);
-    static void add_item(U64 key, int8_t depth, uint8_t flag, float score);
+    static void add_item(U64 key, int8_t depth, uint8_t flag, float score, Move& move = Move(0, 0));
     static const Entry read(U64 key);
     static const Entry probe(U64 key);
     // static void rand_test(int n);

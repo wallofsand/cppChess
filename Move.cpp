@@ -1,5 +1,4 @@
 #include "Move.h"
-#include "Compass.h"
 
 Move::Move(int start_sq, int end_sq)
 {
@@ -34,6 +33,16 @@ const int Move::promote()
 const std::string Move::to_string()
 {
     return Compass::string_from_square(start()) + Compass::string_from_square(end());
+}
+
+const bool operator==(Move& m0, Move& m1)
+{
+    return (m0.start() == m1.start()) && (m0.end() == m1.end()) && (m0.promote() == m1.promote());
+}
+
+const bool operator!=(Move& m0, Move& m1)
+{
+    return !(m0 == m1);
 }
 
 const std::ostream& operator<<(std::ostream& outS, Move& mv)

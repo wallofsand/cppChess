@@ -1,7 +1,7 @@
 #ifndef COMPASS_H
 #define COMPASS_H
 
-#include "Chess.h"
+#include "Bitboard.h"
 #include <iostream>
 #include <string>
 
