@@ -8,7 +8,6 @@ U64 TTable::castle_rights[2][2];
 U64 TTable::ep_file[8];
 // int TTable::bin[DEFAULT_SIZE];
 Entry TTable::table[TTable::DEFAULT_SIZE];
-Move TTable::null_move(0, 0);
 
 TTable::TTable()
 {
@@ -49,7 +48,7 @@ const int TTable::hash_index(U64 key)
     return std::abs((int) key % DEFAULT_SIZE);
 }
 
-void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, Move& move)
+void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv)
 {
     int index = hash_index(key);
     // if hash_index(key) is full, find the next empty index
@@ -61,7 +60,7 @@ void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, Move& mo
     // if the position is already searched to a greater depth, do not write
     if (depth < -6 || read(index).flag && read(index).depth >= depth)
         return;
-    table[index] = Entry(key, depth, flag, score, move);
+    table[index] = Entry(key, depth, flag, score, mv);
     writes++;
 }
 

@@ -4,21 +4,15 @@
 #include "Compass.h"
 #include <iostream>
 
-class Move
+typedef uint32_t move;
+
+namespace Move
 {
-public:
-    Move(int s, int e);
-    Move(int s, int e, int p);
-    Move(const Move& m);
-
-    uint32_t data;
-
-    const friend bool operator!=(Move& m0, Move& m1);
-    const friend std::ostream& operator<<(std::ostream& outS, Move& mv);
-    const int start();
-    const int end();
-    const int promote();
-    const std::string to_string();
+    move build_move(int s, int e, int p = 0);
+    const int start(move m);
+    const int end(move m);
+    const int promote(move m);
+    const std::string to_string(move m);
 };
 
 #endif

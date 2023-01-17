@@ -15,19 +15,19 @@ public:
     Chess& ch;
     bool is_game_over(bool test);
     int find_king(int color);
-    std::vector<Move> gen_moves(bool test = false);
-    std::string move_san(Move& mv);
+    std::vector<move> gen_moves(bool test = false);
+    std::string move_san(move mv);
     void checks_exist(bool test);
     void init(bool test);
     bool in_check = false;
     bool in_double_check = false;
     U64 gen_op_attack_mask(bool test);
 private:
-    std::vector<Move> gen_pawn_moves(bool test);
-    std::vector<Move> gen_knight_piece_moves(int sq, bool test);
-    std::vector<Move> gen_bishop_piece_moves(int sq, bool test);
-    std::vector<Move> gen_rook_piece_moves(int sq, bool test);
-    std::vector<Move> gen_king_piece_moves(int sq, bool test);
+    std::vector<move> gen_pawn_moves(bool test);
+    std::vector<move> gen_knight_piece_moves(int sq, bool test);
+    std::vector<move> gen_bishop_piece_moves(int sq, bool test);
+    std::vector<move> gen_rook_piece_moves(int sq, bool test);
+    std::vector<move> gen_king_piece_moves(int sq, bool test);
     void find_pins(bool test);
     void check_method();
     U64 check_ray;

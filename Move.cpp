@@ -1,51 +1,27 @@
 #include "Move.h"
 
-Move::Move(int start_sq, int end_sq)
+move Move::build_move(int s, int e, int p)
 {
-    data = end_sq << 6 | start_sq;
+    return p << 12 | e << 6 | s;
 }
 
-Move::Move(int start_sq, int end_sq, int type)
+const int Move::start(move m)
 {
-    data = type << 12 | end_sq << 6 | start_sq;
+    return m & 63;
 }
 
-Move::Move(const Move& m)
+const int Move::end(move m)
 {
-    data = m.data;
+    return m >> 6 & 63;
 }
 
-const int Move::start()
+const int Move::promote(move m)
 {
-    return data & 63;
+    return m >> 12;
 }
 
-const int Move::end()
+const std::string Move::to_string(move m)
 {
-    return data >> 6 & 63;
-}
-
-const int Move::promote()
-{
-    return data >> 12;
-}
-
-const std::string Move::to_string()
-{
-    return Compass::string_from_square(start()) + Compass::string_from_square(end());
-}
-
-const bool operator==(Move& m0, Move& m1)
-{
-    return (m0.start() == m1.start()) && (m0.end() == m1.end()) && (m0.promote() == m1.promote());
-}
-
-const bool operator!=(Move& m0, Move& m1)
-{
-    return !(m0 == m1);
-}
-
-const std::ostream& operator<<(std::ostream& outS, Move& mv)
-{
-    return outS << mv.to_string();
+    return Compass::string_from_square(start(m)) + Compass::string_from_square(end(m))
+        + (promote(m) ? "=" + ch_cst::piece_char[promote(m)] : "");
 }

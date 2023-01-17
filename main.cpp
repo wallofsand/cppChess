@@ -35,7 +35,7 @@ int main()
     while (playing)
     {
         MoveGenerator mgen(ch);
-        std::vector<Move> move_list = mgen.gen_moves();
+        std::vector<move> move_list = mgen.gen_moves();
 
         // print ui
         if (ch.aci == human || human == -1 || human == 2)
@@ -50,7 +50,7 @@ int main()
                 ch.repetitions(), nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f);
             if (ch.ply_counter)
                 fmt::print("{}{} {}\n", ((ch.ply_counter - 1) / 2) + 1, ch.ply_counter % 2 == 1 ? ". " : ".. ", last_move);
-            for (Move mv : move_list)
+            for (move mv : move_list)
                 fmt::print("{} ", mgen.move_san(mv));
             fmt::print("\n{} ", ch.aci ? "Black to move: " : "White to move: ");
         }
@@ -79,7 +79,7 @@ int main()
             int depth = (int) str[0] - 48;
             if (depth < 1 || depth > 9) continue;
             game_timer.reset();
-            Move engine_move = players[ch.aci].iterative_search(ch, depth, nodes, false);
+            move engine_move = players[ch.aci].iterative_search(ch, depth, nodes, false);
             last_move = mgen.move_san(engine_move);
             ch.make_move(engine_move);
         }
@@ -89,7 +89,7 @@ int main()
             while (depth < 1 || depth > 9)
                 std::cin >> depth;
             game_timer.reset();
-            Move engine_move = players[ch.aci].iterative_search(ch, depth, nodes, false);
+            move engine_move = players[ch.aci].iterative_search(ch, depth, nodes, false);
             last_move = mgen.move_san(engine_move);
             ch.make_move(engine_move);
         }
@@ -108,7 +108,7 @@ int main()
         }
         else if (str == "end")
             playing = false;
-        else for (Move mv : move_list)
+        else for (move mv : move_list)
             if (str == mgen.move_san(mv))
             {
                 last_move = mgen.move_san(mv);
@@ -155,14 +155,14 @@ U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth)
 
     // main test loop
     MoveGenerator perft_gen(ch);
-    std::vector<Move> moves = perft_gen.gen_moves();
+    std::vector<move> moves = perft_gen.gen_moves();
     for (int mvidx = 0; mvidx < (int) moves.size(); mvidx++)
     {
-        Move mv = moves.at(mvidx);
-        std::cout << fmt::format("{}/{}:\t{} ", mvidx + 1, moves.size(), mv.to_string());
+        move mv = moves.at(mvidx);
+        std::cout << fmt::format("{}/{}:\t{} ", mvidx + 1, moves.size(), Move::to_string(mv));
         if (depth > perft_log.depth)
         {
-            perft_log.buffer = fmt::format("{}/{}:\t{} ", mvidx + 1, moves.size(), mv.to_string());
+            perft_log.buffer = fmt::format("{}/{}:\t{} ", mvidx + 1, moves.size(), Move::to_string(mv));
         }
         ch.make_move(mv);
         U64 i = perft(ch, depth - 1, perft_log);
@@ -217,8 +217,8 @@ U64 perft(Chess& ch, int depth, SearchLogger& perft_log)
         return 1;
     U64 nodes = 0;
     MoveGenerator perft_gen(ch);
-    std::vector<Move> moves = perft_gen.gen_moves();
-    for (Move mv : moves)
+    std::vector<move> moves = perft_gen.gen_moves();
+    for (move mv : moves)
     {
         // std::cout << mv << std::endl;
         if (depth > perft_log.depth)

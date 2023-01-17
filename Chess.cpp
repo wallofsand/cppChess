@@ -7,14 +7,14 @@ Chess::Chess()
     ep_square = -1;
     castle_rights = 0b1111;
     build_bitboards();
-    std::vector<Move> history;
+    std::vector<move> history;
     hash();
 }
 
 Chess::Chess(Chess& _chess)
 {
     Chess();
-    for (Move mv : _chess.history)
+    for (move mv : _chess.history)
     {
         make_move(mv);
     }
@@ -95,10 +95,10 @@ const int Chess::color_at(int sq)
     return -1;
 }
 
-void Chess::make_move(Move mv, bool test)
+void Chess::make_move(move mv, bool test)
 {
-    int start = mv.start();
-    int end = mv.end();
+    int start = Move::start(mv);
+    int end = Move::end(mv);
     if (ep_square >= 0) zhash ^= TTable::ep_file[Compass::file_xindex(ep_square)];
 
     // Captured piece
@@ -119,7 +119,7 @@ void Chess::make_move(Move mv, bool test)
     zhash ^= TTable::sq_color_type_64x2x6[start][aci][piece];
 
     // place the moving piece
-    *bb_piece[mv.promote() ? mv.promote() : piece] |= 1ull << end;
+    *bb_piece[Move::promote(mv) ? Move::promote(mv) : piece] |= 1ull << end;
     *bb_color[aci] |= 1ull << end;
     zhash ^= TTable::sq_color_type_64x2x6[end][aci][piece];
 
@@ -192,8 +192,8 @@ void Chess::make_move(Move mv, bool test)
 
 void Chess::unmake_move(int undos)
 {
-    std::vector<Move> temp;
-    for (Move m : history)
+    std::vector<move> temp;
+    for (move m : history)
         temp.push_back(m);
     history.clear();
     aci = 0;
@@ -212,7 +212,7 @@ const int Chess::repetitions()
 {
     int count = 0;
     Chess test;
-    for (Move m : history)
+    for (move m : history)
     {
         count += (zhash == test.zhash);
         test.make_move(m);

@@ -9,27 +9,27 @@
  * @param test true if special debug information should be printed
  * @return the best move found in the search
  */
-Move Player::iterative_search(Chess& ch, int8_t depth, U64& nodes, bool test)
+move Player::iterative_search(Chess& ch, int8_t depth, U64& nodes, bool test)
 {
     SearchLogger search_log("iter_search_log", 1);
     depth = std::max((int) depth, 1);
     MoveGenerator mgen(ch);
     float high_score = -99.99f;
-    std::vector<Move> moves = mgen.gen_moves();
+    std::vector<move> moves = mgen.gen_moves();
     if (moves.size() == 1)
         return moves.at(0);
     moves = order_moves_by_piece(ch, moves);
-    Move best_move = moves.at(0);
+    move best_move = 0;
     nodes = 0;
 
     // Iterative search loop
     for (int8_t iter = 1; iter <= depth; iter++)
     {
         int best_idx = 0;
-        std::vector<Move> temp;
+        std::vector<move> temp;
         for (int idx = 0; idx < (int) moves.size(); idx++)
         {
-            Move m = moves.at(idx);
+            move m = moves.at(idx);
             ch.make_move(m);
             float score = -nega_max(ch, search_log, iter - 1, nodes, -99.99f, -high_score, test);
             temp.insert((score > high_score ? temp.begin() : temp.end()), m);
@@ -51,22 +51,22 @@ Move Player::iterative_search(Chess& ch, int8_t depth, U64& nodes, bool test)
             temp.push_back(moves.at(idx));
         }
         moves.clear();
-        for (Move m : temp)
+        for (move m : temp)
             moves.push_back(m);
     }
     return best_move;
 }
 
-Move Player::get_move(Chess& ch, SearchLogger& search_log, int8_t depth, U64& nodes, bool test)
+move Player::get_move(Chess& ch, SearchLogger& search_log, int8_t depth, U64& nodes, bool test)
 {
     depth = std::max((int) depth, 1);
     MoveGenerator mgen(ch);
     float high_score = -99.99f;
-    std::vector<Move> moves = mgen.gen_moves();
+    std::vector<move> moves = mgen.gen_moves();
     if (moves.size() == 1)
         return moves.at(0);
     moves = order_moves_by_piece(ch, moves);
-    Move best_move = moves.at(0);
+    move best_move = 0;
     nodes = 0;
 
     // hash the position and check the t-table for a best move
@@ -78,7 +78,7 @@ Move Player::get_move(Chess& ch, SearchLogger& search_log, int8_t depth, U64& no
         return prev.best;
     }
 
-    for (Move m : moves)
+    for (move m : moves)
     {
         ch.make_move(m);
         float score = -nega_max(ch, search_log, depth - 1, nodes, -99.99f, -high_score, test);
@@ -101,7 +101,7 @@ Move Player::get_move(Chess& ch, SearchLogger& search_log, int8_t depth, U64& no
 float Player::nega_max(Chess& ch, SearchLogger& search_log, int8_t depth, U64& nodes, float alpha, float beta, bool test)
 {
     MoveGenerator mgen(ch);
-    std::vector<Move> moves = mgen.gen_moves();
+    std::vector<move> moves = mgen.gen_moves();
     // check the t-table for a best move
     if (ch.repetitions() > 2)
         return 0.0f;
@@ -131,8 +131,8 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int8_t depth, U64& n
 
     nodes++;
     moves = order_moves_by_piece(ch, moves);
-    Move best_move = moves.at(0);
-    for (Move mv : moves)
+    move best_move = 0;
+    for (move mv : moves)
     {
         ch.make_move(mv);
         float score = -nega_max(ch, search_log, depth - 1, nodes, -beta, -alpha, test);
@@ -154,7 +154,7 @@ float Player::nega_max(Chess& ch, SearchLogger& search_log, int8_t depth, U64& n
 float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int8_t depth, U64& nodes, float alpha, float beta, bool test)
 {
     MoveGenerator mgen(ch);
-    std::vector<Move> moves = mgen.gen_moves();
+    std::vector<move> moves = mgen.gen_moves();
     float stand_pat = eval(ch, moves, depth, test);
     if (!moves.size() || stand_pat > beta)
         return stand_pat;
@@ -183,9 +183,9 @@ float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int8_t dept
     alpha = std::max(alpha, stand_pat);
     moves = order_moves_by_piece(ch, moves);
     // make captures until no captures remain, then eval
-    for (Move mv : moves)
+    for (move mv : moves)
     {
-        if (!BB::contains_square(ch.bb_occ, mv.end()) && mv.end() != ch.ep_square)
+        if (!BB::contains_square(ch.bb_occ, Move::end(mv)) && Move::end(mv) != ch.ep_square)
             continue;
         nodes++;
         ch.make_move(mv);
@@ -201,14 +201,14 @@ float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int8_t dept
     return alpha;
 }
 
-std::vector<Move> Player::order_moves_by_piece(Chess& ch, std::vector<Move> moves)
+std::vector<move> Player::order_moves_by_piece(Chess& ch, std::vector<move> moves)
 {
-    std::vector<Move> ordered;
+    std::vector<move> ordered;
     for (int piece = ch_cst::KING; piece >= ch_cst::PAWN; piece--)
     {
-        for (Move mv: moves)
+        for (move mv: moves)
         {
-            if (!BB::contains_square(*ch.bb_piece[piece], mv.start()))
+            if (!BB::contains_square(*ch.bb_piece[piece], Move::start(mv)))
                 continue;
             ordered.push_back(mv);
         }
@@ -216,7 +216,7 @@ std::vector<Move> Player::order_moves_by_piece(Chess& ch, std::vector<Move> move
     return ordered;
 }
 
-float Player::eval(Chess& ch, std::vector<Move> moves, int8_t mate_offset, bool test)
+float Player::eval(Chess& ch, std::vector<move> moves, int8_t mate_offset, bool test)
 {
     float material_score = 0;
     float positional_score = 0;
