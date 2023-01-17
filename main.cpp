@@ -64,7 +64,7 @@ int main()
 
         // get input
         game_timer.reset();
-        std::string str = "2";
+        std::string str = "3";
         if (ch.aci == human || human == -1) std::cin >> str;
         // handle input
         if (str.substr(0, 2) == "um" && ch.ply_counter > 0)
@@ -104,7 +104,10 @@ int main()
             fmt::print("{}", ch.repetitions());
         else if (str == "test")
         {
-            engine.iterative_search(ch, 1, nodes, true);
+            int sq = -1;
+            while (sq < 0 || sq > 63)
+                std::cin >> sq;
+            BB::print_U64(Compass::rank_attacks(ch.bb_occ, sq), std::to_string(sq));
         }
         else if (str == "end")
             playing = false;

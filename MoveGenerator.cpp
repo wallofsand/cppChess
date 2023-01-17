@@ -120,39 +120,6 @@ void MoveGenerator::find_pins(bool test)
     U64 en_bishops = (ch.bb_bishops | ch.bb_queens) & *ch.bb_color[1 - ch.aci];
     U64 king = ch.bb_kings & *ch.bb_color[ch.aci];
 
-    // // North
-    // U64 ray = BB::nort_attacks(king, ~*ch.bb_color[1 - ch.aci]);
-    // if (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
-    // // East
-    // ray = BB::east_attacks(king, ~*ch.bb_color[1 - ch.aci]);
-    // if (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
-    // // South
-    // ray = BB::sout_attacks(king, ~*ch.bb_color[1 - ch.aci]);
-    // if (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
-    // // West
-    // ray = BB::west_attacks(king, ~*ch.bb_color[1 - ch.aci]);
-    // if (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
-    // // NorthEast
-    // ray = BB::NoEa_attacks(king, ~*ch.bb_color[1 - ch.aci]);
-    // if (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
-    // // NorthWest
-    // ray = BB::NoWe_attacks(king, ~*ch.bb_color[1 - ch.aci]);
-    // if (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
-    // // SouthEast
-    // ray = BB::SoEa_attacks(king, ~*ch.bb_color[1 - ch.aci]);
-    // if (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
-    // // SouthWest
-    // ray = BB::SoWe_attacks(king, ~*ch.bb_color[1 - ch.aci]);
-    // if (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
-    //     pinned_pieces |= ray & *ch.bb_color[ch.aci];
-
     // North
     U64 ray = BB::nort_attacks(king, ~*ch.bb_color[1 - ch.aci]);
     pinned_pieces |= (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.aci]) == 1)
@@ -471,6 +438,7 @@ std::vector<move> MoveGenerator::gen_rook_piece_moves(int start, bool test)
     ts |= BB::west_attacks(ss, ~ch.bb_occ);
     ts &= *ch.bb_color[1-ch.aci] | ~ch.bb_occ;
 
+    // ignore pinned pieces
     while (ts)
     {
         // x & -x masks the LS1B

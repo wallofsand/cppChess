@@ -309,6 +309,17 @@ const std::string BB::build_binary_string(U64 bb)
 }
 
 /*
+ * Flip a bitboard vertically about the centre ranks.
+ * Rank 1 is mapped to rank 8 and vice versa.
+ * @param x any bitboard
+ * @return bitboard x flipped vertically
+ */
+U64 BB::flip_vertical(U64 bb)
+{
+   return _byteswap_uint64(bb);
+}
+
+/*
  * method to print a 64 character string as a chessboard
  * Little-Endian, a1 is the first char of the string
  * @param bbstr any string of length 64

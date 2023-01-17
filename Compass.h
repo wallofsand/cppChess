@@ -65,8 +65,9 @@ public:
     Compass();
     static U64 knight_attacks[64];
     static U64 king_attacks[64];
-    static uint8_t rook_rows256x8[256][8];
-    static int8_t edge_distance64x8[64][8];
+    static uint8_t first_rank_attacks_64x8[64*8]; // 64 * 8 = 512 Bytes = 1/2 KByte
+    const static U64 rank_attacks(U64 occ, int sq);
+    static int8_t edge_distance_64x8[64][8];
     const static U64 build_ray(int sq, int dir_index);
     const static U64 build_ray(int sq[2]);
     const static U64 ray_square(int start, int end, U64 empty = 0ull);
@@ -79,7 +80,7 @@ public:
 private:
     static void compute_edge_distances();
     static void compute_knight_attacks();
-    static void compute_rook_attacks();
+    static void compute_rank_attacks();
     static void compute_king_attacks();
 };
 
