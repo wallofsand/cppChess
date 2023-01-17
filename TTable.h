@@ -53,9 +53,10 @@ public:
     static U64 hits, collisions, writes;
     static const float fill_ratio();
     static const int hash_index(U64 key);
-    static void add_item(U64 key, int8_t depth, uint8_t flag, float score, Move& move = Move(0, 0));
+    static void add_item(U64 key, int8_t depth, uint8_t flag, float score, Move& move = null_move);
     static const Entry read(U64 key);
     static const Entry probe(U64 key);
+    static Move null_move;
     // static void rand_test(int n);
     // static int bin[DEFAULT_SIZE];
 private:

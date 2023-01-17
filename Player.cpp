@@ -26,11 +26,13 @@ Move Player::iterative_search(Chess& ch, int8_t depth, U64& nodes, bool test)
     for (int8_t iter = 1; iter <= depth; iter++)
     {
         int best_idx = 0;
+        std::vector<Move> temp;
         for (int idx = 0; idx < (int) moves.size(); idx++)
         {
             Move m = moves.at(idx);
             ch.make_move(m);
-            float score = -nega_max(ch, search_log, depth - 1, nodes, -99.99f, -high_score, test);
+            float score = -nega_max(ch, search_log, iter - 1, nodes, -99.99f, -high_score, test);
+            temp.insert((score > high_score ? temp.begin() : temp.end()), m);
             best_idx = score > high_score ? idx : best_idx;
             best_move = score > high_score ? m : best_move;
             high_score = std::max(score, high_score);
@@ -40,7 +42,7 @@ Move Player::iterative_search(Chess& ch, int8_t depth, U64& nodes, bool test)
             if (test && iter == depth)
                 fmt::print("{:>2d}/{}: {:<6} {:0.2f}\n", idx+1, moves.size(), mgen.move_san(m), score);
         }
-        std::vector<Move> temp;
+        TTable::add_item(ch.zhash, depth, Entry::FLAG_ALPHA, high_score, best_move);
         temp.push_back(best_move);
         for (int idx = 0; idx < (int) moves.size(); idx++)
         {
@@ -84,7 +86,7 @@ Move Player::get_move(Chess& ch, SearchLogger& search_log, int8_t depth, U64& no
         high_score = std::max(score, high_score);
         ch.unmake_move(1);
     }
-    // TTable::add_item(zhash, depth, Entry::FLAG_ALPHA, high_score, best_move);
+    TTable::add_item(ch.zhash, depth, Entry::FLAG_ALPHA, high_score, best_move);
     return best_move;
 }
 

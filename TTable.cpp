@@ -8,6 +8,7 @@ U64 TTable::castle_rights[2][2];
 U64 TTable::ep_file[8];
 // int TTable::bin[DEFAULT_SIZE];
 Entry TTable::table[TTable::DEFAULT_SIZE];
+Move TTable::null_move(0, 0);
 
 TTable::TTable()
 {
