@@ -41,7 +41,7 @@ public:
     // the Mersenne Twister with a popular choice of parameters
     static MyRNG rng;
     static std::uniform_int_distribution<U64> U64_dist;
-    static U64 black_to_move;
+    static U64 is_black_turn;
     // array of random bitstrings for each piece at each square
     // pawns are special case: first "rank" is used for white ep-able pawns
     // while the second "rank" is used for black's ep-able pawns

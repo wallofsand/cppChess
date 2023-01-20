@@ -52,32 +52,34 @@ const U64 Compass::build_ray(int sq[2])
     return 0;
 }
 
-// Method to return a bitboard of the ray
-// from start (exclusive) through colinear square end
-const U64 Compass::ray_square(int start, int end, U64 empty)
+// Method to return a bitboard of the ray from squares
+// start (exclusive) through square end to board edge
+// retuns zero if no such ray exists
+// an optional occupancy array can be passed to stop the ray
+const U64 Compass::ray_square(int start, int end, U64 occ)
 {
-    U64 ray = BB::nort_attacks(1ull << start, ~empty);
+    U64 ray = BB::nort_attacks(1ull << start, ~occ);
     if (BB::contains_square(ray, end))
         return ray;
-    ray = BB::NoEa_attacks(1ull << start, ~empty);
+    ray = BB::NoEa_attacks(1ull << start, ~occ);
     if (BB::contains_square(ray, end))
         return ray;
-    ray = BB::east_attacks(1ull << start, ~empty);
+    ray = BB::east_attacks(1ull << start, ~occ);
     if (BB::contains_square(ray, end))
         return ray;
-    ray = BB::SoEa_attacks(1ull << start, ~empty);
+    ray = BB::SoEa_attacks(1ull << start, ~occ);
     if (BB::contains_square(ray, end))
         return ray;
-    ray = BB::sout_attacks(1ull << start, ~empty);
+    ray = BB::sout_attacks(1ull << start, ~occ);
     if (BB::contains_square(ray, end))
         return ray;
-    ray = BB::SoWe_attacks(1ull << start, ~empty);
+    ray = BB::SoWe_attacks(1ull << start, ~occ);
     if (BB::contains_square(ray, end))
         return ray;
-    ray = BB::west_attacks(1ull << start, ~empty);
+    ray = BB::west_attacks(1ull << start, ~occ);
     if (BB::contains_square(ray, end))
         return ray;
-    ray = BB::NoWe_attacks(1ull << start, ~empty);
+    ray = BB::NoWe_attacks(1ull << start, ~occ);
     if (BB::contains_square(ray, end))
         return ray;
     return 0ull;

@@ -89,6 +89,7 @@
         "variant": "cpp",
         "cerrno": "cpp",
         "cfloat": "cpp",
-        "climits": "cpp"
+        "climits": "cpp",
+        "bitset": "cpp"
     }
 }

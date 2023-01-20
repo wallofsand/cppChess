@@ -111,7 +111,7 @@ U64 BB::SoWe_shift_one(U64 bb)
  * north occluded fill using Kogge-Stone Algorithm
  * @param gen bitboard to "smear"
  * @param empty set of empty bits
- * @return shifted bitboard
+ * @return filled bitboard
  */
 U64 BB::nort_occl_fill(U64 gen, U64 empty)
 {
@@ -127,7 +127,7 @@ U64 BB::nort_occl_fill(U64 gen, U64 empty)
  * south occluded fill using Kogge-Stone Algorithm
  * @param gen bitboard to "smear"
  * @param empty bitboard of empty squares
- * @return shifted bitboard
+ * @return filled bitboard
  */
 U64 BB::sout_occl_fill(U64 gen, U64 empty)
 {
@@ -143,7 +143,7 @@ U64 BB::sout_occl_fill(U64 gen, U64 empty)
  * east occluded fill using Kogge-Stone Algorithm
  * @param gen bitboard to "smear"
  * @param empty set of empty bits
- * @return shifted bitboard
+ * @return filled bitboard
  */
 U64 BB::east_occl_fill(U64 gen, U64 empty)
 {
@@ -160,7 +160,7 @@ U64 BB::east_occl_fill(U64 gen, U64 empty)
  * west occluded fill using Kogge-Stone Algorithm
  * @param gen bitboard to "smear"
  * @param empty set of empty bits
- * @return shifted bitboard
+ * @return filled bitboard
  */
 U64 BB::west_occl_fill(U64 gen, U64 empty)
 {
@@ -177,7 +177,7 @@ U64 BB::west_occl_fill(U64 gen, U64 empty)
  * northeast occluded fill using Kogge-Stone Algorithm
  * @param gen bitboard to "smear"
  * @param empty set of empty bits
- * @return shifted bitboard
+ * @return filled bitboard
  */
 U64 BB::NoEa_occl_fill(U64 gen, U64 empty)
 {
@@ -194,7 +194,7 @@ U64 BB::NoEa_occl_fill(U64 gen, U64 empty)
  * northwest occluded fill using Kogge-Stone Algorithm
  * @param gen bitboard to "smear"
  * @param empty set of empty bits
- * @return shifted bitboard
+ * @return filled bitboard
  */
 U64 BB::NoWe_occl_fill(U64 gen, U64 empty)
 {
@@ -211,7 +211,7 @@ U64 BB::NoWe_occl_fill(U64 gen, U64 empty)
  * southeast occluded fill using Kogge-Stone Algorithm
  * @param gen bitboard to "smear"
  * @param empty set of empty bits
- * @return shifted bitboard
+ * @return filled bitboard
  */
 U64 BB::SoEa_occl_fill(U64 gen, U64 empty)
 {
@@ -228,7 +228,7 @@ U64 BB::SoEa_occl_fill(U64 gen, U64 empty)
  * southwest occluded fill using Kogge-Stone Algorithm
  * @param gen bitboard to "smear"
  * @param empty set of empty bits
- * @return shifted bitboard
+ * @return filled bitboard
  */
 U64 BB::SoWe_occl_fill(U64 gen, U64 empty)
 {

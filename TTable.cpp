@@ -2,7 +2,7 @@
 
 MyRNG TTable::rng;
 std::uniform_int_distribution<U64> TTable::U64_dist;
-U64 TTable::black_to_move, TTable::hits, TTable::collisions, TTable::writes;
+U64 TTable::is_black_turn, TTable::hits, TTable::collisions, TTable::writes;
 U64 TTable::sq_color_type_64x2x6[64][2][6];
 U64 TTable::castle_rights[2][2];
 U64 TTable::ep_file[8];
@@ -16,7 +16,7 @@ TTable::TTable()
     TTable::writes = 0;
     // e.g. keep one global instance (per thread)
     TTable::rng.seed(seed_val);
-    TTable::black_to_move = U64_dist(rng);
+    TTable::is_black_turn = U64_dist(rng);
     TTable::castle_rights[ch_cst::WHITE_INDEX][0] = U64_dist(rng);
     TTable::castle_rights[ch_cst::WHITE_INDEX][1] = U64_dist(rng);
     TTable::castle_rights[ch_cst::BLACK_INDEX][0] = U64_dist(rng);

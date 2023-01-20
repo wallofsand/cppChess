@@ -50,12 +50,12 @@ namespace ch_cst
 
 namespace directions {
     const int NORTH = 8, EAST = 1, SOUTH = -8, WEST = -1,
-        NORTHEAST = 9, NORTHWEST = 7, SOUTHEAST = -7, SOUTHWEST = -9,
-        NNE = 17, NEE = 10, SEE = -6, SSE = -15,
-        SSW = -17, SWW = -10, NWW = 6, NNW = 15;
+            NORTHEAST = 9, NORTHWEST = 7, SOUTHEAST = -7, SOUTHWEST = -9,
+            NNE = 17, NEE = 10, SEE = -6, SSE = -15,
+            SSW = -17, SWW = -10, NWW = 6, NNW = 15;
     const int DIRS[16] = { NORTH, EAST, SOUTH, WEST,
-                          NORTHEAST, NORTHWEST, SOUTHEAST, SOUTHWEST,
-                          NNE, NEE, SEE, SSE, SSW, SWW, NWW, NNW};
+            NORTHEAST, NORTHWEST, SOUTHEAST, SOUTHWEST,
+            NNE, NEE, SEE, SSE, SSW, SWW, NWW, NNW};
     const int PAWN_DIR[2] = { NORTH, SOUTH };
 }
 
@@ -70,7 +70,7 @@ public:
     static int8_t edge_distance_64x8[64][8];
     const static U64 build_ray(int sq, int dir_index);
     const static U64 build_ray(int sq[2]);
-    const static U64 ray_square(int start, int end, U64 empty = 0ull);
+    const static U64 ray_square(int start, int end, U64 occ = 0ull);
     const static int get_dir_start_index(int piece);
     const static int get_dir_end_index(int piece);
     const static int square_from_string(std::string str);
