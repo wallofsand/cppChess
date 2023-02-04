@@ -9,10 +9,10 @@ typedef uint32_t move;
 namespace Move
 {
     move build_move(int s, int e, int p = 0);
-    const int start(move m);
-    const int end(move m);
-    const int promote(move m);
-    const std::string to_string(move m);
+    int start(move m);
+    int end(move m);
+    int promote(move m);
+    std::string to_string(move m);
 };
 
 #endif

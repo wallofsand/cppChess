@@ -33,7 +33,7 @@ TTable::TTable()
  * Method to calculate how full the transposition table is
  * @return the percent of Entries in the t-table that have been written too
  */
-const float TTable::fill_ratio()
+float TTable::fill_ratio()
 {
     float num_elements = 0;
     for (Entry e : table)
@@ -43,7 +43,7 @@ const float TTable::fill_ratio()
     return num_elements / DEFAULT_SIZE;
 }
 
-const int TTable::hash_index(U64 key)
+int TTable::hash_index(U64 key)
 {
     return std::abs((int) key % DEFAULT_SIZE);
 }
@@ -64,7 +64,7 @@ void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv)
     writes++;
 }
 
-const Entry TTable::probe(U64 key)
+Entry TTable::probe(U64 key)
 {
     int index = hash_index(key);
     while (read(index).flag && read(index).key != key)
@@ -72,7 +72,7 @@ const Entry TTable::probe(U64 key)
     return read(index);
 }
 
-const Entry TTable::read(U64 key)
+Entry TTable::read(U64 key)
 {
     return table[hash_index(key)];
 }

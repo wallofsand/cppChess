@@ -34,7 +34,7 @@ class TTable
 {
 public:
     TTable();
-    static const int DEFAULT_SIZE = 70000181;
+    static const int DEFAULT_SIZE = 35000011;
     static const U64 seed_val = 15375420585056461361ull;
     // static const U64 seed_val = 3229840203366374022ull;
     // static const U64 seed_val = 1397063171404053109ull;
@@ -51,11 +51,11 @@ public:
     // file 0 - 7 of ep square
     static U64 ep_file[8];
     static U64 hits, collisions, writes;
-    static const float fill_ratio();
-    static const int hash_index(U64 key);
+    static float fill_ratio();
+    static int hash_index(U64 key);
     static void add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv = 0);
-    static const Entry read(U64 key);
-    static const Entry probe(U64 key);
+    static Entry read(U64 key);
+    static Entry probe(U64 key);
     // static void rand_test(int n);
     // static int bin[DEFAULT_SIZE];
 private:

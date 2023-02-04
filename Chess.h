@@ -1,12 +1,12 @@
 #ifndef CHESS_H
 #define CHESS_H
 
+#include <string>
+#include <vector>
 #include "Bitboard.h"
 #include "Compass.h"
 #include "Move.h"
 #include "TTable.h"
-#include <string>
-#include <vector>
 
 class Chess
 {

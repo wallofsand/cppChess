@@ -16,7 +16,7 @@ void MoveGenerator::init(bool test)
 bool MoveGenerator::is_game_over(bool test)
 {
     init(test);
-    return gen_moves().size() == 0 || Chess::repetitions(ch) > 2;
+    return gen_moves().size() == 0 || ch.repetitions() > 2;
 }
 
 void MoveGenerator::checks_exist(bool test)
@@ -476,14 +476,14 @@ std::vector<move> MoveGenerator::gen_king_piece_moves(int sq, bool test)
     // castling
     // wh:QuKi bl:QuKi
     // queenside castle
-    if (!in_check && ch.castle_rights & 2 << 2 * ch.black_to_move
+    if (ch.castle_rights & 2 << 2 * ch.black_to_move && !in_check
             && !BB::contains_square(ch.bb_occ | op_attack_mask, sq - 1)
             && !BB::contains_square(ch.bb_occ | op_attack_mask, sq - 2)
             && !BB::contains_square(ch.bb_occ, sq - 3)
             && BB::contains_square(ch.bb_rooks & *ch.bb_color[ch.black_to_move], sq - 4))
         king_moves.push_back(Move::build_move(sq, sq - 2));
     // kingside castle
-    if (!in_check && ch.castle_rights & 1 << 2 * ch.black_to_move
+    if (ch.castle_rights & 1 << 2 * ch.black_to_move && !in_check
             && !BB::contains_square(ch.bb_occ | op_attack_mask, sq + 1)
             && !BB::contains_square(ch.bb_occ | op_attack_mask, sq + 2)
             && BB::contains_square(ch.bb_rooks & *ch.bb_color[ch.black_to_move], sq + 3))
@@ -496,17 +496,18 @@ std::vector<move> MoveGenerator::gen_king_piece_moves(int sq, bool test)
  * @param mv the Move to write
  * @returns a string of the SAN of the move
  */
-std::string MoveGenerator::move_san(move mv)
+std::string MoveGenerator::move_san(Chess ch, move mv)
 {
-    std::vector<move> moves = gen_moves();
+    MoveGenerator san_gen(ch);
+    std::vector<move> moves = san_gen.gen_moves();
     std::string san = "";
     int start = Move::start(mv), end = Move::end(mv);
-    int piece = Chess::piece_at(ch, start);
+    int piece = ch.piece_at(start);
 
     // check for ambiguity
     for (move m2 : moves)
     {
-        if (Move::start(m2) == start || Move::end(m2) != end || Chess::piece_at(ch, Move::start(m2)) != piece)
+        if (Move::start(m2) == start || Move::end(m2) != end || ch.piece_at(Move::start(m2)) != piece)
             continue;
         if (Compass::file_xindex(Move::start(m2)) != Compass::file_xindex(start))
             san = ch_cst::square_string[start].substr(0, 1) + san;
@@ -544,11 +545,11 @@ std::string MoveGenerator::move_san(move mv)
     }
 
     // check
-    Chess::make_move(ch, mv);
-    init(false);
-    if (in_check)
+    ch.make_move(mv);
+    san_gen.init(false);
+    if (san_gen.in_check)
         san += "+";
-    Chess::unmake_move(ch, 1);
+    ch.unmake_move(1);
 
     return san;
 }
