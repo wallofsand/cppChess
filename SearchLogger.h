@@ -3,15 +3,16 @@
 #ifndef SEARCHLOGGER_H
 #define SEARCHLOGGER_H
 
+#include <string>
+#include <iostream>
+#include <ostream>
+#include <windows.h>
 #include "Move.h"
 #include "Compass.h"
 #include "Bitboard.h"
 #include "fmt/include/fmt/format.h"
 #include "fmt/include/fmt/os.h"
 #include "fmt/include/fmt/chrono.h"
-#include <string>
-#include <iostream>
-#include <ostream>
 
 class SearchLogger {
 public:

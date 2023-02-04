@@ -185,7 +185,7 @@ float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int8_t dept
     // make captures until no captures remain, then eval
     for (move mv : moves)
     {
-        if (!BB::contains_square(ch.bb_occ, Move::end(mv)) && Move::end(mv) != ch.ep_square)
+        if (!BB::contains_square(ch.bb_occ, Move::end(mv)) && Move::end(mv) != ch.ep_square && !move_is_check(ch, mv))
             continue;
         nodes++;
         ch.make_move(mv);
@@ -201,7 +201,14 @@ float Player::quiescence_search(Chess& ch, SearchLogger& search_log, int8_t dept
     return alpha;
 }
 
-std::vector<move> Player::order_moves_by_piece(Chess ch, std::vector<move> moves)
+bool Player::move_is_check(Chess ch, move mv) const
+{
+    ch.make_move(mv);
+    MoveGenerator check_gen(ch);
+    return MoveGenerator(ch).in_check;
+}
+
+std::vector<move> Player::order_moves_by_piece(Chess ch, std::vector<move> moves) const
 {
     std::vector<move> ordered;
     for (int piece = ch_cst::KING; piece >= ch_cst::PAWN; piece--)
@@ -264,14 +271,15 @@ float Player::eval(Chess ch, int8_t mate_offset, bool test)
     score = ch.black_to_move ? -score : score;
 
     // mobility score:
-    ch.black_to_move = 1 - ch.black_to_move;
+    ch.black_to_move = !ch.black_to_move;
     int net_mobility = (int) move_list.size() - (int) eval_gen.gen_moves().size();
-    ch.black_to_move = 1 - ch.black_to_move;
-    float mobility_score = var_mobility_weight;
+    ch.black_to_move = !ch.black_to_move;
+    float mobility_score = net_mobility * var_mobility_weight;
     score += mobility_score;
 
     // round to the nearest hundreth
     score = std::round(score * 100.0f) / 100.0f;
-    if (test) fmt::print("net moves: {:<3} | mobility: {:<4.2f} | score: {:<4.2f} | ratio: {:<4.2f}\n", net_mobility, mobility_score, score, mobility_score/score);
+    if (test) fmt::print("net moves: {:<3} | mobility: {:<4.2f} | score: {:<4.2f} | ratio: {:<4.2f}\n",
+        net_mobility, mobility_score, score, mobility_score / (score - mobility_score));
     return score;
 }

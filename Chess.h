@@ -16,7 +16,7 @@ public:
     bool black_to_move;
     // bl:QuKi wh:QuKi
     int castle_rights;
-    int ep_square;
+    int ep_square = -1;
     U64 bb_white;
     U64 bb_black;
     U64 bb_pawns;
@@ -28,7 +28,7 @@ public:
     U64 bb_occ;
     U64* bb_piece[7] = { nullptr, &bb_pawns, &bb_knights, &bb_bishops, &bb_rooks, &bb_queens, &bb_kings };
     U64* bb_color[2] = { &bb_white, &bb_black };
-    U64 zhash = 0;
+    U64 zhash = 0ull;
     std::vector<move> history;
     int piece_at(int sq) const;
     int color_at(int sq) const;

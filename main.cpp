@@ -1,10 +1,13 @@
 #include "Chess.h"
 #include "Player.h"
 
+// fmt::print("zhash:  {:0>16x}\nhash(): {:0>16x}\n", ch.zhash, ch.hash());
+
 U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth);
 U64 perft(Chess& ch, int depth, SearchLogger& perft_log);
 
 const int SIM_DEPTH = 2;
+
 const std::string HELP_STRINGS[] = {
     "\nWelcome to Graham's C++ chess.\n"
     "Enter a move exactly as it is printed to play that move.\n"
@@ -13,8 +16,11 @@ const std::string HELP_STRINGS[] = {
     "um x: \tUndo the last x moves.\n",
     "aim x: \tSearch to depth x and make a move. Allows depth of 1-9.\n",
     "\tSearches deeper than four ply may take extemely long.\n",
+    "perft x: \tCount all moves to depth x.\n",
+    "\tSearches deeper than six may take extremely long.\n",
     "help: \tDisplays this message.\n"
 };
+
 const std::string PERFT_RESULTS[] = {
     "1", "20", "400", "8902", "197281", "4865609", "119060324", "3195901860",
     "84998978956", "2439530234167", "69352859712417", "2097651003696806",
@@ -28,10 +34,10 @@ int main()
     TTable();
     Chess ch;
     Player engine(0.0f), low_mobility(-0.02f), high_mobility(0.02f);
-    Player players[2] = { low_mobility, high_mobility };
+    // Player players[2] = { low_mobility, high_mobility };
 
     int human = -2;
-    fmt::print("Which color will you play?\n0: white   1: black   2: sim game   -1: free play\n");
+    fmt::print("Welcome to Graham's C++ chess.\nWhich color will you play?\n0: white   1: black   2: sim game   -1: free play\n");
     while (human < -1 || human > 2)
         std::cin >> human;
 
@@ -44,6 +50,7 @@ int main()
     while (playing)
     {
         MoveGenerator mgen(ch);
+        if (mgen.is_game_over(false)) playing = false;
         std::vector<move> move_list = mgen.gen_moves();
 
         // print ui
@@ -51,7 +58,7 @@ int main()
         {
             fmt::print("\n");
             ch.print_board(true);
-            fmt::print("zhash: {:0>16x}\nhash:  {:0>16x}\nwrites: {} hits: {} collisions: {} fill: {:0.2f}\n",
+            fmt::print("zhash:  {:0>16x}\nhash(): {:0>16x}\nwrites: {} hits: {} collisions: {} fill: {:0.2f}\n",
                 ch.zhash,
                 ch.hash(),
                 TTable::writes, TTable::hits, TTable::collisions, TTable::fill_ratio());
@@ -65,15 +72,29 @@ int main()
             fmt::print("\n{} ", ch.black_to_move ? "Black to move: " : "White to move: ");
         }
 
+        // check for some errors
+        if (ch.zhash != ch.hash())
+        {
+            fmt::print("hash fail!");
+            break;
+        }
+        if (!ch.repetitions())
+        {
+            fmt::print("rep fail!");
+            break;
+        }
+
         // get input
         game_timer.reset();
-        std::string str = "2";
-        if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1) std::cin >> str;
+        std::string str;
+        if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1)
+        std::cin >> str;
 
         // if no input, get ai move
         if (!ch.black_to_move && human == 1 || ch.black_to_move && human == 0 || human == 2)
         {
-            move engine_move = players[ch.black_to_move].iterative_search(ch, SIM_DEPTH, nodes, false);
+            // move engine_move = players[ch.black_to_move].iterative_search(ch, SIM_DEPTH, nodes, false);
+            move engine_move = engine.iterative_search(ch, SIM_DEPTH, nodes, false);
             last_move = MoveGenerator::move_san(ch, engine_move);
             ch.make_move(engine_move);
         }
@@ -96,7 +117,8 @@ int main()
             while (depth < 1 || depth > 9)
                 std::cin >> depth;
             game_timer.reset();
-            move engine_move = players[ch.black_to_move].iterative_search(ch, depth, nodes, false);
+            // move engine_move = players[ch.black_to_move].iterative_search(ch, depth, nodes, false);
+            move engine_move = engine.iterative_search(ch, depth, nodes, false);
             last_move = MoveGenerator::move_san(ch, engine_move);
             ch.make_move(engine_move);
         }
@@ -108,29 +130,27 @@ int main()
             perft_root(ch, depth, !ch.history.size(), 1);
         }
         else if (str == "test")
-        {
-            fmt::print("{:0>16x}", ch.hash());
-            // mgen.gen_moves(true);
-            // int sq = -1;
-            // while (sq < 0 || sq > 63)
-            //     std::cin >> sq;
-            // BB::print_U64(Compass::rank_attacks(ch.bb_occ, sq), std::to_string(sq));
-        }
+            fmt::print("test hash XOR ep_file: {:0>16x}", ch.hash() ^ TTable::ep_file[Compass::file_xindex(ch.ep_square)]);
         else if (str == "end")
-            playing = false;
+            break;
         else for (move mv : move_list)
-            if (str == MoveGenerator::move_san(ch, mv))
-            {
-                last_move = MoveGenerator::move_san(ch, mv);
-                ch.make_move(mv, true );
-                break;
-            }
-        if (mgen.is_game_over(false)) playing = false;
-        if (!playing)
         {
-            fmt::print("\n");
-            ch.print_board(true);
+            if (str != MoveGenerator::move_san(ch, mv))
+                continue;
+            last_move = MoveGenerator::move_san(ch, mv);
+            ch.make_move(mv, true);
+            break;
         }
+    }
+
+    if (!playing)
+    {
+        MoveGenerator mate_gen(ch);
+        fmt::print("\n");
+        if (ch.repetitions() == 3)
+            fmt::print("Draw by repitition!\n");
+        else if (mate_gen.in_check)
+            fmt::print("{} wins!\n", ch.black_to_move ? "White" : "Black");
     }
 
     // for (int idx = 0; idx < TTable::DEFAULT_SIZE; idx++)

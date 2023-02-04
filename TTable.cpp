@@ -4,7 +4,8 @@ MyRNG TTable::rng;
 std::uniform_int_distribution<U64> TTable::U64_dist;
 U64 TTable::is_black_turn, TTable::hits, TTable::collisions, TTable::writes;
 U64 TTable::sq_color_type_64x2x6[64][2][6];
-U64 TTable::castle_rights[2][2];
+// [white, black][king, queen]
+U64 TTable::castle_rights_wb_kq[2][2];
 U64 TTable::ep_file[8];
 // int TTable::bin[DEFAULT_SIZE];
 Entry TTable::table[TTable::DEFAULT_SIZE];
@@ -17,10 +18,10 @@ TTable::TTable()
     // e.g. keep one global instance (per thread)
     TTable::rng.seed(seed_val);
     TTable::is_black_turn = U64_dist(rng);
-    TTable::castle_rights[ch_cst::WHITE_INDEX][0] = U64_dist(rng);
-    TTable::castle_rights[ch_cst::WHITE_INDEX][1] = U64_dist(rng);
-    TTable::castle_rights[ch_cst::BLACK_INDEX][0] = U64_dist(rng);
-    TTable::castle_rights[ch_cst::BLACK_INDEX][1] = U64_dist(rng);
+    TTable::castle_rights_wb_kq[ch_cst::WHITE_INDEX][0] = U64_dist(rng);
+    TTable::castle_rights_wb_kq[ch_cst::WHITE_INDEX][1] = U64_dist(rng);
+    TTable::castle_rights_wb_kq[ch_cst::BLACK_INDEX][0] = U64_dist(rng);
+    TTable::castle_rights_wb_kq[ch_cst::BLACK_INDEX][1] = U64_dist(rng);
     for (int file = 0; file < 8; file++)
         TTable::ep_file[file] = U64_dist(rng);
     for (int sq = 0; sq < 64; sq++)

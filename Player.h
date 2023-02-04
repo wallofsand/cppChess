@@ -11,7 +11,7 @@
 class Player
 {
 public:
-    Player(float delta) : var_mobility_weight(0.1f + delta) {};
+    Player(float delta) : var_mobility_weight(0.07f + delta) {};
     move get_move(Chess& ch, SearchLogger& search_log, int8_t depth, U64& nodes, bool test);
     move iterative_search(Chess ch, int8_t depth, U64& nodes, bool test);
     move get_book_move(Chess& ch, SearchLogger& search_log, bool test);
@@ -19,10 +19,11 @@ public:
     float quiescence_search(Chess& ch, SearchLogger& search_log, int8_t depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);
     float eval(Chess ch, int8_t mate_offset = 0, bool test = false);
     float eval(Chess ch, SearchLogger& search_log, int8_t mate_offset = 0, bool test = false);
-    std::vector<move> order_moves_by_piece(Chess ch, std::vector<move>);
+    bool move_is_check(Chess ch, move mv) const;
+    std::vector<move> order_moves_by_piece(Chess ch, std::vector<move>) const;
 private:
     float var_endgame_weight = 32.0f;
-    float var_mobility_weight = 0.1f;
+    float var_mobility_weight;
     float var_piece_value[7] = { 0, 1, 2.8f, 3, 5, 9.7f, 99.99f };
 };
 

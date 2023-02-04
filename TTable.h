@@ -43,11 +43,9 @@ public:
     static std::uniform_int_distribution<U64> U64_dist;
     static U64 is_black_turn;
     // array of random bitstrings for each piece at each square
-    // pawns are special case: first "rank" is used for white ep-able pawns
-    // while the second "rank" is used for black's ep-able pawns
     static U64 sq_color_type_64x2x6[64][2][6];
     // Kingside: 0, Queenside: 1
-    static U64 castle_rights[2][2];
+    static U64 castle_rights_wb_kq[2][2];
     // file 0 - 7 of ep square
     static U64 ep_file[8];
     static U64 hits, collisions, writes;
