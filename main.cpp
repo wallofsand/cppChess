@@ -1,8 +1,8 @@
 #include "Chess.h"
 #include "Player.h"
 
-U64 perft_root(Chess::State& ch, int depth, bool initial_pos, int log_depth);
-U64 perft(Chess::State& ch, int depth, SearchLogger& perft_log);
+U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth);
+U64 perft(Chess& ch, int depth, SearchLogger& perft_log);
 
 const std::string perft_results[] = {
     "1", "20", "400", "8902", "197281", "4865609", "119060324", "3195901860",
@@ -15,7 +15,7 @@ int main()
 {
     Compass();
     TTable();
-    Chess::State ch;
+    Chess ch;
     Player engine(0.0f), low_mobility(-0.02f), high_mobility(0.02f);
     Player players[2] = { low_mobility, high_mobility };
 
@@ -44,8 +44,9 @@ int main()
         {
             fmt::print("\n");
             Chess::print_board(ch, true);
-            fmt::print("hash: {:0>16x}\nwrites: {} hits: {} collisions: {} fill: {:0.2f}\n",
+            fmt::print("zhash: {:0>16x}\nhash:  {:0>16x}\nwrites: {} hits: {} collisions: {} fill: {:0.2f}\n",
                 ch.zhash,
+                Chess::hash(ch),
                 TTable::writes, TTable::hits, TTable::collisions, TTable::fill_ratio());
             engine.eval(ch, 0, true);
             fmt::print("reps: {} nodes: {} n/s: {:0.0f}\n",
@@ -94,7 +95,7 @@ int main()
             game_timer.reset();
             move engine_move = players[ch.black_to_move].iterative_search(ch, depth, nodes, false);
             last_move = mgen.move_san(engine_move);
-            Chess::make_move(ch, engine_move);
+            ch.make_move(engine_move);
         }
         else if (str == "perft")
         {
@@ -104,11 +105,11 @@ int main()
             perft_root(ch, depth, !ch.history.size(), 1);
         }
         else if (str == "reps")
-            fmt::print("{}", Chess::repetitions(ch));
+            fmt::print("{}", ch.repetitions());
         else if (str == "test")
         {
-            mgen.gen_moves(true);
-
+            fmt::print("{}", ch.hash());
+            // mgen.gen_moves(true);
             // int sq = -1;
             // while (sq < 0 || sq > 63)
             //     std::cin >> sq;
@@ -120,14 +121,14 @@ int main()
             if (str == mgen.move_san(mv))
             {
                 last_move = mgen.move_san(mv);
-                Chess::make_move(ch, mv, true );
+                ch.make_move(mv, true );
                 break;
             }
         if (mgen.is_game_over(false)) playing = false;
         if (!playing)
         {
             fmt::print("\n");
-            Chess::print_board(ch, true);
+            ch.print_board(true);
         }
     }
 
@@ -147,7 +148,7 @@ int main()
  * @param log_depth the depth of nodes to list in log file
  *        default: 0
  */
-U64 perft_root(Chess::State& ch, int depth, bool initial_pos, int log_depth)
+U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth)
 {
     if (!depth)
         return 1;
@@ -186,7 +187,7 @@ U64 perft_root(Chess::State& ch, int depth, bool initial_pos, int log_depth)
 
     // test finished, print results
     if (depth > perft_log.depth)
-        perft_log.write(fmt::format("{}: finished in {}s at {} nodes/s\n{} moves found\n",
+        perft_log.write(fmt::format("{}: finished in {}s at {} nodes/s\n{} moves found.\n",
             SearchLogger::time_to_string(), perft_timer.elapsed(), nodes_per_second, nodes));
     std::cout << fmt::format("{}: finished in {}s at {} nodes/s\n{} moves found\n",
             SearchLogger::time_to_string(), perft_timer.elapsed(), nodes_per_second, nodes);
