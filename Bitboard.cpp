@@ -13,7 +13,6 @@ const bool BB::contains_square(U64 bb, int sq)
 
 /*
  * @param bb any bitboard
- * TODO: SLOW METHOD rewrite this to be fast
  * @return the number of bits set in bb
  */
 const int BB::num_bits_flipped(U64 bb)
@@ -21,8 +20,9 @@ const int BB::num_bits_flipped(U64 bb)
     int count = 0;
     while (bb)
     {
-        count += (int) contains_square(bb, 0);
-        bb = bb >> 1;
+        count++;
+        // clear the LS1B
+        bb &= bb - 1;
     }
     return count;
 }

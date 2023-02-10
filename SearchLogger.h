@@ -16,6 +16,7 @@
 
 class SearchLogger {
 public:
+    SearchLogger() {}
     SearchLogger(std::string str, int d);
     std::string buffer;
     const std::string file_path();
