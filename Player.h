@@ -11,7 +11,6 @@ class Player
 {
 public:
     Player(float delta);
-    move get_move(Chess& ch, int depth, U64& nodes, bool test);
     move iterative_search(Chess ch, int depth, U64& nodes, bool test);
     move get_book_move(Chess& ch, bool test);
     float nega_max(Chess& ch, int depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);

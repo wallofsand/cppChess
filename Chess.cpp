@@ -10,17 +10,41 @@ Chess::Chess()
     zhash = hash();
 }
 
+// copy constructor without make_move
 Chess::Chess(const Chess& ch)
 {
-    black_to_move = false;
-    ep_square = -1;
-    castle_rights = 0b1111;
-    build_bitboards();
-    std::vector<move> history;
-    zhash = hash();
-    for (move mv : ch.history)
-        make_move(mv);
+    this->black_to_move = ch.black_to_move;
+    this->ep_square     = ch.ep_square;
+    this->castle_rights = ch.castle_rights;
+    this->history       = ch.history;
+    this->zhash         = ch.zhash;
+    // copy the bitboards
+    this->bb_white   = bb_white;
+    this->bb_black   = bb_black;
+    this->bb_pawns   = bb_pawns;
+    this->bb_knights = bb_knights;
+    this->bb_bishops = bb_bishops;
+    this->bb_rooks   = bb_rooks;
+    this->bb_queens  = bb_queens;
+    this->bb_kings   = bb_kings;
+    this->bb_occ     = bb_occ;
 }
+
+/***********************************
+ *       OLD COPY CONSTRUCOR       *
+ ***********************************
+ * Chess::Chess(const Chess& ch)   *
+ * {                               *
+ *     black_to_move = false;      *
+ *     ep_square = -1;             *
+ *     castle_rights = 0b1111;     *
+ *     build_bitboards();          *
+ *     std::vector<move> history;  *
+ *     zhash = hash();             *
+ *     for (move mv : ch.history)  *
+ *         make_move(mv);          *
+ * }                               *
+ **********************************/
 
 /*
  * Set up the starting position
@@ -100,6 +124,7 @@ void Chess::make_move(move mv, bool test)
 {
     int start = Move::start(mv);
     int end = Move::end(mv);
+    prev_hash.push_back(zhash);
 
     // Captured piece
     int type = piece_at(end);
@@ -195,6 +220,7 @@ void Chess::unmake_move(int undos)
 {
     std::vector<move> temp = history;
     history.clear();
+    prev_hash.clear();
     black_to_move = false;
     ep_square = -1;
     castle_rights = 0b1111;
@@ -206,14 +232,10 @@ void Chess::unmake_move(int undos)
 
 int Chess::repetitions() const
 {
-    int count = 0;
-    Chess test;
-    for (move mv : history)
-    {
-        count += (zhash == test.zhash);
-        test.make_move(mv);
-    }
-    return count + (zhash == test.zhash);
+    int count = 1;
+    for (U64 h : prev_hash)
+        count += (zhash == h);
+    return count;
 }
 
 void Chess::print_board(bool fmt) const

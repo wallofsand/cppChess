@@ -8,8 +8,9 @@ namespace PieceLocationTables
 {
     const int read(const int table[64], int sq, bool is_black);
     const float complex_read(int type, int sq, float middlegame_weight, bool is_black);
-    const int* middlegame_piece_tables(int type);
-    const int* endgame_piece_tables(int type);
+
+    extern const int* middlegame_piece_tables[7];
+    extern const int* endgame_piece_tables[7];
 
     const int pawns[64] = {
         0, 0, 0, 0, 0, 0, 0, 0,

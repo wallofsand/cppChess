@@ -30,6 +30,7 @@ public:
     U64* bb_color[2] = { &bb_white, &bb_black };
     U64 zhash = 0ull;
     std::vector<move> history;
+    std::vector<U64> prev_hash;
     int piece_at(int sq) const;
     int color_at(int sq) const;
     U64 hash() const;

@@ -26,8 +26,10 @@ void MoveGenerator::checks_exist(bool test)
     in_check = false;
     in_double_check = false;
     check_ray = 0ull;
+
     if (!(king & op_attack_mask))
         return;
+
     U64 op = *ch.bb_color[1 - ch.black_to_move];
     int ksq = find_king(ch.black_to_move);
 
@@ -123,7 +125,7 @@ U64 MoveGenerator::find_pins(bool test)
     // North
     U64 ray = BB::nort_attacks(king, ~*ch.bb_color[!ch.black_to_move]);
     U64 pinned = (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.black_to_move]) == 1)
-            ? ray & ray & *ch.bb_color[ch.black_to_move] : 0ull;
+            ? ray & *ch.bb_color[ch.black_to_move] : 0ull;
     // East
     ray = BB::east_attacks(king, ~*ch.bb_color[!ch.black_to_move]);
     pinned |= (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.black_to_move]) == 1)
@@ -197,7 +199,7 @@ U64 MoveGenerator::gen_op_attack_mask(bool test)
     while (attackers)
     {
         // x & -x masks the LS1B
-        mask |= Compass::knight_attacks[63 - BB::lead_0s(attackers & 0-attackers)];
+        mask |= Compass::knight_attacks[63 - BB::lead_0s(attackers & -attackers)];
         // now clear that LS1B
         attackers &= attackers - 1;
     }
@@ -218,49 +220,79 @@ int MoveGenerator::find_king(int color)
  * Method to get the legal moves in a position.
  * @return an unsorted vector of moves
  */
-std::vector<move> MoveGenerator::gen_moves(bool test)
+move* MoveGenerator::gen_moves(bool test)
 {
     init(test);
 
-    // pawns
-    std::vector<move> moves = gen_pawn_moves(test);
+    // king
+    move moves[120] = {};
+    int8_t idx = 0;
+    move* temp;
+    temp = gen_king_piece_moves(find_king(ch.black_to_move), test);
+    for (int8_t i = 0; i < 120; i++)
+    {
+        if (temp[i] == 0) break;
+        moves[idx] = temp[i];
+        idx++;
+    }
+
+    if (in_double_check)
+        return moves;
 
     // rooks and queens
     U64 ss = (ch.bb_rooks | ch.bb_queens) & *ch.bb_color[ch.black_to_move];
-    if (!in_double_check) while (ss)
+    while (ss)
     {
         // x & -x masks the LS1B
-        for (move m : gen_rook_piece_moves(63 - BB::lead_0s(ss & 0-ss), test))
-            moves.push_back(m);
+        temp = gen_rook_piece_moves(63 - BB::lead_0s(ss & -ss), test);
+        for (move m : )
+        {
+            if (temp[i] == 0) break;
+            moves[idx] = temp[i];
+            idx++;
+        }
         // now clear that LS1B
         ss &= ss - 1;
     }
 
     // bishops and queens
     ss = (ch.bb_bishops | ch.bb_queens) & *ch.bb_color[ch.black_to_move];
-    if (!in_double_check) while (ss)
+    while (ss)
     {
         // x & -x masks the LS1B
-        for (move m : gen_bishop_piece_moves(63 - BB::lead_0s(ss & 0-ss), test))
-            moves.push_back(m);
+        for (move m : gen_bishop_piece_moves(63 - BB::lead_0s(ss & -ss), test))
+        {
+            if (temp[i] == 0) break;
+            moves[idx] = temp[i];
+            idx++;
+        }
         // now clear that LS1B
         ss &= ss - 1;
     }
 
     // knights
     ss = ch.bb_knights & *ch.bb_color[ch.black_to_move];
-    if (!in_double_check) while (ss)
+    while (ss)
     {
         // x & -x masks the LS1B
         for (move m : gen_knight_piece_moves(63 - BB::lead_0s(ss & 0-ss), test))
-            moves.push_back(m);
+        {
+            if (temp[i] == 0) break;
+            moves[idx] = temp[i];
+            idx++;
+        }
         // now clear that LS1B
         ss &= ss - 1;
     }
 
-    // king
-    for (move m : gen_king_piece_moves(find_king(ch.black_to_move), test))
-        moves.push_back(m);
+    // pawns
+    temp = gen_pawn_moves(test);
+    for (int8_t i = 0; i < 120; i++)
+    {
+        if (temp[i] == 0) break;
+        moves[idx] = temp[i];
+        idx++;
+    }
 
     return moves;
 }
@@ -269,12 +301,12 @@ std::vector<move> MoveGenerator::gen_moves(bool test)
  * Generates legal pawn moves
  * @return an unsorted list of pawn moves
  */
-std::vector<move> MoveGenerator::gen_pawn_moves(bool test)
+move* MoveGenerator::gen_pawn_moves(bool test)
 {
     using namespace directions;
-    std::vector<move> pawn_moves;
+    move pawn_moves[120] = {};
     U64 pawns = ch.bb_pawns & *ch.bb_color[ch.black_to_move];
-    if (!pawns || in_double_check)
+    if (!pawns)
         return pawn_moves;
     U64 op = *ch.bb_color[!ch.black_to_move];
 
