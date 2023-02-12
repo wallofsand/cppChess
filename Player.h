@@ -17,7 +17,7 @@ public:
     float quiescence_search(Chess& ch, int depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);
     float eval(Chess& ch, int mate_offset = 0, bool test = false);
     bool move_is_check(Chess& ch, move mv);
-    std::vector<move> order_moves_by_piece(Chess& ch, std::vector<move>) const;
+    void order_moves_by_piece(Chess& ch, const move moves[120], move* out) const;
 private:
     SearchLogger search_log;
     float var_endgame_weight = 32.0f;

@@ -232,7 +232,7 @@ void Chess::unmake_move(int undos)
 
 int Chess::repetitions() const
 {
-    int count = 1;
+    uint8_t count = 1;
     for (U64 h : prev_hash)
         count += (zhash == h);
     return count;

@@ -1,13 +1,25 @@
 #include "PieceLocationTables.h"
 
-const int* PieceLocationTables::middlegame_piece_tables[7] = { nullptr, pawns, knights, bishops, rooks, queens, kings_middle };
-const int* PieceLocationTables::endgame_piece_tables[7] = { nullptr, pawns, knights, bishops, rooks, queens, kings_end };
+const int* PieceLocationTables::middlegame_piece_tables[7] = 
+{
+    nullptr, PieceLocationTables::pawns, PieceLocationTables::knights,
+    PieceLocationTables::bishops, PieceLocationTables::rooks,
+    PieceLocationTables::queens, PieceLocationTables::kings_middle
+};
+
+const int* PieceLocationTables::endgame_piece_tables[7] =
+{
+    nullptr, PieceLocationTables::pawns, PieceLocationTables::knights,
+    PieceLocationTables::bishops, PieceLocationTables::rooks,
+    PieceLocationTables::queens, PieceLocationTables::kings_end
+};
+
 
 // all tables are read from black's perspective
 // when white reads a table, we need to flip it along the Y axis
 const int PieceLocationTables::read(const int* table, int sq, bool is_black)
 {
-    sq = is_black ? sq : (7 - (sq >> 3) << 3) + sq % 8;
+    sq = is_black ? sq : ((7 - (sq >> 3)) << 3) + (sq % 8);
     return table[sq];
 }
 

@@ -53,8 +53,10 @@ int main()
     while (playing)
     {
         MoveGenerator mgen(ch);
-        std::vector<move> move_list = engine.order_moves_by_piece(ch, mgen.gen_moves());
-        if (move_list.size() == 0 || ch.repetitions() > 2) playing = false;
+        move move_list[120] = {};
+        mgen.gen_moves(move_list);
+        engine.order_moves_by_piece(ch, move_list, move_list);
+        if (!move_list[119] || ch.repetitions() > 2) playing = false;
 
         // print ui
         fmt::print("\n");
@@ -70,21 +72,9 @@ int main()
         if (!playing) break;
         if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1)
         {
-            for (move mv : move_list)
-                fmt::print("{} ", MoveGenerator::move_san(ch, mv));
+            for (uint8_t i = 0; i < move_list[119]; i++)
+                fmt::print("{} ", MoveGenerator::move_san(ch, move_list[i]));
             fmt::print("\n{} ", ch.black_to_move ? "Black to move: " : "White to move: ");
-        }
-
-        // check for some errors
-        if (ch.zhash != ch.hash())
-        {
-            fmt::print("hash fail!");
-            break;
-        }
-        if (!ch.repetitions())
-        {
-            fmt::print("rep fail!");
-            break;
         }
 
         // get input
@@ -144,12 +134,12 @@ int main()
         else if (str == "end")
             // playing = false;
             return 1;
-        else for (move mv : move_list)
+        else for (uint8_t i = 0; i < move_list[119]; i++)
         {
-            if (str != MoveGenerator::move_san(ch, mv))
+            if (str != MoveGenerator::move_san(ch, move_list[i]))
                 continue;
-            last_move = MoveGenerator::move_san(ch, mv);
-            ch.make_move(mv, true);
+            last_move = MoveGenerator::move_san(ch, move_list[i]);
+            ch.make_move(move_list[i], true);
             break;
         }
     }
@@ -176,7 +166,7 @@ int main()
  */
 U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth)
 {
-    log_depth = std::min(log_depth, depth);
+    log_depth = log_depth < depth ? log_depth : depth;
     SearchLogger perft_log("perft_log", depth - log_depth);
     U64 leaf_nodes = 0;
     U64 nodes = 0;
@@ -185,18 +175,19 @@ U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth)
             depth, SearchLogger::time_to_string()));
     Timer perft_timer;
     MoveGenerator perft_gen(ch);
-    std::vector<move> moves = perft_gen.gen_moves();
+    move moves[120] = {};
+    perft_gen.gen_moves(moves);
 
     // main test loop
     if (!depth)
         leaf_nodes = 1;
-    else for (int mvidx = 0; mvidx < (int) moves.size(); mvidx++)
+    else for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
     {
-        move mv = moves.at(mvidx);
-        std::cout << fmt::format("{}/{}:\t{} ", mvidx + 1, moves.size(), Move::to_string(mv));
+        move mv = moves[mvidx];
+        std::cout << fmt::format("{}/{}:\t{} ", mvidx + 1, moves[119], Move::to_string(mv));
         if (depth > perft_log.depth)
         {
-            perft_log.buffer = fmt::format("{}/{}:\t{} ", mvidx + 1, moves.size(), Move::to_string(mv));
+            perft_log.buffer = fmt::format("{}/{}:\t{} ", mvidx + 1, moves[119], Move::to_string(mv));
         }
         ch.make_move(mv);
         nodes++;
@@ -252,12 +243,13 @@ U64 perft(Chess& ch, int depth, SearchLogger& perft_log, U64& nodes)
         return 1;
     U64 leaf_nodes = 0;
     MoveGenerator perft_gen(ch);
-    std::vector<move> moves = perft_gen.gen_moves();
-    for (move mv : moves)
+    move moves[120] = {};
+    perft_gen.gen_moves(moves);
+    for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
     {
         if (depth > perft_log.depth)
-            perft_log.buffer += fmt::format(" {}", MoveGenerator::move_san(ch, mv));
-        ch.make_move(mv);
+            perft_log.buffer += fmt::format(" {}", MoveGenerator::move_san(ch, moves[mvidx]));
+        ch.make_move(moves[mvidx]);
         nodes++;
         U64 i = perft(ch, depth - 1, perft_log, nodes);
         leaf_nodes += i;
@@ -289,15 +281,15 @@ U64 eperft_root(Chess& ch, int depth)
     U64 nodes = 0;
     Timer eperft_timer;
     MoveGenerator eperft_gen(ch);
-    std::vector<move> moves = eperft_gen.gen_moves();
+    move moves[120] = {};
+    eperft_gen.gen_moves(moves);
 
     // main test loop
     if (!depth)
         leaf_nodes = 1;
-    else for (int mvidx = 0; mvidx < (int) moves.size(); mvidx++)
+    else for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
     {
-        move mv = moves.at(mvidx);
-        ch.make_move(mv);
+        ch.make_move(moves[mvidx]);
         nodes++;
         U64 i = eperft(ch, depth - 1, nodes);
         leaf_nodes += i;
@@ -328,10 +320,11 @@ U64 eperft(Chess& ch, int depth, U64& nodes)
     }
     U64 leaf_nodes = 0;
     MoveGenerator eperft_gen(ch);
-    std::vector<move> moves = eperft_gen.gen_moves();
-    for (move mv : moves)
+    move moves[120] = {};
+    eperft_gen.gen_moves(moves);
+    for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
     {
-        ch.make_move(mv);
+        ch.make_move(moves[mvidx]);
         nodes++;
         U64 i = eperft(ch, depth - 1, nodes);
         leaf_nodes += i;

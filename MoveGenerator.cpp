@@ -15,8 +15,9 @@ void MoveGenerator::init(bool test)
  */
 bool MoveGenerator::is_game_over(bool test)
 {
-    init(test);
-    return gen_moves().size() == 0 || ch.repetitions() > 2;
+    move moves[120] = {};
+    gen_moves(moves);
+    return !moves[119] || ch.repetitions() > 2;
 }
 
 void MoveGenerator::checks_exist(bool test)
@@ -199,7 +200,7 @@ U64 MoveGenerator::gen_op_attack_mask(bool test)
     while (attackers)
     {
         // x & -x masks the LS1B
-        mask |= Compass::knight_attacks[63 - BB::lead_0s(attackers & -attackers)];
+        mask |= Compass::knight_attacks[63 - BB::lead_0s(attackers & 0-attackers)];
         // now clear that LS1B
         attackers &= attackers - 1;
     }
@@ -220,36 +221,30 @@ int MoveGenerator::find_king(int color)
  * Method to get the legal moves in a position.
  * @return an unsorted vector of moves
  */
-move* MoveGenerator::gen_moves(bool test)
+void MoveGenerator::gen_moves(move* moves, bool test)
 {
     init(test);
 
     // king
-    move moves[120] = {};
-    int8_t idx = 0;
-    move* temp;
-    temp = gen_king_piece_moves(find_king(ch.black_to_move), test);
-    for (int8_t i = 0; i < 120; i++)
+    move temp[120] = {};
+    gen_king_piece_moves(temp, test);
+    for (uint8_t i = 0; i < temp[119]; i++)
     {
-        if (temp[i] == 0) break;
-        moves[idx] = temp[i];
-        idx++;
+        moves[moves[119]] = temp[i];
+        moves[119] += moves[119] < 118 ? 1 : 0;
     }
-
-    if (in_double_check)
-        return moves;
+    if (in_double_check) return;
 
     // rooks and queens
     U64 ss = (ch.bb_rooks | ch.bb_queens) & *ch.bb_color[ch.black_to_move];
     while (ss)
     {
         // x & -x masks the LS1B
-        temp = gen_rook_piece_moves(63 - BB::lead_0s(ss & -ss), test);
-        for (move m : )
+        gen_rook_piece_moves(temp, 63 - BB::lead_0s(ss & 0-ss), test);
+        for (uint8_t i = 0; i < temp[119]; i++)
         {
-            if (temp[i] == 0) break;
-            moves[idx] = temp[i];
-            idx++;
+            moves[moves[119]] = temp[i];
+            moves[119] += moves[119] < 118 ? 1 : 0;
         }
         // now clear that LS1B
         ss &= ss - 1;
@@ -260,11 +255,11 @@ move* MoveGenerator::gen_moves(bool test)
     while (ss)
     {
         // x & -x masks the LS1B
-        for (move m : gen_bishop_piece_moves(63 - BB::lead_0s(ss & -ss), test))
+        gen_bishop_piece_moves(temp, 63 - BB::lead_0s(ss & 0-ss), test);
+        for (uint8_t i = 0; i < temp[119]; i++)
         {
-            if (temp[i] == 0) break;
-            moves[idx] = temp[i];
-            idx++;
+            moves[moves[119]] = temp[i];
+            moves[119] += moves[119] < 118 ? 1 : 0;
         }
         // now clear that LS1B
         ss &= ss - 1;
@@ -275,39 +270,35 @@ move* MoveGenerator::gen_moves(bool test)
     while (ss)
     {
         // x & -x masks the LS1B
-        for (move m : gen_knight_piece_moves(63 - BB::lead_0s(ss & 0-ss), test))
+        gen_knight_piece_moves(temp, 63 - BB::lead_0s(ss & 0-ss), test);
+        for (uint8_t i = 0; i < temp[119]; i++)
         {
-            if (temp[i] == 0) break;
-            moves[idx] = temp[i];
-            idx++;
+            moves[moves[119]] = temp[i];
+            moves[119] += moves[119] < 118 ? 1 : 0;
         }
         // now clear that LS1B
         ss &= ss - 1;
     }
 
     // pawns
-    temp = gen_pawn_moves(test);
-    for (int8_t i = 0; i < 120; i++)
+    gen_pawn_moves(temp, test);
+    for (uint8_t i = 0; i < temp[119]; i++)
     {
-        if (temp[i] == 0) break;
-        moves[idx] = temp[i];
-        idx++;
+        moves[moves[119]] = temp[i];
+        moves[119] += moves[119] < 118 ? 1 : 0;
     }
-
-    return moves;
 }
 
 /*
  * Generates legal pawn moves
  * @return an unsorted list of pawn moves
  */
-move* MoveGenerator::gen_pawn_moves(bool test)
+void MoveGenerator::gen_pawn_moves(move* pawn_moves, bool test)
 {
     using namespace directions;
-    move pawn_moves[120] = {};
     U64 pawns = ch.bb_pawns & *ch.bb_color[ch.black_to_move];
-    if (!pawns)
-        return pawn_moves;
+    pawn_moves[120] = {};
+    if (!pawns) return;
     U64 op = *ch.bb_color[!ch.black_to_move];
 
     // pawn captures
@@ -326,14 +317,19 @@ move* MoveGenerator::gen_pawn_moves(bool test)
                 && !BB::contains_square(Compass::ray_square(find_king(ch.black_to_move), start_sq, op), end_sq))
             continue;
         if (Compass::rank_yindex(end_sq) % 7 != 0)
-            pawn_moves.push_back(Move::build_move(start_sq, end_sq));
-        else // pawn promotions
         {
-            pawn_moves.push_back(Move::build_move(start_sq, end_sq, ch_cst::QUEEN));
-            pawn_moves.push_back(Move::build_move(start_sq, end_sq, ch_cst::ROOK));
-            pawn_moves.push_back(Move::build_move(start_sq, end_sq, ch_cst::BISHOP));
-            pawn_moves.push_back(Move::build_move(start_sq, end_sq, ch_cst::KNIGHT));
+            pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq);
+            pawn_moves[119]++;
         }
+        else // pawn promotions
+            pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::QUEEN);
+            pawn_moves[119]++;
+            pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::ROOK);
+            pawn_moves[119]++;
+            pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::KNIGHT);
+            pawn_moves[119]++;
+            pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::BISHOP);
+            pawn_moves[119]++;
     }
 
     // western captures
@@ -347,17 +343,21 @@ move* MoveGenerator::gen_pawn_moves(bool test)
         if (BB::contains_square(pinned_pieces, start_sq)
                 && !BB::contains_square(Compass::ray_square(find_king(ch.black_to_move), start_sq, op), end_sq))
             continue;
-        // if ((~captures_west & 1ull << end_sq)
-        //         | (pinned_pieces & 1ull << (end_sq + DIRS[5+2*c.aci]))
-        //         | (pin_ray_moves & 1ull << end_sq))
         if (Compass::rank_yindex(end_sq) % 7 != 0)
-            pawn_moves.push_back(Move::build_move(start_sq, end_sq));
+        {
+            pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq);
+            pawn_moves[119]++;
+        }
         else // pawn promotions
         {
-            pawn_moves.push_back(Move::build_move(start_sq, end_sq, ch_cst::QUEEN));
-            pawn_moves.push_back(Move::build_move(start_sq, end_sq, ch_cst::ROOK));
-            pawn_moves.push_back(Move::build_move(start_sq, end_sq, ch_cst::BISHOP));
-            pawn_moves.push_back(Move::build_move(start_sq, end_sq, ch_cst::KNIGHT));
+            pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::QUEEN);
+            pawn_moves[119]++;
+            pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::ROOK);
+            pawn_moves[119]++;
+            pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::KNIGHT);
+            pawn_moves[119]++;
+            pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::BISHOP);
+            pawn_moves[119]++;
         }
     }
 
@@ -371,69 +371,86 @@ move* MoveGenerator::gen_pawn_moves(bool test)
     while (pawn_advances)
     {
         // x & -x masks the LS1B
-        int end_sq = 63 - BB::lead_0s(pawn_advances & 0-pawn_advances);
+        uint8_t end_sq = 63 - BB::lead_0s(pawn_advances & 0-pawn_advances);
          // now clear that LS1B
         pawn_advances &= pawn_advances - 1;
-        if (BB::contains_square(pawns, end_sq - PAWN_DIR[ch.black_to_move])
-                && (!BB::contains_square(pinned_pieces, end_sq - PAWN_DIR[ch.black_to_move])
+        uint8_t start_sq = end_sq - PAWN_DIR[ch.black_to_move];
+        if (BB::contains_square(pawns, start_sq)
+                && (!BB::contains_square(pinned_pieces, start_sq)
                     || Compass::file_xindex(find_king(ch.black_to_move)) == Compass::file_xindex(end_sq)))
         {
             if (Compass::rank_yindex(end_sq) % 7 != 0)
-                pawn_moves.push_back(Move::build_move(end_sq - PAWN_DIR[ch.black_to_move], end_sq));
+            {
+                pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::QUEEN);
+                pawn_moves[119]++;
+            }
             else // pawn promotions
             {
-                pawn_moves.push_back(Move::build_move(end_sq - PAWN_DIR[ch.black_to_move], end_sq, ch_cst::QUEEN));
-                pawn_moves.push_back(Move::build_move(end_sq - PAWN_DIR[ch.black_to_move], end_sq, ch_cst::ROOK));
-                pawn_moves.push_back(Move::build_move(end_sq - PAWN_DIR[ch.black_to_move], end_sq, ch_cst::BISHOP));
-                pawn_moves.push_back(Move::build_move(end_sq - PAWN_DIR[ch.black_to_move], end_sq, ch_cst::KNIGHT));
+                pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::QUEEN);
+                pawn_moves[119]++;
+                pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::ROOK);
+                pawn_moves[119]++;
+                pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::KNIGHT);
+                pawn_moves[119]++;
+                pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::BISHOP);
+                pawn_moves[119]++;
             }
         }
-        else if (BB::contains_square(pawns, end_sq - 2 * PAWN_DIR[ch.black_to_move])
-                && (!BB::contains_square(pinned_pieces, end_sq - 2 * PAWN_DIR[ch.black_to_move])
-                    || Compass::file_xindex(find_king(ch.black_to_move)) == Compass::file_xindex(end_sq)))
-            pawn_moves.push_back(Move::build_move(end_sq - 2 * PAWN_DIR[ch.black_to_move], end_sq));
+        else if (BB::contains_square(pawns, end_sq - 2 * PAWN_DIR[ch.black_to_move]) &&
+            (!BB::contains_square(pinned_pieces, end_sq - 2 * PAWN_DIR[ch.black_to_move])
+            || Compass::file_xindex(find_king(ch.black_to_move)) == Compass::file_xindex(end_sq)))
+        {
+            pawn_moves[pawn_moves[119]] = Move::build_move(end_sq - 2 * PAWN_DIR[ch.black_to_move], end_sq);
+            pawn_moves[119]++;
+        }
     }
 
     if (!in_check)
-        return pawn_moves;
-    std::vector<move> legal_moves;
-    for (move m : pawn_moves)
-        if (BB::contains_square(check_ray, Move::end(m))
-                || (Move::end(m) == ch.ep_square && check_ray & 1ull << (ch.ep_square + directions::PAWN_DIR[!ch.black_to_move])))
-            legal_moves.push_back(m);
-    return legal_moves;
+        return;
+    move legal_moves[120] = {};
+    for (uint8_t i = 0; i < pawn_moves[119]; i++)
+        if (BB::contains_square(check_ray, Move::end(pawn_moves[i]))
+            || (Move::end(pawn_moves[i]) == ch.ep_square && check_ray & 1ull << (ch.ep_square + directions::PAWN_DIR[!ch.black_to_move])))
+        {
+            legal_moves[legal_moves[119]] = pawn_moves[i];
+            legal_moves[119]++;
+        }
+    pawn_moves = legal_moves;
 }
 
-std::vector<move> MoveGenerator::gen_knight_piece_moves(int start, bool test)
+void MoveGenerator::gen_knight_piece_moves(move* knight_moves, int start, bool test)
 {
-    std::vector<move> knight_moves;
+    knight_moves[120] = {};
     U64 ts = Compass::knight_attacks[start] & ~*ch.bb_color[ch.black_to_move];
     if (BB::contains_square(pinned_pieces, start))
-        return knight_moves;
+        return;
 
     while (ts)
     {
         // x & -x masks the LS1B
-        knight_moves.push_back(Move::build_move(start, 63 - BB::lead_0s(ts & 0-ts)));
+        knight_moves[knight_moves[119]] = Move::build_move(start, 63 - BB::lead_0s(ts & 0-ts));
+        knight_moves[119]++;
         // now clear that LS1B
         ts &= ts - 1;
     }
 
     if (!in_check)
-        return knight_moves;
-    std::vector<move> legal_moves;
-    for (move m : knight_moves)
+        return;
+    move legal_moves[120] = {};
+    for (uint8_t i = 0; i < knight_moves[119]; i++)
     {
-        if (check_ray & 1ull << Move::end(m))
-            legal_moves.push_back(m);
+        if (check_ray & 1ull << Move::end(knight_moves[i]))
+        {
+            legal_moves[legal_moves[119]] = (knight_moves[i]);
+            legal_moves[119]++;
+        }
     }
-    return legal_moves;
+    knight_moves = legal_moves;
 }
 
-std::vector<move> MoveGenerator::gen_bishop_piece_moves(int start, bool test)
+void MoveGenerator::gen_bishop_piece_moves(move* bishop_moves, int start, bool test)
 {
-    std::vector<move> bishop_moves;
-
+    bishop_moves[120] = {};
     U64 ss = 1ull << start;
     U64 ts = BB::NoEa_attacks(ss, ~ch.bb_occ);
     ts |= BB::NoWe_attacks(ss, ~ch.bb_occ);
@@ -445,26 +462,29 @@ std::vector<move> MoveGenerator::gen_bishop_piece_moves(int start, bool test)
     {
         // x & -x masks the LS1B
         if (~pinned_pieces & ss || Compass::ray_square(find_king(ch.black_to_move), start) & ts & 0-ts)
-            bishop_moves.push_back(Move::build_move(start, 63 - BB::lead_0s(ts & 0-ts)));
+        {
+            bishop_moves[bishop_moves[119]] = Move::build_move(start, 63 - BB::lead_0s(ts & 0-ts));
+            bishop_moves[119]++;
+        }
         // now clear that LS1B
         ts &= ts - 1;
     }
 
     if (!in_check)
-        return bishop_moves;
-    std::vector<move> legal_moves;
-    for (move m : bishop_moves)
-    {
-        if (BB::contains_square(check_ray, Move::end(m)))
-            legal_moves.push_back(m);
-    }
-    return legal_moves;
+        return;
+    move legal_moves[120] = {};
+    for (uint8_t i = 0; i < bishop_moves[119]; i++)
+        if (BB::contains_square(check_ray, Move::end(bishop_moves[i])))
+        {
+            legal_moves[legal_moves[119]] = bishop_moves[i];
+            legal_moves[119]++;
+        }
+    bishop_moves = legal_moves;
 }
 
-std::vector<move> MoveGenerator::gen_rook_piece_moves(int start, bool test)
+void MoveGenerator::gen_rook_piece_moves(move* rook_moves, int start, bool test)
 {
-    std::vector<move> rook_moves;
-
+    rook_moves[120] = {};
     U64 ss = 1ull << start;
     U64 ts = BB::nort_attacks(ss, ~ch.bb_occ);
     ts |= BB::sout_attacks(ss, ~ch.bb_occ);
@@ -477,30 +497,40 @@ std::vector<move> MoveGenerator::gen_rook_piece_moves(int start, bool test)
     {
         // x & -x masks the LS1B
         if (~pinned_pieces & ss || Compass::ray_square(find_king(ch.black_to_move), start) & ts & 0-ts)
-            rook_moves.push_back(Move::build_move(start, 63 - BB::lead_0s(ts & 0-ts)));
+        {
+            rook_moves[rook_moves[119]] = Move::build_move(start, 63 - BB::lead_0s(ts & 0-ts));
+            rook_moves[119]++;
+        }
         // now clear that LS1B
         ts &= ts - 1;
     }
 
     if (!in_check)
-        return rook_moves;
-    std::vector<move> legal_moves;
-    for (move m : rook_moves)
-        if (BB::contains_square(check_ray, Move::end(m)))
-            legal_moves.push_back(m);
-    return legal_moves;
+        return;
+    move legal_moves[120] = {};
+    for (uint8_t i = 0; i < rook_moves[119]; i++)
+        if (BB::contains_square(check_ray, Move::end(rook_moves[i])))
+        {
+            legal_moves[legal_moves[119]] = rook_moves[i];
+            legal_moves[119]++;
+        }
+    rook_moves = legal_moves;
 }
 
-std::vector<move> MoveGenerator::gen_king_piece_moves(int sq, bool test)
+void MoveGenerator::gen_king_piece_moves(move* king_moves, bool test)
 {
-    std::vector<move> king_moves;
-    U64 ts = Compass::king_attacks[sq] & ~*ch.bb_color[ch.black_to_move] & ~op_attack_mask;
+    king_moves[120] = {};
+    uint8_t king_sq = find_king(ch.black_to_move);
+    U64 ts = Compass::king_attacks[king_sq]
+           & ~*ch.bb_color[ch.black_to_move]
+           & ~op_attack_mask;
 
     // normal moves
     while (ts)
     {
         // x & -x masks the LS1B
-        king_moves.push_back(Move::build_move(sq, 63 - BB::lead_0s(ts & 0-ts)));
+        king_moves[king_moves[119]] = Move::build_move(king_sq, 63 - BB::lead_0s(ts & 0-ts));
+        king_moves[119]++;
         // now clear that LS1B
         ts &= ts - 1;
     }
@@ -509,18 +539,23 @@ std::vector<move> MoveGenerator::gen_king_piece_moves(int sq, bool test)
     // wh:QuKi bl:QuKi
     // queenside castle
     if (ch.castle_rights & 2 << 2 * ch.black_to_move && !in_check
-            && !BB::contains_square(ch.bb_occ | op_attack_mask, sq - 1)
-            && !BB::contains_square(ch.bb_occ | op_attack_mask, sq - 2)
-            && !BB::contains_square(ch.bb_occ, sq - 3)
-            && BB::contains_square(ch.bb_rooks & *ch.bb_color[ch.black_to_move], sq - 4))
-        king_moves.push_back(Move::build_move(sq, sq - 2));
+        && !BB::contains_square(ch.bb_occ | op_attack_mask, king_sq - 1)
+        && !BB::contains_square(ch.bb_occ | op_attack_mask, king_sq - 2)
+        && !BB::contains_square(ch.bb_occ, king_sq - 3)
+        && BB::contains_square(ch.bb_rooks & *ch.bb_color[ch.black_to_move], king_sq - 4))
+    {
+        king_moves[king_moves[119]] = Move::build_move(king_sq, king_sq - 2);
+        king_moves[119]++;
+    }
     // kingside castle
     if (ch.castle_rights & 1 << 2 * ch.black_to_move && !in_check
-            && !BB::contains_square(ch.bb_occ | op_attack_mask, sq + 1)
-            && !BB::contains_square(ch.bb_occ | op_attack_mask, sq + 2)
-            && BB::contains_square(ch.bb_rooks & *ch.bb_color[ch.black_to_move], sq + 3))
-        king_moves.push_back(Move::build_move(sq, sq + 2));
-    return king_moves;
+        && !BB::contains_square(ch.bb_occ | op_attack_mask, king_sq + 1)
+        && !BB::contains_square(ch.bb_occ | op_attack_mask, king_sq + 2)
+        && BB::contains_square(ch.bb_rooks & *ch.bb_color[ch.black_to_move], king_sq + 3))
+    {
+        king_moves[king_moves[119]] = Move::build_move(king_sq, king_sq + 2);
+        king_moves[119]++;
+    }
 }
 
 /*
@@ -531,14 +566,16 @@ std::vector<move> MoveGenerator::gen_king_piece_moves(int sq, bool test)
 std::string MoveGenerator::move_san(Chess ch, move mv)
 {
     MoveGenerator san_gen(ch);
-    std::vector<move> moves = san_gen.gen_moves();
+    move moves[120] = {};
+    san_gen.gen_moves(moves);
     std::string san = "";
     int start = Move::start(mv), end = Move::end(mv);
     int piece = ch.piece_at(start);
 
     // check for ambiguity
-    for (move m2 : moves)
+    for (uint8_t i = 0; i < moves[119]; i++)
     {
+        move m2 = moves[i];
         if (Move::start(m2) == start || Move::end(m2) != end || ch.piece_at(Move::start(m2)) != piece)
             continue;
         if (Compass::file_xindex(Move::start(m2)) != Compass::file_xindex(start))
@@ -585,3 +622,4 @@ std::string MoveGenerator::move_san(Chess ch, move mv)
 
     return san;
 }
+
