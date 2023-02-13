@@ -37,7 +37,7 @@ namespace BB
     U64 NoWe_attacks(U64 bishops, U64 empty);
     U64 SoEa_attacks(U64 bishops, U64 empty);
     U64 SoWe_attacks(U64 bishops, U64 empty);
-    U64 gen_shift(U64 bb, uint8_t s);
+    U64 gen_shift(U64 bb, int16_t s);
     U64 flip_vertical(U64 bb);
     bool contains_square(U64 bb, uint8_t sq);
     uint8_t num_bits_flipped(U64 bb);

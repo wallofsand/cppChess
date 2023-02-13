@@ -259,7 +259,7 @@ U64 BB::SoWe_attacks(U64 bishops, U64 empty) { return SoWe_shift_one(SoWe_occl_f
  *          right if negative
  * @return shifted bitboard
  */
-U64 BB::gen_shift(U64 bb, uint8_t s)
+U64 BB::gen_shift(U64 bb, int16_t s)
 {
     char left = (char) s;
     char right = -((char) (s >> 8) & left);
