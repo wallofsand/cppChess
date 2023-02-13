@@ -53,10 +53,9 @@ int main()
     while (playing)
     {
         MoveGenerator mgen(ch);
-        move move_list[120] = {};
-        mgen.gen_moves(move_list);
-        engine.order_moves_by_piece(ch, move_list, move_list);
-        if (!move_list[119] || ch.repetitions() > 2) playing = false;
+        move moves[120] = {};
+        mgen.gen_moves(moves);
+        if (!moves[119] || ch.repetitions() > 2) playing = false;
 
         // print ui
         fmt::print("\n");
@@ -72,8 +71,8 @@ int main()
         if (!playing) break;
         if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1)
         {
-            for (uint8_t i = 0; i < move_list[119]; i++)
-                fmt::print("{} ", MoveGenerator::move_san(ch, move_list[i]));
+            for (uint8_t i = 0; i < moves[119]; i++)
+                fmt::print("{} ", MoveGenerator::move_san(ch, moves[i]));
             fmt::print("\n{} ", ch.black_to_move ? "Black to move: " : "White to move: ");
         }
 
@@ -81,7 +80,7 @@ int main()
         game_timer.reset();
         std::string str;
         if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1)
-        std::cin >> str;
+            std::cin >> str;
 
         // if no input, get ai move
         if (!ch.black_to_move && human == 1 || ch.black_to_move && human == 0 || human == 2)
@@ -134,12 +133,12 @@ int main()
         else if (str == "end")
             // playing = false;
             return 1;
-        else for (uint8_t i = 0; i < move_list[119]; i++)
+        else for (uint8_t i = 0; i < moves[119]; i++)
         {
-            if (str != MoveGenerator::move_san(ch, move_list[i]))
+            if (str != MoveGenerator::move_san(ch, moves[i]))
                 continue;
-            last_move = MoveGenerator::move_san(ch, move_list[i]);
-            ch.make_move(move_list[i], true);
+            last_move = MoveGenerator::move_san(ch, moves[i]);
+            ch.make_move(moves[i], true);
             break;
         }
     }

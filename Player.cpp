@@ -14,7 +14,7 @@ Player::Player(float mob_percent)
  * @param test true if special debug information should be printed
  * @return the best move found in the search
  */
-move Player::iterative_search(Chess ch, int depth, U64& nodes, bool test)
+move Player::iterative_search(Chess& ch, uint8_t depth, U64& nodes, bool test)
 {
     // if (BB::num_bits_flipped(ch.bb_occ) <= 6)
     //     depth = depth + 2;
@@ -26,20 +26,19 @@ move Player::iterative_search(Chess ch, int depth, U64& nodes, bool test)
     mgen.gen_moves(moves);
     if (moves[119] == 1)
         return moves[0];
-    order_moves_by_piece(ch, moves, moves);
     move best_move = moves[0];
     nodes = 0;
 
     // Iterative search loop
-    for (int iter = 1; iter <= depth; iter++)
+    for (uint8_t iter = 1; iter <= depth; iter++)
     {
         for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
         {
             move mv = moves[mvidx];
             ch.make_move(mv);
             float score = -nega_max(ch, iter - 1, nodes, -99.99f, -high_score, test);
-            best_move  = score > high_score ? mv    : best_move;
-            high_score = score > high_score ? score : high_score;
+            best_move   = score > high_score ? mv    : best_move;
+            high_score  = score > high_score ? score : high_score;
             ch.unmake_move(1);
 
             // print output of search
@@ -60,7 +59,7 @@ move Player::iterative_search(Chess ch, int depth, U64& nodes, bool test)
  * @param b the minimum eval allowed by the opponent
  * @return the eval of the most favorable end node
  */
-float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta, bool test)
+float Player::nega_max(Chess& ch, uint8_t depth, U64& nodes, float alpha, float beta, bool test)
 {
     MoveGenerator mgen(ch);
     move moves[120] = {};
@@ -96,7 +95,6 @@ float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta
     }
 
     nodes++;
-    order_moves_by_piece(ch, moves, moves);
     move best_move = 0;
     for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
     {
@@ -117,7 +115,7 @@ float Player::nega_max(Chess& ch, int depth, U64& nodes, float alpha, float beta
 /*
  *
  */
-float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, float beta, bool test)
+float Player::quiescence_search(Chess& ch, uint8_t depth, U64& nodes, float alpha, float beta, bool test)
 {
     MoveGenerator mgen(ch);
     move moves[120] {};
@@ -151,7 +149,6 @@ float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, f
 
     nodes++;
     alpha = stand_pat > alpha ? stand_pat : alpha;
-    order_moves_by_piece(ch, moves, moves);
     // make captures until no captures remain, then eval
     for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
     {
@@ -171,7 +168,7 @@ float Player::quiescence_search(Chess& ch, int depth, U64& nodes, float alpha, f
     return alpha;
 }
 
-bool Player::move_is_check(Chess& ch, move mv)
+bool Player::move_is_check(Chess ch, move mv)
 {
     ch.make_move(mv);
     MoveGenerator check_gen(ch);
@@ -179,31 +176,26 @@ bool Player::move_is_check(Chess& ch, move mv)
     return MoveGenerator(ch).in_check;
 }
 
-void Player::order_moves_by_piece(Chess& ch, const move* moves, move* out) const
+void Player::order_moves_by_piece(Chess& ch, const move* moves, move* ordered) const
 {
-    move ordered[120] = {};
-    uint8_t idx = 0;
+    ordered[120] = {};
     move hash_move = TTable::read(ch.zhash).best;
     if (hash_move)
     {
-        ordered[idx] = hash_move;
-        idx++;
+        ordered[ordered[119]] = hash_move;
+        ordered[119]++;
     }
     for (uint8_t piece = ch_cst::KING; piece >= ch_cst::PAWN; piece--)
-    {
-        for (uint8_t i = 0; i < 120; i++)
+        for (uint8_t i = 0; i < moves[119]; i++)
         {
-            move mv = moves[i];
-            if (!BB::contains_square(*ch.bb_piece[piece], Move::start(mv)) || mv == hash_move)
+            if (!BB::contains_square(*ch.bb_piece[piece], Move::start(moves[i])) || moves[i] == hash_move)
                 continue;
-            ordered[idx] = mv;
-            idx++;
+            ordered[ordered[119]] = moves[i];
+            ordered[119]++;
         }
-    }
-    out = ordered;
 }
 
-float Player::eval(Chess& ch, int mate_offset, bool test)
+float Player::eval(Chess& ch, uint8_t mate_offset, bool test)
 {
     float material_score = 0, positional_score = 0;
     MoveGenerator eval_gen(ch);
@@ -227,7 +219,7 @@ float Player::eval(Chess& ch, int mate_offset, bool test)
         U64 pieces = ch.bb_white & *ch.bb_piece[p];
         while (pieces)
         {
-            int sq = 63 - BB::lead_0s(pieces & 0-pieces);
+            uint8_t sq = 63 - BB::lead_0s(pieces & 0-pieces);
             material_score += var_piece_value[p];
             positional_score += PieceLocationTables::complex_read(p, sq, middlegame_weight, false);
             pieces &= pieces - 1;
@@ -239,7 +231,7 @@ float Player::eval(Chess& ch, int mate_offset, bool test)
         U64 pieces = ch.bb_black & *ch.bb_piece[p];
         while (pieces)
         {
-            int sq = 63 - BB::lead_0s(pieces & 0-pieces);
+            uint8_t sq = 63 - BB::lead_0s(pieces & 0-pieces);
             material_score -= var_piece_value[p];
             positional_score -= PieceLocationTables::complex_read(p, sq, middlegame_weight, true);
             pieces &= pieces - 1;
@@ -252,7 +244,7 @@ float Player::eval(Chess& ch, int mate_offset, bool test)
 
     // mobility score:
     ch.black_to_move = !ch.black_to_move;
-    int net_mobility = moves[119];
+    int8_t net_mobility = moves[119];
     eval_gen.gen_moves(moves);
     net_mobility -= moves[119];
     ch.black_to_move = !ch.black_to_move;

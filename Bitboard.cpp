@@ -6,7 +6,7 @@
  * @param sq square index 0-63
  * @return true if the bit at sq is set
  */
-const bool BB::contains_square(U64 bb, int sq)
+bool BB::contains_square(U64 bb, uint8_t sq)
 {
     return bb & 1ull << sq;
 }
@@ -15,9 +15,9 @@ const bool BB::contains_square(U64 bb, int sq)
  * @param bb any bitboard
  * @return the number of bits set in bb
  */
-const int BB::num_bits_flipped(U64 bb)
+uint8_t BB::num_bits_flipped(U64 bb)
 {
-    int count = 0;
+    uint8_t count = 0;
     while (bb)
     {
         count++;
@@ -259,7 +259,7 @@ U64 BB::SoWe_attacks(U64 bishops, U64 empty) { return SoWe_shift_one(SoWe_occl_f
  *          right if negative
  * @return shifted bitboard
  */
-U64 BB::gen_shift(U64 bb, int s)
+U64 BB::gen_shift(U64 bb, uint8_t s)
 {
     char left = (char) s;
     char right = -((char) (s >> 8) & left);
@@ -271,7 +271,7 @@ U64 BB::gen_shift(U64 bb, int s)
  * @param bb any bitboard
  * @param fmt true if a pretty frame should print
  */
-const void BB::print_U64(U64 bb, std::string name, bool fmt)
+void BB::print_U64(U64 bb, std::string name, bool fmt)
 {
     if (name != "")
     {
@@ -286,11 +286,11 @@ const void BB::print_U64(U64 bb, std::string name, bool fmt)
  * @param bb any bitboard
  * @return a string of the binary representation of bb
  */
-const std::string BB::build_binary_string(U64 bb)
+std::string BB::build_binary_string(U64 bb)
 {
-    int leading_zero_count = lead_0s(bb);
+    uint8_t leading_zero_count = lead_0s(bb);
     std::string zeros = "";
-    for (int i = 0; i < leading_zero_count; i++)
+    for (uint8_t i = 0; i < leading_zero_count; i++)
         zeros.append("0");
     while (bb)
     {
@@ -299,7 +299,7 @@ const std::string BB::build_binary_string(U64 bb)
     }
     // string is currently reversed - the string is the correct binary representation of the number
     // but that means the bits are indexed backwards. lets fix that
-    for (int idx = 0; idx < 32; idx++)
+    for (uint8_t idx = 0; idx < 32; idx++)
     {
         char tmp = zeros[idx];
         zeros[idx] = zeros[63-idx];
@@ -325,16 +325,16 @@ U64 BB::flip_vertical(U64 bb)
  * @param bbstr any string of length 64
  * @param fmt true to print fancy output
  */
-const void BB::print_binary_string(std::string bbstr, bool fmt)
+void BB::print_binary_string(std::string bbstr, bool fmt)
 {
     // we want to print the binary as 8 8-bit words
     // the words are printed forewards but in reverse order
     // since the printing happens top-to-bottom on the screen
     std::string divider = "|---|---|---|---|---|---|---|---|\n";
-    for (int file = 7; file >= 0; file--)
+    for (uint8_t file = 7; file >= 0; file--)
     {
         fmt::print("{}", fmt ? divider + "| " : "");
-        for (int rank = 0; rank < 8; rank++)
+        for (uint8_t rank = 0; rank < 8; rank++)
             fmt::print("{}{}", bbstr[(file<<3) + rank], fmt ? " | " : "");
         fmt::print("\n");
     }
@@ -346,10 +346,10 @@ const void BB::print_binary_string(std::string bbstr, bool fmt)
  * @param any bitboard
  * @return the number of leading zeros
  */
-const int BB::lead_0s(U64 bb)
+uint8_t BB::lead_0s(U64 bb)
 {
     if (!bb) return 64;
-    int count = 0;
+    uint8_t count = 0;
     // is the msb in the top 32 bits?
     if (!(bb & 0xFFFFFFFF00000000))
     {

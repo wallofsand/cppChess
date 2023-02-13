@@ -11,23 +11,24 @@ Chess::Chess()
 }
 
 // copy constructor without make_move
-Chess::Chess(const Chess& ch)
+Chess::Chess(const Chess& _ch)
 {
-    this->black_to_move = ch.black_to_move;
-    this->ep_square     = ch.ep_square;
-    this->castle_rights = ch.castle_rights;
-    this->history       = ch.history;
-    this->zhash         = ch.zhash;
+    this->black_to_move = _ch.black_to_move;
+    this->castle_rights = _ch.castle_rights;
+    this->ep_square     = _ch.ep_square;
+    this->history       = _ch.history;
+    this->prev_hash     = _ch.prev_hash;
+    this->zhash         = _ch.zhash;
     // copy the bitboards
-    this->bb_white   = bb_white;
-    this->bb_black   = bb_black;
-    this->bb_pawns   = bb_pawns;
-    this->bb_knights = bb_knights;
-    this->bb_bishops = bb_bishops;
-    this->bb_rooks   = bb_rooks;
-    this->bb_queens  = bb_queens;
-    this->bb_kings   = bb_kings;
-    this->bb_occ     = bb_occ;
+    this->bb_white   = _ch.bb_white;
+    this->bb_black   = _ch.bb_black;
+    this->bb_pawns   = _ch.bb_pawns;
+    this->bb_knights = _ch.bb_knights;
+    this->bb_bishops = _ch.bb_bishops;
+    this->bb_rooks   = _ch.bb_rooks;
+    this->bb_queens  = _ch.bb_queens;
+    this->bb_kings   = _ch.bb_kings;
+    this->bb_occ     = _ch.bb_occ;
 }
 
 /***********************************
@@ -77,7 +78,7 @@ U64 Chess::hash() const
     while (pieces)
     {
         // x & -x masks the LS1B
-        int sq = 63 - BB::lead_0s(pieces & 0-pieces);
+        uint8_t sq = 63 - BB::lead_0s(pieces & 0-pieces);
         h ^= TTable::sq_color_type_64x2x6[sq][color_at(sq)][piece_at(sq) - 1];
         // now clear that LS1B
         pieces &= pieces - 1;
@@ -100,9 +101,9 @@ U64 Chess::hash() const
  * @param sq the square index to check
  * @return the piece type (1 - 6) or 0 if no piece is found
  */
-int Chess::piece_at(int sq) const
+uint8_t Chess::piece_at(uint8_t sq) const
 {
-    for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
+    for (uint8_t piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
         if (BB::contains_square(*bb_piece[piece], sq))
             return piece;
     return 0;
@@ -113,7 +114,7 @@ int Chess::piece_at(int sq) const
  * @param sq the square index to check
  * @return 0 for white, 1 for black, -1 if no piece is found
  */
-int Chess::color_at(int sq) const
+uint8_t Chess::color_at(uint8_t sq) const
 {
     if (BB::contains_square(bb_white, sq)) return ch_cst::WHITE_INDEX;
     if (BB::contains_square(bb_black, sq)) return ch_cst::BLACK_INDEX;
@@ -122,12 +123,12 @@ int Chess::color_at(int sq) const
 
 void Chess::make_move(move mv, bool test)
 {
-    int start = Move::start(mv);
-    int end = Move::end(mv);
+    uint8_t start = Move::start(mv);
+    uint8_t end = Move::end(mv);
     prev_hash.push_back(zhash);
 
     // Captured piece
-    int type = piece_at(end);
+    uint8_t type = piece_at(end);
     if (type)
     {
         // remove captured pieces
@@ -216,7 +217,7 @@ void Chess::make_move(move mv, bool test)
     history.push_back(mv);
 }
 
-void Chess::unmake_move(int undos)
+void Chess::unmake_move(uint8_t undos)
 {
     std::vector<move> temp = history;
     history.clear();
@@ -226,11 +227,11 @@ void Chess::unmake_move(int undos)
     castle_rights = 0b1111;
     build_bitboards();
     zhash = hash();
-    for (int i = 0; i < (int) temp.size() - undos; i++)
+    for (uint8_t i = 0; i < temp.size() - undos; i++)
         make_move(temp[i]);
 }
 
-int Chess::repetitions() const
+uint8_t Chess::repetitions() const
 {
     uint8_t count = 1;
     for (U64 h : prev_hash)
@@ -241,13 +242,13 @@ int Chess::repetitions() const
 void Chess::print_board(bool fmt) const
 {
     std::string board = "";
-    for (int sq = 0; sq < 64; sq++)
+    for (uint8_t sq = 0; sq < 64; sq++)
     {
-        for (int color = 0; color < 2; color++)
-            for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
+        for (uint8_t color = 0; color < 2; color++)
+            for (uint8_t piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
                 if (BB::contains_square(*bb_piece[piece] & *bb_color[color], sq))
                     board += ch_cst::piece_char[piece | (color << 3)];
-        if ((int) board.length() > sq) continue;
+        if (board.length() > sq) continue;
         else if (sq == ep_square) board += "e";
         else if (Compass::file_xindex(sq) % 2 == Compass::rank_yindex(sq) % 2) board += ".";
         else board += " ";

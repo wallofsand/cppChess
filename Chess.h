@@ -15,8 +15,8 @@ public:
     Chess(const Chess& ch);
     bool black_to_move;
     // bl:QuKi wh:QuKi
-    int castle_rights;
-    int ep_square = -1;
+    uint8_t castle_rights;
+    int8_t ep_square = -1;
     U64 bb_white;
     U64 bb_black;
     U64 bb_pawns;
@@ -31,13 +31,13 @@ public:
     U64 zhash = 0ull;
     std::vector<move> history;
     std::vector<U64> prev_hash;
-    int piece_at(int sq) const;
-    int color_at(int sq) const;
+    uint8_t piece_at(uint8_t sq) const;
+    uint8_t color_at(uint8_t sq) const;
     U64 hash() const;
     void print_board(bool fmt = false) const;
     void make_move(move mv, bool test = false);
-    void unmake_move(int undos);
-    int repetitions() const;
+    void unmake_move(uint8_t undos);
+    uint8_t repetitions() const;
     void build_bitboards();
 };
 

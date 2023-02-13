@@ -11,13 +11,13 @@ class Player
 {
 public:
     Player(float delta);
-    move iterative_search(Chess ch, int depth, U64& nodes, bool test);
+    move iterative_search(Chess& ch, uint8_t depth, U64& nodes, bool test);
     move get_book_move(Chess& ch, bool test);
-    float nega_max(Chess& ch, int depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);
-    float quiescence_search(Chess& ch, int depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);
-    float eval(Chess& ch, int mate_offset = 0, bool test = false);
-    bool move_is_check(Chess& ch, move mv);
-    void order_moves_by_piece(Chess& ch, const move moves[120], move* out) const;
+    float nega_max(Chess& ch, uint8_t depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);
+    float quiescence_search(Chess& ch, uint8_t depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);
+    float eval(Chess& ch, uint8_t mate_offset = 0, bool test = false);
+    bool move_is_check(Chess ch, move mv);
+    void order_moves_by_piece(Chess& ch, const move moves[120], move* ordered) const;
 private:
     SearchLogger search_log;
     float var_endgame_weight = 32.0f;

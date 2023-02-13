@@ -1,21 +1,21 @@
 #include "Move.h"
 
-move Move::build_move(int s, int e, int p)
+move Move::build_move(uint8_t s, uint8_t e, uint8_t p)
 {
     return p << 12 | e << 6 | s;
 }
 
-int Move::start(move m)
+uint8_t Move::start(move m)
 {
     return m & 63;
 }
 
-int Move::end(move m)
+uint8_t Move::end(move m)
 {
-    return m >> 6 & 63;
+    return (m >> 6) & 63;
 }
 
-int Move::promote(move m)
+uint8_t Move::promote(move m)
 {
     return m >> 12;
 }
