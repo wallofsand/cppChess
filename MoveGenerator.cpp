@@ -200,7 +200,7 @@ U64 MoveGenerator::gen_op_attack_mask(bool test)
     while (attackers)
     {
         // x & -x masks the LS1B
-        mask |= Compass::knight_attacks[63 - BB::lead_0s(attackers & 0-attackers)];
+        mask |= Compass::knight_attacks[63 - BB::lz_count(attackers & 0-attackers)];
         // now clear that LS1B
         attackers &= attackers - 1;
     }
@@ -214,25 +214,25 @@ U64 MoveGenerator::gen_op_attack_mask(bool test)
  */
 uint8_t MoveGenerator::find_king(uint8_t color)
 {
-    return 63 - BB::lead_0s(ch.bb_kings & *ch.bb_color[color]);
+    return 63 - BB::lz_count(ch.bb_kings & *ch.bb_color[color]);
 }
 
 /*
  * Method to get the legal moves in a position.
- * @return an unsorted vector of moves
+ * @return an array of all legal moves
  */
 move* MoveGenerator::gen_moves(move (&moves)[120], bool test)
 {
     init(test);
 
     // king
+    moves[119] = 0;
     move temp[120] = {};
     gen_king_piece_moves(temp, test);
     for (uint8_t i = 0; i < temp[119]; i++)
     {
         moves[moves[119]] = temp[i];
         moves[119] += moves[119] < 118 ? 1 : 0;
-        temp[i] = 0;
     }
     temp[119] = 0;
     if (in_double_check) return moves;
@@ -242,12 +242,11 @@ move* MoveGenerator::gen_moves(move (&moves)[120], bool test)
     while (ss)
     {
         // x & -x masks the LS1B
-        gen_rook_piece_moves(temp, 63 - BB::lead_0s(ss & 0-ss), test);
+        gen_rook_piece_moves(temp, 63 - BB::lz_count(ss & 0-ss), test);
         for (uint8_t i = 0; i < temp[119]; i++)
         {
             moves[moves[119]] = temp[i];
             moves[119] += moves[119] < 118 ? 1 : 0;
-            temp[i] = 0;
         }
         temp[119] = 0;
         // now clear that LS1B
@@ -259,12 +258,11 @@ move* MoveGenerator::gen_moves(move (&moves)[120], bool test)
     while (ss)
     {
         // x & -x masks the LS1B
-        gen_bishop_piece_moves(temp, 63 - BB::lead_0s(ss & 0-ss), test);
+        gen_bishop_piece_moves(temp, 63 - BB::lz_count(ss & 0-ss), test);
         for (uint8_t i = 0; i < temp[119]; i++)
         {
             moves[moves[119]] = temp[i];
             moves[119] += moves[119] < 118 ? 1 : 0;
-            temp[i] = 0;
         }
         temp[119] = 0;
         // now clear that LS1B
@@ -276,12 +274,11 @@ move* MoveGenerator::gen_moves(move (&moves)[120], bool test)
     while (ss)
     {
         // x & -x masks the LS1B
-        gen_knight_piece_moves(temp, 63 - BB::lead_0s(ss & 0-ss), test);
+        gen_knight_piece_moves(temp, 63 - BB::lz_count(ss & 0-ss), test);
         for (uint8_t i = 0; i < temp[119]; i++)
         {
             moves[moves[119]] = temp[i];
             moves[119] += moves[119] < 118 ? 1 : 0;
-            temp[i] = 0;
         }
         temp[119] = 0;
         // now clear that LS1B
@@ -311,14 +308,14 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[120], bool test)
     U64 op = *ch.bb_color[!ch.black_to_move];
 
     // pawn captures
-    U64 captures_west = (ch.black_to_move) ? BB::SoWe_shift_one(pawns) & (op | 1ull << ch.ep_square) : BB::NoWe_shift_one(pawns) & (op | 1ull << ch.ep_square);
     U64 captures_east = (ch.black_to_move) ? BB::SoEa_shift_one(pawns) & (op | 1ull << ch.ep_square) : BB::NoEa_shift_one(pawns) & (op | 1ull << ch.ep_square);
+    U64 captures_west = (ch.black_to_move) ? BB::SoWe_shift_one(pawns) & (op | 1ull << ch.ep_square) : BB::NoWe_shift_one(pawns) & (op | 1ull << ch.ep_square);
 
     // eastern captures
     while (captures_east)
     {
         // x & -x masks the LS1B
-        uint8_t end_sq = 63 - BB::lead_0s(captures_east & 0-captures_east);
+        uint8_t end_sq = 63 - BB::lz_count(captures_east & 0-captures_east);
         // now clear that LS1B
         captures_east &= captures_east - 1;
         uint8_t start_sq = end_sq - DIRS[4 + 2 * ch.black_to_move];
@@ -331,6 +328,7 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[120], bool test)
             pawn_moves[119]++;
         }
         else // pawn promotions
+        {
             pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::QUEEN);
             pawn_moves[119]++;
             pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::ROOK);
@@ -339,13 +337,14 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[120], bool test)
             pawn_moves[119]++;
             pawn_moves[pawn_moves[119]] = Move::build_move(start_sq, end_sq, ch_cst::BISHOP);
             pawn_moves[119]++;
+        }
     }
 
     // western captures
     while (captures_west)
     {
         // x & -x masks the LS1B
-        uint8_t end_sq = 63 - BB::lead_0s(captures_west & 0-captures_west);
+        uint8_t end_sq = 63 - BB::lz_count(captures_west & 0-captures_west);
         // now clear that LS1B
         captures_west &= captures_west - 1;
         uint8_t start_sq = end_sq - DIRS[5 + 2 * ch.black_to_move];
@@ -380,7 +379,7 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[120], bool test)
     while (pawn_advances)
     {
         // x & -x masks the LS1B
-        uint8_t end_sq = 63 - BB::lead_0s(pawn_advances & 0-pawn_advances);
+        uint8_t end_sq = 63 - BB::lz_count(pawn_advances & 0-pawn_advances);
          // now clear that LS1B
         pawn_advances &= pawn_advances - 1;
         uint8_t start_sq = end_sq - PAWN_DIR[ch.black_to_move];
@@ -425,10 +424,9 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[120], bool test)
             legal_moves[legal_moves[119]] = pawn_moves[i];
             legal_moves[119]++;
         }
-    for (uint8_t i = 0; i < 120; i++)
-    {
+    for (uint8_t i = 0; i < legal_moves[119]; i++)
         pawn_moves[i] = legal_moves[i];
-    }
+    pawn_moves[119] = legal_moves[119];
 }
 
 void MoveGenerator::gen_knight_piece_moves(move (&knight_moves)[120], uint8_t start, bool test)
@@ -440,7 +438,7 @@ void MoveGenerator::gen_knight_piece_moves(move (&knight_moves)[120], uint8_t st
     while (ts)
     {
         // x & -x masks the LS1B
-        knight_moves[knight_moves[119]] = Move::build_move(start, 63 - BB::lead_0s(ts & 0-ts));
+        knight_moves[knight_moves[119]] = Move::build_move(start, 63 - BB::lz_count(ts & 0-ts));
         knight_moves[119]++;
         // now clear that LS1B
         ts &= ts - 1;
@@ -455,10 +453,9 @@ void MoveGenerator::gen_knight_piece_moves(move (&knight_moves)[120], uint8_t st
             legal_moves[legal_moves[119]] = knight_moves[i];
             legal_moves[119]++;
         }
-    for (uint8_t i = 0; i < 120; i++)
-    {
+    for (uint8_t i = 0; i < legal_moves[119]; i++)
         knight_moves[i] = legal_moves[i];
-    }
+    knight_moves[119] = legal_moves[119];
 }
 
 void MoveGenerator::gen_bishop_piece_moves(move (&bishop_moves)[120], uint8_t start, bool test)
@@ -476,7 +473,7 @@ void MoveGenerator::gen_bishop_piece_moves(move (&bishop_moves)[120], uint8_t st
         // x & -x masks the LS1B
         if (~pinned_pieces & ss || Compass::ray_square(find_king(ch.black_to_move), start) & ts & 0-ts)
         {
-            bishop_moves[bishop_moves[119]] = Move::build_move(start, 63 - BB::lead_0s(ts & 0-ts));
+            bishop_moves[bishop_moves[119]] = Move::build_move(start, 63 - BB::lz_count(ts & 0-ts));
             bishop_moves[119]++;
         }
         // now clear that LS1B
@@ -492,10 +489,9 @@ void MoveGenerator::gen_bishop_piece_moves(move (&bishop_moves)[120], uint8_t st
             legal_moves[legal_moves[119]] = bishop_moves[i];
             legal_moves[119]++;
         }
-    for (uint8_t i = 0; i < 120; i++)
-    {
+    for (uint8_t i = 0; i < legal_moves[119]; i++)
         bishop_moves[i] = legal_moves[i];
-    }
+    bishop_moves[119] = legal_moves[119];
 }
 
 void MoveGenerator::gen_rook_piece_moves(move (&rook_moves)[120], uint8_t start, bool test)
@@ -513,7 +509,7 @@ void MoveGenerator::gen_rook_piece_moves(move (&rook_moves)[120], uint8_t start,
         // x & -x masks the LS1B
         if (~pinned_pieces & ss || Compass::ray_square(find_king(ch.black_to_move), start) & ts & 0-ts)
         {
-            rook_moves[rook_moves[119]] = Move::build_move(start, 63 - BB::lead_0s(ts & 0-ts));
+            rook_moves[rook_moves[119]] = Move::build_move(start, 63 - BB::lz_count(ts & 0-ts));
             rook_moves[119]++;
         }
         // now clear that LS1B
@@ -529,10 +525,9 @@ void MoveGenerator::gen_rook_piece_moves(move (&rook_moves)[120], uint8_t start,
             legal_moves[legal_moves[119]] = rook_moves[i];
             legal_moves[119]++;
         }
-    for (uint8_t i = 0; i < 120; i++)
-    {
+    for (uint8_t i = 0; i < legal_moves[119]; i++)
         rook_moves[i] = legal_moves[i];
-    }
+    rook_moves[119] = legal_moves[119];
 }
 
 void MoveGenerator::gen_king_piece_moves(move (&king_moves)[120], bool test)
@@ -546,7 +541,7 @@ void MoveGenerator::gen_king_piece_moves(move (&king_moves)[120], bool test)
     while (ts)
     {
         // x & -x masks the LS1B
-        king_moves[king_moves[119]] = Move::build_move(king_sq, 63 - BB::lead_0s(ts & 0-ts));
+        king_moves[king_moves[119]] = Move::build_move(king_sq, 63 - BB::lz_count(ts & 0-ts));
         king_moves[119]++;
         // now clear that LS1B
         ts &= ts - 1;

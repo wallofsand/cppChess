@@ -3,7 +3,7 @@
 U64 Compass::knight_attacks[64];
 U64 Compass::king_attacks[64];
 uint8_t Compass::first_rank_attacks_64x8[64*8];
-int8_t Compass::edge_distance_64x8[64][8];
+uint8_t Compass::edge_distance_64x8[64][8];
 
 Compass::Compass()
 {
@@ -16,10 +16,10 @@ Compass::Compass()
 
 // Method to return a bitboard of the ray which
 // passes through square sq in direction DIRS[dir_index]
-const U64 Compass::build_ray(int sq, int dir_index)
+const U64 Compass::build_ray(uint8_t sq, uint8_t dir_index)
 {
     U64 ray = 0;
-    for (int step = 1; step <= Compass::edge_distance_64x8[sq][dir_index]; step++)
+    for (uint8_t step = 1; step <= Compass::edge_distance_64x8[sq][dir_index]; step++)
     {
         ray |= 1ull << (sq + step * directions::DIRS[dir_index]);
     }
@@ -28,19 +28,19 @@ const U64 Compass::build_ray(int sq, int dir_index)
 
 // Method to return a bitboard of the ray which
 // passes between two colinear squares sq0 to sq1
-const U64 Compass::build_ray(int sq[2])
+const U64 Compass::build_ray(uint8_t sq[2])
 {
-    int sq0 = sq[0];
-    int sq1 = sq[1];
-    int end_index = get_dir_end_index(ch_cst::QUEEN);
-    for (int i = 0; i < end_index; i++)
+    uint8_t sq0 = sq[0];
+    uint8_t sq1 = sq[1];
+    uint8_t end_index = get_dir_end_index(ch_cst::QUEEN);
+    for (uint8_t i = 0; i < end_index; i++)
     {
-        int dir = directions::DIRS[i];
-        for (int step = 1; step <= edge_distance_64x8[sq0][i]; step++)
+        uint8_t dir = directions::DIRS[i];
+        for (uint8_t step = 1; step <= edge_distance_64x8[sq0][i]; step++)
             if (sq0 + step * directions::DIRS[i] == sq1)
             {
                 U64 ray = 0;
-                int sq = sq0;
+                uint8_t sq = sq0;
                 while(sq != sq1)
                 {
                     ray |= 1ull << sq;
@@ -56,7 +56,7 @@ const U64 Compass::build_ray(int sq[2])
 // start (exclusive) through square end to board edge
 // retuns zero if no such ray exists
 // an optional occupancy array can be passed to stop the ray
-const U64 Compass::ray_square(int start, int end, U64 occ)
+const U64 Compass::ray_square(uint8_t start, uint8_t end, U64 occ)
 {
     U64 ray = BB::nort_attacks(1ull << start, ~occ);
     if (BB::contains_square(ray, end))
@@ -87,14 +87,14 @@ const U64 Compass::ray_square(int start, int end, U64 occ)
 
 void Compass::compute_edge_distances()
 {
-    for (int sq = 0; sq < 64; sq++)
+    for (uint8_t sq = 0; sq < 64; sq++)
     {
-        int rank = rank_yindex(sq);
-        int file = file_xindex(sq);
-        int nstep = 7 - rank;
-        int estep = 7 - file;
-        int sstep = rank;
-        int wstep = file;
+        uint8_t rank = rank_yindex(sq);
+        uint8_t file = file_xindex(sq);
+        uint8_t nstep = 7 - rank;
+        uint8_t estep = 7 - file;
+        uint8_t sstep = rank;
+        uint8_t wstep = file;
         edge_distance_64x8[sq][0] = nstep;
         edge_distance_64x8[sq][1] = estep;
         edge_distance_64x8[sq][2] = sstep;
@@ -109,7 +109,7 @@ void Compass::compute_edge_distances()
 void Compass::compute_knight_attacks()
 {
     using namespace directions;
-    for (int sq = 0; sq < 64; sq++)
+    for (uint8_t sq = 0; sq < 64; sq++)
     {
         // NORTH, EAST, SOUTH, WEST
         // NNE, NEE, SEE, SSE, SSW, SWW, NWW, NNW;
@@ -150,7 +150,7 @@ const U64 Compass::rank_attacks(U64 occ, int sq)
 
 void Compass::compute_rank_attacks()
 {
-    for (U64 occ = 0; occ < 64; occ++) for (int rksq = 0; rksq < 8; rksq++)
+    for (U64 occ = 0; occ < 64; occ++) for (uint8_t rksq = 0; rksq < 8; rksq++)
     {
         U64 rook = 1ull << rksq;
         first_rank_attacks_64x8[8*occ+rksq] = BB::east_attacks(rook, ~occ) & 255;
@@ -161,12 +161,12 @@ void Compass::compute_rank_attacks()
 
 void Compass::compute_king_attacks()
 {
-    for (int king_sq = 0; king_sq < 64; king_sq++)
+    for (uint8_t king_sq = 0; king_sq < 64; king_sq++)
     {
         king_attacks[king_sq] = 0ull;
-        for (int dir_idx = get_dir_start_index(ch_cst::KING); dir_idx < get_dir_end_index(ch_cst::KING); dir_idx++)
+        for (uint8_t dir_idx = get_dir_start_index(ch_cst::KING); dir_idx < get_dir_end_index(ch_cst::KING); dir_idx++)
         {
-            int dir = directions::DIRS[dir_idx];
+            uint8_t dir = directions::DIRS[dir_idx];
             if (edge_distance_64x8[king_sq][dir_idx] == 0)
                 continue;
             king_attacks[king_sq] |= 1ull << (king_sq + dir);
@@ -174,7 +174,7 @@ void Compass::compute_king_attacks()
     }
 }
 
-const int Compass::get_dir_start_index(int piece)
+const uint8_t Compass::get_dir_start_index(uint8_t piece)
 {
     switch (piece)
     {
@@ -182,16 +182,12 @@ const int Compass::get_dir_start_index(int piece)
         return 8;
     case ch_cst::BISHOP:
         return 4;
-    case ch_cst::ROOK:
-    case ch_cst::QUEEN:
-    case ch_cst::KING:
-        return 0;
     default:
-        return -1;
+        return 0;
     }
 }
 
-const int Compass::get_dir_end_index(int piece)
+const uint8_t Compass::get_dir_end_index(uint8_t piece)
 {
     switch (piece)
     {
@@ -199,32 +195,28 @@ const int Compass::get_dir_end_index(int piece)
         return 16;
     case ch_cst::ROOK:
         return 4;
-    case ch_cst::BISHOP:
-    case ch_cst::QUEEN:
-    case ch_cst::KING:
-        return 8;
     default:
-        return -1;
+        return 8;
     }
 }
 
 // y-coordinate, 1-8
 // function returns an index 0-7
-const int Compass::rank_yindex(int sq)
+const uint8_t Compass::rank_yindex(uint8_t sq)
 {
     return sq >> 3;
 }
 
 // x-coordinate, a-h
 // function returns an index 0-7
-const int Compass::file_xindex(int sq)
+const uint8_t Compass::file_xindex(uint8_t sq)
 {
     return sq % 8;
 }
 
-const int Compass::square_from_string(std::string str)
+const uint8_t Compass::square_from_string(std::string str)
 {
-    int sq;
+    uint8_t sq;
     switch (str[0])
     {
     case 'a':
@@ -281,7 +273,7 @@ const int Compass::square_from_string(std::string str)
     return sq;
 }
 
-const std::string Compass::string_from_square(int sq)
+const std::string Compass::string_from_square(uint8_t sq)
 {
     std::string str = "";
     switch (file_xindex(sq))

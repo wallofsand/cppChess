@@ -288,7 +288,7 @@ void BB::print_U64(U64 bb, std::string name, bool fmt)
  */
 std::string BB::build_binary_string(U64 bb)
 {
-    uint8_t leading_zero_count = lead_0s(bb);
+    uint8_t leading_zero_count = lz_count(bb);
     std::string zeros = "";
     for (uint8_t i = 0; i < leading_zero_count; i++)
         zeros.append("0");
@@ -331,7 +331,7 @@ void BB::print_binary_string(std::string bbstr, bool fmt)
     // the words are printed forewards but in reverse order
     // since the printing happens top-to-bottom on the screen
     std::string divider = "|---|---|---|---|---|---|---|---|\n";
-    for (uint8_t file = 7; file >= 0; file--)
+    for (int8_t file = 7; file >= 0; file--)
     {
         fmt::print("{}", fmt ? divider + "| " : "");
         for (uint8_t rank = 0; rank < 8; rank++)
@@ -346,7 +346,7 @@ void BB::print_binary_string(std::string bbstr, bool fmt)
  * @param any bitboard
  * @return the number of leading zeros
  */
-uint8_t BB::lead_0s(U64 bb)
+uint8_t BB::lz_count(U64 bb)
 {
     if (!bb) return 64;
     uint8_t count = 0;

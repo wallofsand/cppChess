@@ -32,7 +32,7 @@ public:
     std::vector<move> history;
     std::vector<U64> prev_hash;
     uint8_t piece_at(uint8_t sq) const;
-    uint8_t color_at(uint8_t sq) const;
+    bool black_at(uint8_t sq) const;
     U64 hash() const;
     void print_board(bool fmt = false) const;
     void make_move(move mv, bool test = false);

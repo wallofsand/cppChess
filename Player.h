@@ -22,7 +22,7 @@ private:
     SearchLogger search_log;
     float var_endgame_weight = 32.0f;
     float var_mobility_weight;
-    float var_piece_value[7] = { 0, 1, 2.8f, 3, 5, 9.7f, 99.99f };
+    float var_piece_value[7] = { 0, 100, 280, 300, 500, 970, 9999 };
 };
 
 #endif

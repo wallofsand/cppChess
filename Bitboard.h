@@ -44,7 +44,7 @@ namespace BB
     void print_U64(U64 bb, std::string name = "", bool fmt = false);
     void print_binary_string(std::string bbstr, bool fmt = false);
     std::string build_binary_string(U64 bb);
-    uint8_t lead_0s(U64 bb);
+    uint8_t lz_count(U64 bb);
 }
 
 #endif

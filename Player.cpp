@@ -2,7 +2,7 @@
 
 Player::Player(float mob_percent)
 {
-    var_mobility_weight = 0.05f * mob_percent;
+    var_mobility_weight = 5 * mob_percent;
     SearchLogger search_log("iter_search_log", 0);
 }
 
@@ -34,17 +34,15 @@ move Player::iterative_search(Chess& ch, uint8_t depth, U64& nodes, bool test)
     {
         for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
         {
-            move mv = moves[mvidx];
-            ch.make_move(mv);
+            ch.make_move(moves[mvidx]);
             float score = -nega_max(ch, iter - 1, nodes, -99.99f, -high_score, test);
-            best_move   = score > high_score ? mv    : best_move;
-            high_score  = score > high_score ? score : high_score;
+            best_move   = score > high_score ? moves[mvidx] : best_move;
+            high_score  = score > high_score ? score        : high_score;
             ch.unmake_move(1);
-
             // print output of search
             if (test && iter == depth)
                 fmt::print("{:>2d}/{}: {:<6} {:0.2f}\n",
-                    mvidx + 1, moves[119], MoveGenerator::move_san(ch, mv), score);
+                    mvidx + 1, moves[119], MoveGenerator::move_san(ch, moves[mvidx]), score);
         }
         TTable::add_item(ch.zhash, depth, Entry::FLAG_ALPHA, high_score, best_move);
     }
@@ -195,9 +193,17 @@ void Player::order_moves_by_piece(Chess& ch, const move* moves, move* ordered) c
         }
 }
 
+/*
+ * Method to evaluate a given position
+ * @param ch the position to evaluate
+ * @param mate_offset the remaining depth of search
+ *        mating player will maximize this value to find early mates
+ * @param test print some debug/logging info
+ */
 float Player::eval(Chess& ch, uint8_t mate_offset, bool test)
 {
-    float material_score = 0, positional_score = 0;
+    int material_score = 0;
+    float positional_score = 0;
     MoveGenerator eval_gen(ch);
     move moves[120] = {};
     eval_gen.gen_moves(moves);
@@ -205,7 +211,7 @@ float Player::eval(Chess& ch, uint8_t mate_offset, bool test)
     // is the game over?
     if (!moves[119])
         // if it is a stalemate, return 0
-        return eval_gen.in_check ? ((-99.99f - mate_offset) * (ch.black_to_move ? -1 : 1)) : 0.0f;
+        return eval_gen.in_check ? ((-99.99f - mate_offset) * (ch.black_to_move ? -1 : 1)) : 0;
     // detect threefold repetition
     if (ch.repetitions() >= 3) return 0;
 
@@ -219,7 +225,7 @@ float Player::eval(Chess& ch, uint8_t mate_offset, bool test)
         U64 pieces = ch.bb_white & *ch.bb_piece[p];
         while (pieces)
         {
-            uint8_t sq = 63 - BB::lead_0s(pieces & 0-pieces);
+            uint8_t sq = 63 - BB::lz_count(pieces & 0-pieces);
             material_score += var_piece_value[p];
             positional_score += PieceLocationTables::complex_read(p, sq, middlegame_weight, false);
             pieces &= pieces - 1;
@@ -231,29 +237,40 @@ float Player::eval(Chess& ch, uint8_t mate_offset, bool test)
         U64 pieces = ch.bb_black & *ch.bb_piece[p];
         while (pieces)
         {
-            uint8_t sq = 63 - BB::lead_0s(pieces & 0-pieces);
+            uint8_t sq = 63 - BB::lz_count(pieces & 0-pieces);
             material_score -= var_piece_value[p];
             positional_score -= PieceLocationTables::complex_read(p, sq, middlegame_weight, true);
             pieces &= pieces - 1;
         }
     }
 
-    float score = material_score + (positional_score / 100.0f);
+    float score = material_score + positional_score;
     // adjust the eval so the player to move is positive
     score = ch.black_to_move ? -score : score;
-
     // mobility score:
     ch.black_to_move = !ch.black_to_move;
-    int8_t net_mobility = moves[119];
+    int net_mobility = moves[119];
+
+    std::cout << net_mobility;
+    std::cout << moves[119];
     eval_gen.gen_moves(moves);
+    std::cout << moves[119];
+    // this code returns -20 moves instead of 
+    // printing this list of moves fixes things
+    // for (int i = 0; i < moves[119]; i++)
+    //     std::cout << Move::to_string(moves[i]) << ", ";
+    // std::cout << std::endl;
+
+    std::cout << net_mobility;
     net_mobility -= moves[119];
+    std::cout << net_mobility;
     ch.black_to_move = !ch.black_to_move;
+    // mobility is worth less in the endgame
     float mobility_score = net_mobility * var_mobility_weight * middlegame_weight;
     score += mobility_score;
-
     // round to the nearest hundreth
-    score = std::round(score * 100.0f) / 100.0f;
-    // if (test) fmt::print("net moves: {:<3} | mobility: {:<4.2f} | score: {:<4.2f} | ratio: {:<4.2f}\n",
-    //     net_mobility, mobility_score, score, mobility_score / (score - mobility_score));
+    score = std::round(score) / 100.0f;
+    if (test) fmt::print("net moves: {:<3} | mobility: {:<4.2f} | score: {:<4.2f} | ratio: {:<4.2f}\n",
+        net_mobility, mobility_score, score, mobility_score / (score - mobility_score));
     return score;
 }

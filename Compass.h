@@ -38,25 +38,25 @@ namespace ch_cst
         a7, b7, c7, d7, e7, f7, g7, h7,
         a8, b8, c8, d8, e8, f8, g8, h8
     };
-    const int PAWN = 1;
-    const int KNIGHT = 2;
-    const int BISHOP = 3;
-    const int ROOK = 4;
-    const int QUEEN = 5;
-    const int KING = 6;
-    const int WHITE_INDEX = 0;
-    const int BLACK_INDEX = 1;
+    const uint8_t PAWN = 1;
+    const uint8_t KNIGHT = 2;
+    const uint8_t BISHOP = 3;
+    const uint8_t ROOK = 4;
+    const uint8_t QUEEN = 5;
+    const uint8_t KING = 6;
+    const uint8_t WHITE_INDEX = 0;
+    const uint8_t BLACK_INDEX = 1;
 }
 
 namespace directions {
-    const int NORTH = 8, EAST = 1, SOUTH = -8, WEST = -1,
+    const int8_t NORTH = 8, EAST = 1, SOUTH = -8, WEST = -1,
             NORTHEAST = 9, NORTHWEST = 7, SOUTHEAST = -7, SOUTHWEST = -9,
             NNE = 17, NEE = 10, SEE = -6, SSE = -15,
             SSW = -17, SWW = -10, NWW = 6, NNW = 15;
-    const int DIRS[16] = { NORTH, EAST, SOUTH, WEST,
+    const int8_t DIRS[16] = { NORTH, EAST, SOUTH, WEST,
             NORTHEAST, NORTHWEST, SOUTHEAST, SOUTHWEST,
             NNE, NEE, SEE, SSE, SSW, SWW, NWW, NNW};
-    const int PAWN_DIR[2] = { NORTH, SOUTH };
+    const int8_t PAWN_DIR[2] = { NORTH, SOUTH };
 }
 
 class Compass
@@ -65,18 +65,18 @@ public:
     Compass();
     static U64 knight_attacks[64];
     static U64 king_attacks[64];
+    static uint8_t edge_distance_64x8[64][8];
     static uint8_t first_rank_attacks_64x8[64*8]; // 64 * 8 = 512 Bytes = 1/2 KByte
     const static U64 rank_attacks(U64 occ, int sq);
-    static int8_t edge_distance_64x8[64][8];
-    const static U64 build_ray(int sq, int dir_index);
-    const static U64 build_ray(int sq[2]);
-    const static U64 ray_square(int start, int end, U64 occ = 0ull);
-    const static int get_dir_start_index(int piece);
-    const static int get_dir_end_index(int piece);
-    const static int square_from_string(std::string str);
-    const static std::string string_from_square(int sq);
-    const static int rank_yindex(int sq);
-    const static int file_xindex(int sq);
+    const static U64 build_ray(uint8_t sq, uint8_t dir_index);
+    const static U64 build_ray(uint8_t sq[2]);
+    const static U64 ray_square(uint8_t start, uint8_t end, U64 occ = 0ull);
+    const static uint8_t get_dir_start_index(uint8_t piece);
+    const static uint8_t get_dir_end_index(uint8_t piece);
+    const static uint8_t square_from_string(std::string str);
+    const static std::string string_from_square(uint8_t sq);
+    const static uint8_t rank_yindex(uint8_t sq);
+    const static uint8_t file_xindex(uint8_t sq);
 private:
     static void compute_edge_distances();
     static void compute_knight_attacks();

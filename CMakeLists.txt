@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(cppChess VERSION 0.1.0)
 
-include_directories(cppChess ${CMAKE_CURRENT_SOURCE_DIR} 
+include_directories(cppChess ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/fmt/include/fmt)
 
 add_executable(cppChess

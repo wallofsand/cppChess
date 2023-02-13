@@ -9,7 +9,7 @@
 class MoveGenerator
 {
 public:
-    MoveGenerator(Chess& pos) : ch(pos) {}
+    inline MoveGenerator(Chess& pos) : ch(pos) {}
     Chess& ch;
     bool is_game_over(bool test);
     uint8_t find_king(uint8_t color);

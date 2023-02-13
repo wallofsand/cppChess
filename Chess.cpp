@@ -78,8 +78,8 @@ U64 Chess::hash() const
     while (pieces)
     {
         // x & -x masks the LS1B
-        uint8_t sq = 63 - BB::lead_0s(pieces & 0-pieces);
-        h ^= TTable::sq_color_type_64x2x6[sq][color_at(sq)][piece_at(sq) - 1];
+        uint8_t sq = 63 - BB::lz_count(pieces & 0-pieces);
+        h ^= TTable::sq_color_type_64x2x6[sq][black_at(sq)][piece_at(sq) - 1];
         // now clear that LS1B
         pieces &= pieces - 1;
     }
@@ -100,11 +100,12 @@ U64 Chess::hash() const
  * Method to return the piece type on a square, if any
  * @param sq the square index to check
  * @return the piece type (1 - 6) or 0 if no piece is found
+ *         returns 0 if no piece is found
  */
 uint8_t Chess::piece_at(uint8_t sq) const
 {
     for (uint8_t piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
-        if (BB::contains_square(*bb_piece[piece], sq))
+        if (*bb_piece[piece] & 1ull << sq)
             return piece;
     return 0;
 }
@@ -112,13 +113,11 @@ uint8_t Chess::piece_at(uint8_t sq) const
 /*
  * Method to return the color of a piece on a square, if any
  * @param sq the square index to check
- * @return 0 for white, 1 for black, -1 if no piece is found
+ * @return 0 for white, 1 for black, 0 if no piece is found
  */
-uint8_t Chess::color_at(uint8_t sq) const
+bool Chess::black_at(uint8_t sq) const
 {
-    if (BB::contains_square(bb_white, sq)) return ch_cst::WHITE_INDEX;
-    if (BB::contains_square(bb_black, sq)) return ch_cst::BLACK_INDEX;
-    return -1;
+    return bb_black & 1ull << sq;
 }
 
 void Chess::make_move(move mv, bool test)
@@ -149,6 +148,9 @@ void Chess::make_move(move mv, bool test)
     *bb_color[black_to_move] |= 1ull << end;
     zhash ^= TTable::sq_color_type_64x2x6[end][black_to_move][(Move::promote(mv) ? Move::promote(mv) : type) - 1];
 
+    // clear ep square
+    zhash ^= (ep_square >= 0) ? TTable::ep_file[Compass::file_xindex(ep_square)] : 0;
+
     // ep capture
     if (type == ch_cst::PAWN && end == ep_square)
     {
@@ -156,11 +158,8 @@ void Chess::make_move(move mv, bool test)
         *bb_color[!black_to_move] &= ~(1ull << (end - directions::PAWN_DIR[black_to_move]));
         zhash ^= TTable::sq_color_type_64x2x6[end - directions::PAWN_DIR[black_to_move]][!black_to_move][ch_cst::PAWN - 1];
     }
-
-    // clear ep square
-    if (ep_square >= 0) zhash ^= TTable::ep_file[Compass::file_xindex(ep_square)];
     // update ep square
-    if (type == ch_cst::PAWN && (start - end) % 16 == 0)
+    else if (type == ch_cst::PAWN && (start - end) % 16 == 0)
     {
         ep_square = start + directions::PAWN_DIR[black_to_move];
         zhash ^= TTable::ep_file[Compass::file_xindex(ep_square)];
@@ -244,10 +243,7 @@ void Chess::print_board(bool fmt) const
     std::string board = "";
     for (uint8_t sq = 0; sq < 64; sq++)
     {
-        for (uint8_t color = 0; color < 2; color++)
-            for (uint8_t piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
-                if (BB::contains_square(*bb_piece[piece] & *bb_color[color], sq))
-                    board += ch_cst::piece_char[piece | (color << 3)];
+        board += ch_cst::piece_char[(black_at(sq) << 3) | piece_at(sq)];
         if (board.length() > sq) continue;
         else if (sq == ep_square) board += "e";
         else if (Compass::file_xindex(sq) % 2 == Compass::rank_yindex(sq) % 2) board += ".";
