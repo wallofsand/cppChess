@@ -2,7 +2,7 @@
 
 Player::Player(float mob_percent)
 {
-    var_mobility_weight = 5 * mob_percent;
+    var_mobility_weight = MOB_CONST * mob_percent;
     SearchLogger search_log("iter_search_log", 0);
 }
 
@@ -14,7 +14,7 @@ Player::Player(float mob_percent)
  * @param test true if special debug information should be printed
  * @return the best move found in the search
  */
-move Player::iterative_search(Chess& ch, uint8_t depth, U64& nodes, bool test)
+move Player::iterative_search(Chess& ch, int8_t depth, U64& nodes, bool test)
 {
     // if (BB::num_bits_flipped(ch.bb_occ) <= 6)
     //     depth = depth + 2;
@@ -50,27 +50,27 @@ move Player::iterative_search(Chess& ch, uint8_t depth, U64& nodes, bool test)
 }
 
 /*
- * @param ch the position to be evaluated
+ * @param ch the position to be searched
  * @param depth the number of ply to search
  * @param nodes the number of positions seen so far
  * @param a the score-to-beat for future evaluations
  * @param b the minimum eval allowed by the opponent
  * @return the eval of the most favorable end node
  */
-float Player::nega_max(Chess& ch, uint8_t depth, U64& nodes, float alpha, float beta, bool test)
+float Player::nega_max(Chess& ch, int8_t depth, U64& nodes, float alpha, float beta, bool test)
 {
     MoveGenerator mgen(ch);
     move moves[120] = {};
     mgen.gen_moves(moves);
     // check for mate
     if (!moves[119])
-        return eval(ch);
+        return eval(ch, depth);
     // check the t-table for a best move
     if (ch.repetitions() > 2)
         return 0.0f;
     // if the stored depth was >= remaining search depth, use that result
     Entry prev = TTable::probe(ch.zhash);
-    if (!depth || (prev.flag && prev.depth >= depth))
+    if (!depth || prev.flag == Entry::FLAG_EXACT || (prev.flag && prev.depth > depth))
     {
         if (prev.flag && prev.depth >= depth)
         {
@@ -113,7 +113,7 @@ float Player::nega_max(Chess& ch, uint8_t depth, U64& nodes, float alpha, float 
 /*
  *
  */
-float Player::quiescence_search(Chess& ch, uint8_t depth, U64& nodes, float alpha, float beta, bool test)
+float Player::quiescence_search(Chess& ch, int8_t depth, U64& nodes, float alpha, float beta, bool test)
 {
     MoveGenerator mgen(ch);
     move moves[120] {};
@@ -200,7 +200,7 @@ void Player::order_moves_by_piece(Chess& ch, const move* moves, move* ordered) c
  *        mating player will maximize this value to find early mates
  * @param test print some debug/logging info
  */
-float Player::eval(Chess& ch, uint8_t mate_offset, bool test)
+float Player::eval(Chess& ch, int8_t mate_offset, bool test)
 {
     int material_score = 0;
     float positional_score = 0;
@@ -250,27 +250,15 @@ float Player::eval(Chess& ch, uint8_t mate_offset, bool test)
     // mobility score:
     ch.black_to_move = !ch.black_to_move;
     int net_mobility = moves[119];
-
-    std::cout << net_mobility;
-    std::cout << moves[119];
     eval_gen.gen_moves(moves);
-    std::cout << moves[119];
-    // this code returns -20 moves instead of 
-    // printing this list of moves fixes things
-    // for (int i = 0; i < moves[119]; i++)
-    //     std::cout << Move::to_string(moves[i]) << ", ";
-    // std::cout << std::endl;
-
-    std::cout << net_mobility;
     net_mobility -= moves[119];
-    std::cout << net_mobility;
     ch.black_to_move = !ch.black_to_move;
     // mobility is worth less in the endgame
     float mobility_score = net_mobility * var_mobility_weight * middlegame_weight;
     score += mobility_score;
     // round to the nearest hundreth
-    score = std::round(score) / 100.0f;
-    if (test) fmt::print("net moves: {:<3} | mobility: {:<4.2f} | score: {:<4.2f} | ratio: {:<4.2f}\n",
-        net_mobility, mobility_score, score, mobility_score / (score - mobility_score));
+    score = std::round(score) / 100;
+    if (test) fmt::print("net moves: {:<3} | mobility: {:<4.2f} | position: {:<4.2f} | score: {:<4.2f}\n",
+        net_mobility, mobility_score/100, positional_score/100, score);
     return score;
 }

@@ -202,21 +202,21 @@ const uint8_t Compass::get_dir_end_index(uint8_t piece)
 
 // y-coordinate, 1-8
 // function returns an index 0-7
-const uint8_t Compass::rank_yindex(uint8_t sq)
+const int8_t Compass::rank_yindex(int8_t sq)
 {
     return sq >> 3;
 }
 
 // x-coordinate, a-h
 // function returns an index 0-7
-const uint8_t Compass::file_xindex(uint8_t sq)
+const int8_t Compass::file_xindex(int8_t sq)
 {
     return sq % 8;
 }
 
-const uint8_t Compass::square_from_string(std::string str)
+const int8_t Compass::square_from_string(std::string str)
 {
-    uint8_t sq;
+    int8_t sq;
     switch (str[0])
     {
     case 'a':
@@ -273,7 +273,7 @@ const uint8_t Compass::square_from_string(std::string str)
     return sq;
 }
 
-const std::string Compass::string_from_square(uint8_t sq)
+const std::string Compass::string_from_square(int8_t sq)
 {
     std::string str = "";
     switch (file_xindex(sq))

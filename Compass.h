@@ -73,10 +73,10 @@ public:
     const static U64 ray_square(uint8_t start, uint8_t end, U64 occ = 0ull);
     const static uint8_t get_dir_start_index(uint8_t piece);
     const static uint8_t get_dir_end_index(uint8_t piece);
-    const static uint8_t square_from_string(std::string str);
-    const static std::string string_from_square(uint8_t sq);
-    const static uint8_t rank_yindex(uint8_t sq);
-    const static uint8_t file_xindex(uint8_t sq);
+    const static std::string string_from_square(int8_t sq);
+    const static int8_t square_from_string(std::string str);
+    const static int8_t rank_yindex(int8_t sq);
+    const static int8_t file_xindex(int8_t sq);
 private:
     static void compute_edge_distances();
     static void compute_knight_attacks();

@@ -1,12 +1,12 @@
 #include "Chess.h"
 #include "Player.h"
 
-U64 perft_root(Chess& ch, uint8_t depth, bool initial_pos = false, uint8_t log_depth = 1);
-U64 perft(Chess& ch, uint8_t depth, U64& nodes);
-U64 eperft_root(Chess& ch, uint8_t depth);
-U64 eperft(Chess& ch, uint8_t depth, U64& nodes);
+U64 perft_root(Chess& ch, int8_t depth, bool initial_pos = false, int8_t log_depth = 1);
+U64 perft(Chess& ch, int8_t depth, U64& nodes);
+U64 eperft_root(Chess& ch, int8_t depth);
+U64 eperft(Chess& ch, int8_t depth, U64& nodes);
 
-const uint8_t SIM_DEPTH = 3;
+const int8_t SIM_DEPTH = 3;
 
 const std::string HELP_STRINGS[] = {
     "\nWelcome to Graham's C++ chess.\n"
@@ -16,7 +16,9 @@ const std::string HELP_STRINGS[] = {
     "um x: \tUndo the last x moves.\n",
     "aim x: \tSearch to depth x and make a move. Allows depth of 1-9.\n",
     "\tSearches deeper than four ply may take extemely long.\n",
-    "perft x: \tCount all moves to depth x. Allows any depth > -1.\n",
+    "perft x: \tCount all moves at depth x. Allows any depth > -1.\n",
+    "\tSearches deeper than six may take extremely long.\n",
+    "eperft x: \tEval all positions at depth x. Allows any depth > -1.\n",
     "\tSearches deeper than six may take extremely long.\n",
     "help: \tDisplays this message.\n"
 };
@@ -38,7 +40,7 @@ int main()
     // Player low_mobility(0.80f), high_mobility(1.20f);
     // Player players[2] = { low_mobility, high_mobility };
 
-    int human = -1;
+    int human = -2;
     fmt::print("Welcome to Graham's C++ chess.\nWhich color will you play?\n0: white   1: black   2: sim game   -1: free play\n");
     while (human < -1 || human > 2)
         std::cin >> human;
@@ -78,13 +80,14 @@ int main()
 
         // get input
         game_timer.reset();
-        std::string str;
+        std::string str = "";
         if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1)
             std::cin >> str;
 
         // if no input, get ai move
         if (!ch.black_to_move && human == 1 || ch.black_to_move && human == 0 || human == 2)
         {
+            std::cout << "Pondering . . ." << std::endl;
             // move engine_move = players[ch.black_to_move].iterative_search(ch, SIM_DEPTH, nodes, false);
             move engine_move = engine.iterative_search(ch, SIM_DEPTH, nodes, false);
             last_move = MoveGenerator::move_san(ch, engine_move);
@@ -169,7 +172,7 @@ SearchLogger perft_log("perft_log", 0);
  * @param log_depth the depth of nodes to list in log file
  *        default: 0
  */
-U64 perft_root(Chess& ch, uint8_t depth, bool initial_pos, uint8_t log_depth)
+U64 perft_root(Chess& ch, int8_t depth, bool initial_pos, int8_t log_depth)
 {
     log_depth = log_depth < depth ? log_depth : depth;
     perft_log.depth = depth - log_depth;
@@ -191,9 +194,7 @@ U64 perft_root(Chess& ch, uint8_t depth, bool initial_pos, uint8_t log_depth)
         move mv = moves[mvidx];
         std::cout << fmt::format("{}/{}:\t{} ", mvidx + 1, moves[119], Move::to_string(mv));
         if (depth > perft_log.depth)
-        {
             perft_log.buffer = fmt::format("{}/{}:\t{} ", mvidx + 1, moves[119], Move::to_string(mv));
-        }
         ch.make_move(mv);
         nodes++;
         U64 i = perft(ch, depth - 1, nodes);
@@ -205,7 +206,7 @@ U64 perft_root(Chess& ch, uint8_t depth, bool initial_pos, uint8_t log_depth)
     }
     double nodes_per_second = (double) nodes;
     if (perft_timer.elapsed() >= 0.001f)
-        nodes_per_second = nodes_per_second / perft_timer.elapsed();
+        nodes_per_second = std::round(nodes_per_second / perft_timer.elapsed());
 
     // test finished, print results
     if (depth > perft_log.depth)
@@ -242,7 +243,7 @@ U64 perft_root(Chess& ch, uint8_t depth, bool initial_pos, uint8_t log_depth)
  * @param ch the current position to search
  * @param depth number of ply remaining in the search
  */
-U64 perft(Chess& ch, uint8_t depth, U64& nodes)
+U64 perft(Chess& ch, int8_t depth, U64& nodes)
 {
     if (!depth)
         return 1;
@@ -277,10 +278,12 @@ U64 perft(Chess& ch, uint8_t depth, U64& nodes)
  * @param log_depth the depth of nodes to list in log file
  *        default: 0
  */
-U64 eperft_root(Chess& ch, uint8_t depth)
+U64 eperft_root(Chess& ch, int8_t depth)
 {
     // run normal perft for baseline
     perft_root(ch, depth, false, 0);
+
+    std::cout << fmt::format("{}: begin eval test...\n", SearchLogger::time_to_string());
 
     U64 leaf_nodes = 0;
     U64 nodes = 0;
@@ -316,11 +319,11 @@ U64 eperft_root(Chess& ch, uint8_t depth)
  * @param ch the current position to search
  * @param depth number of ply remaining in the search
  */
-U64 eperft(Chess& ch, uint8_t depth, U64& nodes)
+U64 eperft(Chess& ch, int8_t depth, U64& nodes)
 {
     if (!depth)
     {
-        engine.eval(ch);
+        engine.eval(ch, depth);
         return 1;
     }
     U64 leaf_nodes = 0;

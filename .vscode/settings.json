@@ -90,6 +90,7 @@
         "cerrno": "cpp",
         "cfloat": "cpp",
         "climits": "cpp",
-        "bitset": "cpp"
+        "bitset": "cpp",
+        "filesystem": "cpp"
     }
 }

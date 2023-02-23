@@ -1,6 +1,6 @@
 #include "Move.h"
 
-move Move::build_move(const uint8_t s, const uint8_t e, const uint8_t p)
+move Move::build_move(const uint16_t s, const uint16_t e, const uint16_t p)
 {
     return (p & 15) << 12 | (e & 63) << 6 | (s & 63);
 }
