@@ -138,12 +138,12 @@ float Player::quiescence_search(Chess& ch, int8_t depth, U64& nodes, float alpha
 
     // Delta pruning: if a huge swing (> 1 queen)
     // is not enough to improve the position, give up
-    // const float DELTA = 15;
-    // if (stand_pat < alpha - DELTA)
-    // {
-    //     std::cout << "DELTA PRUNE" << std::endl;
-    //     return alpha;
-    // }
+    const float DELTA = 15;
+    if (stand_pat < alpha - DELTA)
+    {
+        std::cout << "DELTA PRUNE" << std::endl;
+        return alpha;
+    }
 
     nodes++;
     alpha = stand_pat > alpha ? stand_pat : alpha;
