@@ -19,14 +19,14 @@ struct Entry
     uint8_t flag;
     float score;
     move best;
-    inline const std::string to_string()
-    { return fmt::format("key: {} depth: {} flag: {} score: {}",
-        key, depth, flag, score); };
-    // eval is exact value
+    inline std::string to_string() const
+    { return fmt::format("key: {} depth: {} flag: {} score: {} best: {}",
+        key, depth, flag, score, best); };
+    // eval is exact value (all moves were searched)
     static const uint8_t FLAG_EXACT = 1;
-    // eval is > maximum value
+    // eval is < alpha value
     static const uint8_t FLAG_ALPHA = 2;
-    // eval was > beta cutoff
+    // eval is > beta value
     static const uint8_t FLAG_BETA = 3;
 };
 

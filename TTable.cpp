@@ -53,13 +53,13 @@ void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv)
 {
     int index = hash_index(key);
     // if hash_index(key) is full, find the next empty index
-    while (read(index).flag != 0 && read(index).key != key)
+    while (read(index).flag && read(index).key != key)
         index++;
     // record a collision
     if (index != hash_index(key))
         collisions++;
     // if the position is already searched to a greater depth, do not write
-    if (depth < -6 || read(index).flag && read(index).depth >= depth)
+    if (read(index).depth > depth)
         return;
     table[index] = Entry(key, depth, flag, score, mv);
     writes++;

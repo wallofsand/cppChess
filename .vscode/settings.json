@@ -91,6 +91,7 @@
         "cfloat": "cpp",
         "climits": "cpp",
         "bitset": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "xhash": "cpp"
     }
 }

@@ -33,17 +33,18 @@ const std::string PERFT_RESULTS[] = {
 Player engine(1.0f);
 
 int main()
-{ while (true) {
+{
     Compass();
     TTable();
-    Chess ch;
-    // Player low_mobility(0.80f), high_mobility(1.20f);
-    // Player players[2] = { low_mobility, high_mobility };
 
     int human = -2;
     fmt::print("Welcome to Graham's C++ chess.\nWhich color will you play?\n0: white   1: black   2: sim game   -1: free play\n");
     while (human < -1 || human > 2)
         std::cin >> human;
+
+    Chess ch(ch_cst::START_FEN);
+    // Player low_mobility(0.80f), high_mobility(1.20f);
+    // Player players[2] = { low_mobility, high_mobility };
 
     bool playing = true;
     std::string last_move = "ERROR";
@@ -72,17 +73,15 @@ int main()
             fmt::print("{}{} {}\n", ((ch.history.size() - 1) / 2) + 1, ch.history.size() % 2 == 1 ? ". " : ".. ", last_move);
         if (!playing) break;
         if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1)
-        {
             for (uint8_t i = 0; i < moves[119]; i++)
                 fmt::print("{} ", MoveGenerator::move_san(ch, moves[i]));
-            fmt::print("\n{} ", ch.black_to_move ? "Black to move: " : "White to move: ");
-        }
+        fmt::print("\n{} ", ch.black_to_move ? "Black to move: " : "White to move: ");
 
         // get input
         game_timer.reset();
-        std::string str = "";
+        std::string input = "";
         if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1)
-            std::cin >> str;
+            std::cin >> input;
 
         // if no input, get ai move
         if (!ch.black_to_move && human == 1 || ch.black_to_move && human == 0 || human == 2)
@@ -95,24 +94,31 @@ int main()
             if (human == 2)
                 sim_log.write(last_move + " ");
         }
+
         // otherwise, handle input
-        else if (str.substr(0, 2) == "um" && ch.history.size() > 0)
+        else if (input == "um" && ch.history.size() > 0)
         {
             int undos = 0;
             while (undos < 1 || undos > (int) ch.history.size())
                 std::cin >> undos;
             ch.unmake_move(undos);
         }
-        else if(str == "help" || str == "?")
-        {
+        else if (input == "help" || input == "?")
             for (std::string tip : HELP_STRINGS)
                 fmt::print("{}", tip);
-        }
-        else if (str == "null")
+        else if (input == "probe")
+            fmt::print("{}\n", TTable::probe(ch.zhash).to_string());
+        else if (input == "best")
         {
-            ch.black_to_move = !ch.black_to_move;
+            Entry e = TTable::probe(ch.zhash);
+            if (TTable::probe(ch.zhash).best)
+                fmt::print("{}\n", MoveGenerator::move_san(ch, TTable::probe(ch.zhash).best));
+            else
+                fmt::print("No move found.\n");
         }
-        else if (str == "aim")
+        else if (input == "null") // null move - skip your turn
+            ch.black_to_move = !ch.black_to_move;
+        else if (input == "aim")
         {
             int depth = 0;
             while (depth < 1 || depth > 9)
@@ -123,26 +129,25 @@ int main()
             last_move = MoveGenerator::move_san(ch, engine_move);
             ch.make_move(engine_move);
         }
-        else if (str == "perft")
+        else if (input == "perft")
         {
             int depth = -1;
             while (depth < 0)
                 std::cin >> depth;
             perft_root(ch, depth, !ch.history.size(), 1);
         }
-        else if (str == "eperft")
+        else if (input == "eperft")
         {
             int depth = -1;
             while (depth < 0)
                 std::cin >> depth;
             eperft_root(ch, depth);
         }
-        else if (str == "end")
-            // playing = false;
-            return 1;
+        else if (input == "end")
+            playing = false;
         else for (uint8_t i = 0; i < moves[119]; i++)
         {
-            if (str != MoveGenerator::move_san(ch, moves[i]))
+            if (input != MoveGenerator::move_san(ch, moves[i]))
                 continue;
             last_move = MoveGenerator::move_san(ch, moves[i]);
             ch.make_move(moves[i], true);
@@ -156,7 +161,7 @@ int main()
         fmt::print("Draw by repitition!\n");
     else if (mate_gen.in_check)
         fmt::print("{} wins!\n", ch.black_to_move ? "White" : "Black");
-    }
+
     return 0;
 }
 

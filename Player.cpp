@@ -26,17 +26,17 @@ move Player::iterative_search(Chess& ch, int8_t depth, U64& nodes, bool test)
     mgen.gen_moves(moves);
     if (moves[119] == 1)
         return moves[0];
-    move best_move = moves[0];
+    move best = moves[0];
     nodes = 0;
 
     // Iterative search loop
-    for (uint8_t iter = 1; iter <= depth; iter++)
+    for (int8_t iter = 1; iter <= depth; iter++)
     {
-        for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
+        for (int8_t mvidx = 0; mvidx < moves[119]; mvidx++)
         {
             ch.make_move(moves[mvidx]);
             float score = -nega_max(ch, iter - 1, nodes, -99.99f, -high_score, test);
-            best_move   = score > high_score ? moves[mvidx] : best_move;
+            best        = score > high_score ? moves[mvidx] : best;
             high_score  = score > high_score ? score        : high_score;
             ch.unmake_move(1);
             // print output of search
@@ -44,9 +44,9 @@ move Player::iterative_search(Chess& ch, int8_t depth, U64& nodes, bool test)
                 fmt::print("{:>2d}/{}: {:<6} {:0.2f}\n",
                     mvidx + 1, moves[119], MoveGenerator::move_san(ch, moves[mvidx]), score);
         }
-        TTable::add_item(ch.zhash, depth, Entry::FLAG_ALPHA, high_score, best_move);
+        TTable::add_item(ch.zhash, iter, Entry::FLAG_EXACT, high_score, best);
     }
-    return best_move;
+    return best;
 }
 
 /*
@@ -70,7 +70,7 @@ float Player::nega_max(Chess& ch, int8_t depth, U64& nodes, float alpha, float b
         return 0.0f;
     // if the stored depth was >= remaining search depth, use that result
     Entry prev = TTable::probe(ch.zhash);
-    if (!depth || prev.flag == Entry::FLAG_EXACT || (prev.flag && prev.depth > depth))
+    if (!depth || prev.depth > depth)
     {
         if (prev.flag && prev.depth >= depth)
         {
@@ -85,28 +85,26 @@ float Player::nega_max(Chess& ch, int8_t depth, U64& nodes, float alpha, float b
         }
         if (!depth)
         {
-            // float score = eval(ch, depth, test);
             float score = quiescence_search(ch, depth, nodes, alpha, beta, test);
-            TTable::add_item(ch.zhash, depth, Entry::FLAG_EXACT, score);
             return score;
         }
     }
 
     nodes++;
-    move best_move = 0;
+    move best = 0;
     for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
     {
         ch.make_move(moves[mvidx]);
         float score = -nega_max(ch, depth - 1, nodes, -beta, -alpha, test);
         ch.unmake_move(1);
-        if (score >= beta)
-        {
-            TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta);
-            return beta;
-        }
+        // if (score >= beta)
+        // {
+        //     TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta);
+        //     return beta;
+        // }
         alpha = score > alpha ? score : alpha;
     }
-    TTable::add_item(ch.zhash, depth, Entry::FLAG_ALPHA, alpha);
+    TTable::add_item(ch.zhash, depth, best ? Entry::FLAG_EXACT : Entry::FLAG_ALPHA, alpha, best);
     return alpha;
 }
 
@@ -147,6 +145,7 @@ float Player::quiescence_search(Chess& ch, int8_t depth, U64& nodes, float alpha
 
     nodes++;
     alpha = stand_pat > alpha ? stand_pat : alpha;
+    move best = 0;
     // make captures until no captures remain, then eval
     for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
     {
@@ -161,8 +160,10 @@ float Player::quiescence_search(Chess& ch, int8_t depth, U64& nodes, float alpha
             TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta);
             return beta;
         }
+        best = score > alpha ? moves[mvidx] : best;
         alpha = score > alpha ? score : alpha;
     }
+    TTable::add_item(ch.zhash, depth, best ? Entry::FLAG_EXACT : Entry::FLAG_ALPHA, alpha, best);
     return alpha;
 }
 
@@ -213,7 +214,8 @@ float Player::eval(Chess& ch, int8_t mate_offset, bool test)
         // if it is a stalemate, return 0
         return eval_gen.in_check ? ((-99.99f - mate_offset) * (ch.black_to_move ? -1 : 1)) : 0;
     // detect threefold repetition
-    if (ch.repetitions() >= 3) return 0;
+    if (ch.repetitions() >= 3)
+        return 0;
 
     // game isn't over, eval the position
     // endgame interpolation

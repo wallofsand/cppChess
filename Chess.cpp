@@ -2,12 +2,121 @@
 
 Chess::Chess()
 {
-    black_to_move = false;
-    ep_square = -1;
-    castle_rights = 0b1111;
+    this->black_to_move = false;
+    this->ep_square = -1;
+    this->castle_rights = 0b1111;
     build_bitboards();
     std::vector<move> history;
-    zhash = hash();
+    this->zhash = hash();
+}
+
+/*
+ * FEN constructor
+ * a FEN record contains six fields, separated by a space
+ *   1. pieces, ranks 8 to 1, '/' between ranks
+ *   2. active color
+ *   3. castling availability
+ *   4. en passasant target square
+ *   5. halfmove clock - number of halfmoves since the last
+ *        pawn move or capture. used for the 50-move rule
+ *   6. fullmove number, incremented after black's moves
+ */
+Chess::Chess(const std::string fen)
+{
+    // some other initialization
+    this->castle_rights = 0;
+    std::vector<move> history;
+    this->zhash = hash();
+
+    int8_t loc = 0;
+
+    // field 1: piece locations
+    int8_t r = 7;
+    int8_t f = 0;
+    while (fen[loc] != ' ')
+    {
+        while (fen[loc] == '/')
+            loc++;
+        int8_t sq = r * 8 + f;
+        if (49 <= fen[loc] && fen[loc] <= 56)
+        {
+            f += fen[loc] - 49;
+        }
+        else for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
+        {
+            if (fen[loc] == ch_cst::piece_char[piece])
+            {
+                // white pieces
+                this->bb_white         |= 1ull << sq;
+                *this->bb_piece[piece] |= 1ull << sq;
+            }
+            else if (fen[loc] == ch_cst::piece_char[piece + 8] + (piece == ch_cst::PAWN))
+            {
+                // black pieces
+                this->bb_black         |= 1ull << sq;
+                *this->bb_piece[piece] |= 1ull << sq;
+            }
+        }
+        f = (f + 1) % 8;
+        r = f ? r : r - 1;
+        loc++;
+    }
+    this->bb_occ = bb_white | bb_black;
+    loc++;
+
+    // field 2: active color
+    this->black_to_move = fen[loc] == 'b';
+    loc += 2;
+
+    // field 3: castle availability
+    if (fen[loc] != '-')
+        while (fen[loc] != ' ')
+        {
+            // bl:QuKi wh:QuKi
+            if (fen[loc] == 'K')
+                this->castle_rights |= 0b0001;
+            else if (fen[loc] == 'Q')
+                this->castle_rights |= 0b0010;
+            else if (fen[loc] == 'k')
+                this->castle_rights |= 0b0100;
+            else if (fen[loc] == 'q')
+                this->castle_rights |= 0b1000;
+            loc++;
+        }
+    else loc++;
+    loc++;
+
+    // field 4: ep target square
+    if (fen[loc] != '-')
+    {
+        this->ep_square = Compass::square_from_string(fen.substr(loc, 2));
+        loc += 2;
+    }
+    else
+    {
+        this->ep_square = -1;
+        loc++;
+    }
+    loc++;
+
+    // field 5: halfmove clock
+    this->halfmoves = 0;
+    while (fen[loc] != ' ')
+    {
+        this->halfmoves *= 10;
+        this->halfmoves += fen[loc] - 48;
+        loc++;
+    }
+    loc++;
+
+    // field 6: fullmove clock
+    this->fullmoves = 0;
+    while (fen[loc] != ' ')
+    {
+        this->fullmoves *= 10;
+        this->fullmoves += fen[loc] - 48;
+        loc++;
+    }
 }
 
 // copy constructor without make_move
