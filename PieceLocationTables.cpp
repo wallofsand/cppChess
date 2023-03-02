@@ -14,7 +14,6 @@ const int* PieceLocationTables::endgame_piece_tables[7] =
     PieceLocationTables::queens, PieceLocationTables::kings_end
 };
 
-
 // all tables are read from black's perspective
 // when white reads a table, we need to flip it along the Y axis
 const int PieceLocationTables::read(const int* table, int sq, bool is_black)

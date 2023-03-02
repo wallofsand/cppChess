@@ -37,14 +37,14 @@ namespace BB
     U64 NoWe_attacks(U64 bishops, U64 empty);
     U64 SoEa_attacks(U64 bishops, U64 empty);
     U64 SoWe_attacks(U64 bishops, U64 empty);
-    U64 gen_shift(U64 bb, int16_t s);
+    U64 gen_shift(U64 bb, int s);
     U64 flip_vertical(U64 bb);
-    bool contains_square(U64 bb, uint8_t sq);
-    uint8_t num_bits_flipped(U64 bb);
+    bool contains_square(U64 bb, int sq);
+    int num_bits_flipped(U64 bb);
     void print_U64(U64 bb, std::string name = "", bool fmt = false);
     void print_binary_string(std::string bbstr, bool fmt = false);
     std::string build_binary_string(U64 bb);
-    uint8_t lz_count(U64 bb);
+    int lz_count(U64 bb);
 }
 
 #endif

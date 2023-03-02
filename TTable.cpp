@@ -7,7 +7,6 @@ U64 TTable::sq_color_type_64x2x6[64][2][6];
 // [white, black][king, queen]
 U64 TTable::castle_rights_wb_kq[2][2];
 U64 TTable::ep_file[8];
-// int TTable::bin[DEFAULT_SIZE];
 Entry TTable::table[TTable::DEFAULT_SIZE];
 
 TTable::TTable()
@@ -77,19 +76,3 @@ Entry TTable::read(U64 key)
 {
     return table[hash_index(key)];
 }
-
-// void TTable::rand_test(int n)
-// {
-//     for (int i = 0; i < n; i++)
-//         bin[hash_index(U64_dist(rng))]++;
-//     float avg = 0;
-//     float dev = 0;
-//     for (int idx = 0; idx < DEFAULT_SIZE; idx++)
-//     {
-//         // fmt::print("{}: {}\t|", idx, bin[idx]);
-//         avg = (avg + bin[idx]) / 2.0f;
-//         dev = (dev + abs(avg - bin[idx])) / 2.0f;
-//     }
-//     fmt::print("avg: {}\ndev: {}\n", avg, dev);
-//     fmt::print("{}\n", U64_dist(rng));
-// }

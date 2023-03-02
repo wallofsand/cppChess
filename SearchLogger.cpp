@@ -1,7 +1,5 @@
 #include "SearchLogger.h"
 
-using namespace ch_cst;
-
 const std::string SearchLogger::file_path()
 {
     CreateDirectory("logs", NULL);

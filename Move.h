@@ -8,10 +8,10 @@ typedef uint16_t move;
 
 namespace Move
 {
-    move build_move(const uint16_t s, const uint16_t e, const uint16_t p = 0);
-    uint8_t start(const move& m);
-    uint8_t end(const move& m);
-    uint8_t promote(const move& m);
+    move build_move(const int s, const int e, const int p = 0);
+    int start(const move& m);
+    int end(const move& m);
+    int promote(const move& m);
     std::string to_string(const move m);
 };
 

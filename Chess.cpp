@@ -28,16 +28,16 @@ Chess::Chess(const std::string fen)
     std::vector<move> history;
     this->zhash = hash();
 
-    int8_t loc = 0;
+    int loc = 0;
 
     // field 1: piece locations
-    int8_t r = 7;
-    int8_t f = 0;
+    int r = 7;
+    int f = 0;
     while (fen[loc] != ' ')
     {
         while (fen[loc] == '/')
             loc++;
-        int8_t sq = r * 8 + f;
+        int sq = r * 8 + f;
         if (49 <= fen[loc] && fen[loc] <= 56)
         {
             f += fen[loc] - 49;
@@ -50,7 +50,7 @@ Chess::Chess(const std::string fen)
                 this->bb_white         |= 1ull << sq;
                 *this->bb_piece[piece] |= 1ull << sq;
             }
-            else if (fen[loc] == ch_cst::piece_char[piece + 8] + (piece == ch_cst::PAWN))
+            else if (fen[loc] == ch_cst::piece_char[piece + 8])
             {
                 // black pieces
                 this->bb_black         |= 1ull << sq;
@@ -117,6 +117,80 @@ Chess::Chess(const std::string fen)
         this->fullmoves += fen[loc] - 48;
         loc++;
     }
+}
+
+/*
+ * Method to build the FEN string of a position
+ * a FEN record contains six fields, separated by a space
+ *   1. pieces, ranks 8 to 1, '/' between ranks
+ *   2. active color
+ *   3. castling availability
+ *   4. en passasant target square
+ *   5. halfmove clock - number of halfmoves since the last
+ *        pawn move or capture. used for the 50-move rule
+ *   6. fullmove number, incremented after black's moves
+ */
+std::string Chess::fen() const
+{
+    std::string fen = "";
+
+    int loc = 0;
+
+    // field 1: piece locations
+    int spaces = 0;
+    for (int r = 7; r >= 0; r--) {
+        for (int f = 0; f < 7; f++)
+        {
+            int sq = 8 * r + f;
+            if (bb_occ & 1ull << sq)
+            {
+                if (spaces)
+                {
+                    fen += std::to_string(spaces);
+                    spaces = 0;
+                }
+                fen += ch_cst::piece_char[(black_at(sq) << 3) | piece_at(sq)];
+            }
+            else spaces++;
+            if (spaces)
+            {
+                fen += std::to_string(spaces);
+                spaces = 0;
+            }
+        }
+        fen += '/';
+    }
+    fen += ' ';
+
+    // field 2: active color
+    fen += black_to_move ? "b " : "w ";
+
+    // field 3: castle availability
+    if (!castle_rights)
+        fen += '-';
+    else
+    {
+        if (castle_rights & 1)
+            fen += 'K';
+        if (castle_rights & 2)
+            fen += 'Q';
+        if (castle_rights & 4)
+            fen += 'k';
+        if (castle_rights & 8)
+            fen += 'q';
+    }
+    fen += ' ';
+
+    // field 4: ep target square
+    if (ep_square) fen += ch_cst::string_from_square[ep_square] + ' ';
+    else           fen += "- ";
+
+    // field 5: halfmove clock
+    fen += std::to_string(halfmoves);
+
+    // field 6: fullmove clock
+    fen += std::to_string(fullmoves);
+    return fen;
 }
 
 // copy constructor without make_move
@@ -187,7 +261,7 @@ U64 Chess::hash() const
     while (pieces)
     {
         // x & -x masks the LS1B
-        uint8_t sq = 63 - BB::lz_count(pieces & 0-pieces);
+        int sq = 63 - BB::lz_count(pieces & 0-pieces);
         h ^= TTable::sq_color_type_64x2x6[sq][black_at(sq)][piece_at(sq) - 1];
         // now clear that LS1B
         pieces &= pieces - 1;
@@ -211,9 +285,9 @@ U64 Chess::hash() const
  * @return the piece type (1 - 6) or 0 if no piece is found
  *         returns 0 if no piece is found
  */
-uint8_t Chess::piece_at(uint8_t sq) const
+int Chess::piece_at(int sq) const
 {
-    for (uint8_t piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
+    for (int piece = ch_cst::PAWN; piece <= ch_cst::KING; piece++)
         if (*bb_piece[piece] & 1ull << sq)
             return piece;
     return 0;
@@ -224,19 +298,19 @@ uint8_t Chess::piece_at(uint8_t sq) const
  * @param sq the square index to check
  * @return 0 for white, 1 for black, 0 if no piece is found
  */
-bool Chess::black_at(uint8_t sq) const
+bool Chess::black_at(int sq) const
 {
     return bb_black & 1ull << sq;
 }
 
 void Chess::make_move(move mv, bool test)
 {
-    uint8_t start = Move::start(mv);
-    uint8_t end = Move::end(mv);
+    int start = Move::start(mv);
+    int end = Move::end(mv);
     prev_hash.push_back(zhash);
 
     // Captured piece
-    uint8_t type = piece_at(end);
+    int type = piece_at(end);
     if (type)
     {
         // remove captured pieces
@@ -325,7 +399,7 @@ void Chess::make_move(move mv, bool test)
     history.push_back(mv);
 }
 
-void Chess::unmake_move(uint8_t undos)
+void Chess::unmake_move(int undos)
 {
     std::vector<move> temp = history;
     history.clear();
@@ -335,13 +409,13 @@ void Chess::unmake_move(uint8_t undos)
     castle_rights = 0b1111;
     build_bitboards();
     zhash = hash();
-    for (uint8_t i = 0; i < temp.size() - undos; i++)
+    for (int i = 0; i < temp.size() - undos; i++)
         make_move(temp[i]);
 }
 
-uint8_t Chess::repetitions() const
+int Chess::repetitions() const
 {
-    uint8_t count = 1;
+    int count = 1;
     for (U64 h : prev_hash)
         count += (zhash == h);
     return count;
@@ -350,10 +424,12 @@ uint8_t Chess::repetitions() const
 void Chess::print_board(bool fmt) const
 {
     std::string board = "";
-    for (uint8_t sq = 0; sq < 64; sq++)
+    for (int sq = 0; sq < 64; sq++)
     {
-        board += ch_cst::piece_char[(black_at(sq) << 3) | piece_at(sq)];
-        if (board.length() > sq) continue;
+        if ((bb_black & bb_pawns) & 1ull << sq)
+            board += 'o';
+        else if (bb_occ & 1ull << sq)
+            board += ch_cst::piece_char[(black_at(sq) << 3) | piece_at(sq)];
         else if (sq == ep_square) board += "e";
         else if (Compass::file_xindex(sq) % 2 == Compass::rank_yindex(sq) % 2) board += ".";
         else board += " ";

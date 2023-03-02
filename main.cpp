@@ -1,12 +1,12 @@
 #include "Chess.h"
 #include "Player.h"
 
-U64 perft_root(Chess& ch, int8_t depth, bool initial_pos = false, int8_t log_depth = 1);
-U64 perft(Chess& ch, int8_t depth, U64& nodes);
-U64 eperft_root(Chess& ch, int8_t depth);
-U64 eperft(Chess& ch, int8_t depth, U64& nodes);
+U64 perft_root(Chess& ch, int depth, bool initial_pos = false, int log_depth = 1);
+U64 perft(Chess& ch, int depth, U64& nodes);
+U64 eperft_root(Chess& ch, int depth);
+U64 eperft(Chess& ch, int depth, U64& nodes);
 
-const int8_t SIM_DEPTH = 3;
+const int SIM_DEPTH = 3;
 
 const std::string HELP_STRINGS[] = {
     "\nWelcome to Graham's C++ chess.\n"
@@ -73,7 +73,7 @@ int main()
             fmt::print("{}{} {}\n", ((ch.history.size() - 1) / 2) + 1, ch.history.size() % 2 == 1 ? ". " : ".. ", last_move);
         if (!playing) break;
         if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1)
-            for (uint8_t i = 0; i < moves[119]; i++)
+            for (int i = 0; i < moves[119]; i++)
                 fmt::print("{} ", MoveGenerator::move_san(ch, moves[i]));
         fmt::print("\n{} ", ch.black_to_move ? "Black to move: " : "White to move: ");
 
@@ -145,7 +145,7 @@ int main()
         }
         else if (input == "end")
             playing = false;
-        else for (uint8_t i = 0; i < moves[119]; i++)
+        else for (int i = 0; i < moves[119]; i++)
         {
             if (input != MoveGenerator::move_san(ch, moves[i]))
                 continue;
@@ -177,7 +177,7 @@ SearchLogger perft_log("perft_log", 0);
  * @param log_depth the depth of nodes to list in log file
  *        default: 0
  */
-U64 perft_root(Chess& ch, int8_t depth, bool initial_pos, int8_t log_depth)
+U64 perft_root(Chess& ch, int depth, bool initial_pos, int log_depth)
 {
     log_depth = log_depth < depth ? log_depth : depth;
     perft_log.depth = depth - log_depth;
@@ -194,7 +194,7 @@ U64 perft_root(Chess& ch, int8_t depth, bool initial_pos, int8_t log_depth)
     // main test loop
     if (!depth)
         leaf_nodes = 1;
-    else for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
+    else for (int mvidx = 0; mvidx < moves[119]; mvidx++)
     {
         move mv = moves[mvidx];
         std::cout << fmt::format("{}/{}:\t{} ", mvidx + 1, moves[119], Move::to_string(mv));
@@ -248,7 +248,7 @@ U64 perft_root(Chess& ch, int8_t depth, bool initial_pos, int8_t log_depth)
  * @param ch the current position to search
  * @param depth number of ply remaining in the search
  */
-U64 perft(Chess& ch, int8_t depth, U64& nodes)
+U64 perft(Chess& ch, int depth, U64& nodes)
 {
     if (!depth)
         return 1;
@@ -256,7 +256,7 @@ U64 perft(Chess& ch, int8_t depth, U64& nodes)
     MoveGenerator perft_gen(ch);
     move moves[120] = {};
     perft_gen.gen_moves(moves);
-    for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
+    for (int mvidx = 0; mvidx < moves[119]; mvidx++)
     {
         if (depth > perft_log.depth)
             perft_log.buffer += fmt::format(" {}", MoveGenerator::move_san(ch, moves[mvidx]));
@@ -283,7 +283,7 @@ U64 perft(Chess& ch, int8_t depth, U64& nodes)
  * @param log_depth the depth of nodes to list in log file
  *        default: 0
  */
-U64 eperft_root(Chess& ch, int8_t depth)
+U64 eperft_root(Chess& ch, int depth)
 {
     // run normal perft for baseline
     perft_root(ch, depth, false, 0);
@@ -300,7 +300,7 @@ U64 eperft_root(Chess& ch, int8_t depth)
     // main test loop
     if (!depth)
         leaf_nodes = 1;
-    else for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
+    else for (int mvidx = 0; mvidx < moves[119]; mvidx++)
     {
         ch.make_move(moves[mvidx]);
         nodes++;
@@ -324,7 +324,7 @@ U64 eperft_root(Chess& ch, int8_t depth)
  * @param ch the current position to search
  * @param depth number of ply remaining in the search
  */
-U64 eperft(Chess& ch, int8_t depth, U64& nodes)
+U64 eperft(Chess& ch, int depth, U64& nodes)
 {
     if (!depth)
     {
@@ -335,7 +335,7 @@ U64 eperft(Chess& ch, int8_t depth, U64& nodes)
     MoveGenerator eperft_gen(ch);
     move moves[120] = {};
     eperft_gen.gen_moves(moves);
-    for (uint8_t mvidx = 0; mvidx < moves[119]; mvidx++)
+    for (int mvidx = 0; mvidx < moves[119]; mvidx++)
     {
         ch.make_move(moves[mvidx]);
         nodes++;

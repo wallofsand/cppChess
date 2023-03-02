@@ -6,7 +6,7 @@
  * @param sq square index 0-63
  * @return true if the bit at sq is set
  */
-bool BB::contains_square(U64 bb, uint8_t sq)
+bool BB::contains_square(U64 bb, int sq)
 {
     return bb & 1ull << sq;
 }
@@ -15,9 +15,9 @@ bool BB::contains_square(U64 bb, uint8_t sq)
  * @param bb any bitboard
  * @return the number of bits set in bb
  */
-uint8_t BB::num_bits_flipped(U64 bb)
+int BB::num_bits_flipped(U64 bb)
 {
-    uint8_t count = 0;
+    int count = 0;
     while (bb)
     {
         count++;
@@ -259,7 +259,7 @@ U64 BB::SoWe_attacks(U64 bishops, U64 empty) { return SoWe_shift_one(SoWe_occl_f
  *          right if negative
  * @return shifted bitboard
  */
-U64 BB::gen_shift(U64 bb, int16_t s)
+U64 BB::gen_shift(U64 bb, int s)
 {
     char left = (char) s;
     char right = -((char) (s >> 8) & left);
@@ -288,9 +288,9 @@ void BB::print_U64(U64 bb, std::string name, bool fmt)
  */
 std::string BB::build_binary_string(U64 bb)
 {
-    uint8_t leading_zero_count = lz_count(bb);
+    int leading_zero_count = lz_count(bb);
     std::string zeros = "";
-    for (uint8_t i = 0; i < leading_zero_count; i++)
+    for (int i = 0; i < leading_zero_count; i++)
         zeros.append("0");
     while (bb)
     {
@@ -299,7 +299,7 @@ std::string BB::build_binary_string(U64 bb)
     }
     // string is currently reversed - the string is the correct binary representation of the number
     // but that means the bits are indexed backwards. lets fix that
-    for (uint8_t idx = 0; idx < 32; idx++)
+    for (int idx = 0; idx < 32; idx++)
     {
         char tmp = zeros[idx];
         zeros[idx] = zeros[63-idx];
@@ -331,10 +331,10 @@ void BB::print_binary_string(std::string bbstr, bool fmt)
     // the words are printed forewards but in reverse order
     // since the printing happens top-to-bottom on the screen
     std::string divider = "|---|---|---|---|---|---|---|---|\n";
-    for (int8_t file = 7; file >= 0; file--)
+    for (int file = 7; file >= 0; file--)
     {
         fmt::print("{}", fmt ? divider + "| " : "");
-        for (uint8_t rank = 0; rank < 8; rank++)
+        for (int rank = 0; rank < 8; rank++)
             fmt::print("{}{}", bbstr[(file<<3) + rank], fmt ? " | " : "");
         fmt::print("\n");
     }
@@ -346,10 +346,10 @@ void BB::print_binary_string(std::string bbstr, bool fmt)
  * @param any bitboard
  * @return the number of leading zeros
  */
-uint8_t BB::lz_count(U64 bb)
+int BB::lz_count(U64 bb)
 {
     if (!bb) return 64;
-    uint8_t count = 0;
+    int count = 0;
     // is the msb in the top 32 bits?
     if (!(bb & 0xFFFFFFFF00000000))
     {

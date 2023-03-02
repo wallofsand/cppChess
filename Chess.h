@@ -22,10 +22,10 @@ public:
     std::string fen() const;
     bool black_to_move;
     // bl:QuKi wh:QuKi
-    uint8_t castle_rights;
-    int8_t halfmoves;
-    int8_t fullmoves;
-    int8_t ep_square;
+    int castle_rights;
+    int halfmoves;
+    int fullmoves;
+    int ep_square;
     U64 bb_white{0};
     U64 bb_black{0};
     U64 bb_pawns{0};
@@ -40,13 +40,13 @@ public:
     U64 zhash = 0ull;
     std::vector<move> history;
     std::vector<U64> prev_hash;
-    uint8_t piece_at(uint8_t sq) const;
-    bool black_at(uint8_t sq) const;
+    int piece_at(int sq) const;
+    bool black_at(int sq) const;
     U64 hash() const;
     void print_board(bool fmt = false) const;
     void make_move(move mv, bool test = false);
-    void unmake_move(uint8_t undos);
-    uint8_t repetitions() const;
+    void unmake_move(int undos);
+    int repetitions() const;
     void build_bitboards();
 };
 

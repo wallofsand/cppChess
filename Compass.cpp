@@ -16,10 +16,10 @@ Compass::Compass()
 
 // Method to return a bitboard of the ray which
 // passes through square sq in direction DIRS[dir_index]
-const U64 Compass::build_ray(uint8_t sq, uint8_t dir_index)
+const U64 Compass::build_ray(int sq, int dir_index)
 {
     U64 ray = 0;
-    for (uint8_t step = 1; step <= Compass::edge_distance_64x8[sq][dir_index]; step++)
+    for (int step = 1; step <= Compass::edge_distance_64x8[sq][dir_index]; step++)
     {
         ray |= 1ull << (sq + step * directions::DIRS[dir_index]);
     }
@@ -28,22 +28,19 @@ const U64 Compass::build_ray(uint8_t sq, uint8_t dir_index)
 
 // Method to return a bitboard of the ray which
 // passes between two colinear squares sq0 to sq1
-const U64 Compass::build_ray(uint8_t sq[2])
+const U64 Compass::build_ray(int sq[2])
 {
-    uint8_t sq0 = sq[0];
-    uint8_t sq1 = sq[1];
-    uint8_t end_index = get_dir_end_index(ch_cst::QUEEN);
-    for (uint8_t i = 0; i < end_index; i++)
+    int end_index = get_dir_end_index(ch_cst::QUEEN);
+    for (int i = 0; i < end_index; i++)
     {
-        uint8_t dir = directions::DIRS[i];
-        for (uint8_t step = 1; step <= edge_distance_64x8[sq0][i]; step++)
-            if (sq0 + step * directions::DIRS[i] == sq1)
+        int dir = directions::DIRS[i];
+        for (int step = 1; step <= edge_distance_64x8[sq[0]][i]; step++)
+            if (sq[0] + step * directions::DIRS[i] == sq[1])
             {
                 U64 ray = 0;
-                uint8_t sq = sq0;
-                while(sq != sq1)
+                while(sq[0] != sq[1])
                 {
-                    ray |= 1ull << sq;
+                    ray |= 1ull << sq[0];
                     sq += directions::DIRS[i];
                 }
                 return ray;
@@ -56,7 +53,7 @@ const U64 Compass::build_ray(uint8_t sq[2])
 // start (exclusive) through square end to board edge
 // retuns zero if no such ray exists
 // an optional occupancy array can be passed to stop the ray
-const U64 Compass::ray_square(uint8_t start, uint8_t end, U64 occ)
+const U64 Compass::ray_square(int start, int end, U64 occ)
 {
     U64 ray = BB::nort_attacks(1ull << start, ~occ);
     if (BB::contains_square(ray, end))
@@ -87,7 +84,7 @@ const U64 Compass::ray_square(uint8_t start, uint8_t end, U64 occ)
 
 void Compass::compute_edge_distances()
 {
-    for (uint8_t sq = 0; sq < 64; sq++)
+    for (int sq = 0; sq < 64; sq++)
     {
         uint8_t rank = rank_yindex(sq);
         uint8_t file = file_xindex(sq);
@@ -108,33 +105,30 @@ void Compass::compute_edge_distances()
 
 void Compass::compute_knight_attacks()
 {
-    using namespace directions;
-    for (uint8_t sq = 0; sq < 64; sq++)
+    for (int sq = 0; sq < 64; sq++)
     {
-        // NORTH, EAST, SOUTH, WEST
-        // NNE, NEE, SEE, SSE, SSW, SWW, NWW, NNW;
-        Compass::knight_attacks[sq] = 0b0;
+        Compass::knight_attacks[sq] = 0ull;
         if (edge_distance_64x8[sq][0] > 0)
         {
             if (edge_distance_64x8[sq][0] > 1 && edge_distance_64x8[sq][1] > 0)
-                Compass::knight_attacks[sq] |= 1ull << (sq + NNE);
+                Compass::knight_attacks[sq] |= 1ull << (sq + directions::NNE);
             if (edge_distance_64x8[sq][1] > 1)
-                Compass::knight_attacks[sq] |= 1ull << (sq + NEE);
+                Compass::knight_attacks[sq] |= 1ull << (sq + directions::NEE);
             if (edge_distance_64x8[sq][0] > 1 && edge_distance_64x8[sq][3] > 0)
-                Compass::knight_attacks[sq] |= 1ull << (sq + NNW);
+                Compass::knight_attacks[sq] |= 1ull << (sq + directions::NNW);
             if (edge_distance_64x8[sq][3] > 1)
-                Compass::knight_attacks[sq] |= 1ull << (sq + NWW);
+                Compass::knight_attacks[sq] |= 1ull << (sq + directions::NWW);
         }
         if (edge_distance_64x8[sq][2] > 0)
         {
             if (edge_distance_64x8[sq][2] > 1 && edge_distance_64x8[sq][1] > 0)
-                Compass::knight_attacks[sq] |= 1ull << (sq + SSE);
+                Compass::knight_attacks[sq] |= 1ull << (sq + directions::SSE);
             if (edge_distance_64x8[sq][1] > 1)
-                Compass::knight_attacks[sq] |= 1ull << (sq + SEE);
+                Compass::knight_attacks[sq] |= 1ull << (sq + directions::SEE);
             if (edge_distance_64x8[sq][2] > 1 && edge_distance_64x8[sq][3] > 0)
-                Compass::knight_attacks[sq] |= 1ull << (sq + SSW);
+                Compass::knight_attacks[sq] |= 1ull << (sq + directions::SSW);
             if (edge_distance_64x8[sq][3] > 1)
-                Compass::knight_attacks[sq] |= 1ull << (sq + SWW);
+                Compass::knight_attacks[sq] |= 1ull << (sq + directions::SWW);
         }
     }
 }
@@ -150,7 +144,7 @@ const U64 Compass::rank_attacks(U64 occ, int sq)
 
 void Compass::compute_rank_attacks()
 {
-    for (U64 occ = 0; occ < 64; occ++) for (uint8_t rksq = 0; rksq < 8; rksq++)
+    for (U64 occ = 0; occ < 64; occ++) for (int rksq = 0; rksq < 8; rksq++)
     {
         U64 rook = 1ull << rksq;
         first_rank_attacks_64x8[8*occ+rksq] = BB::east_attacks(rook, ~occ) & 255;
@@ -161,12 +155,12 @@ void Compass::compute_rank_attacks()
 
 void Compass::compute_king_attacks()
 {
-    for (uint8_t king_sq = 0; king_sq < 64; king_sq++)
+    for (int king_sq = 0; king_sq < 64; king_sq++)
     {
         king_attacks[king_sq] = 0ull;
-        for (uint8_t dir_idx = get_dir_start_index(ch_cst::KING); dir_idx < get_dir_end_index(ch_cst::KING); dir_idx++)
+        for (int dir_idx = get_dir_start_index(ch_cst::KING); dir_idx < get_dir_end_index(ch_cst::KING); dir_idx++)
         {
-            uint8_t dir = directions::DIRS[dir_idx];
+            int dir = directions::DIRS[dir_idx];
             if (edge_distance_64x8[king_sq][dir_idx] == 0)
                 continue;
             king_attacks[king_sq] |= 1ull << (king_sq + dir);
@@ -174,7 +168,7 @@ void Compass::compute_king_attacks()
     }
 }
 
-const uint8_t Compass::get_dir_start_index(uint8_t piece)
+const int Compass::get_dir_start_index(int piece)
 {
     switch (piece)
     {
@@ -187,7 +181,7 @@ const uint8_t Compass::get_dir_start_index(uint8_t piece)
     }
 }
 
-const uint8_t Compass::get_dir_end_index(uint8_t piece)
+const int Compass::get_dir_end_index(int piece)
 {
     switch (piece)
     {
@@ -202,21 +196,21 @@ const uint8_t Compass::get_dir_end_index(uint8_t piece)
 
 // y-coordinate, 1-8
 // function returns an index 0-7
-const int8_t Compass::rank_yindex(int8_t sq)
+const int Compass::rank_yindex(int sq)
 {
     return sq >> 3;
 }
 
 // x-coordinate, a-h
 // function returns an index 0-7
-const int8_t Compass::file_xindex(int8_t sq)
+const int Compass::file_xindex(int sq)
 {
     return sq % 8;
 }
 
-const int8_t Compass::square_from_string(std::string str)
+const int Compass::square_from_string(std::string str)
 {
-    int8_t sq;
+    int sq;
     switch (str[0])
     {
     case 'a':
@@ -271,64 +265,4 @@ const int8_t Compass::square_from_string(std::string str)
         break;
     }
     return sq;
-}
-
-const std::string Compass::string_from_square(int8_t sq)
-{
-    std::string str = "";
-    switch (file_xindex(sq))
-    {
-    case 0:
-        str += 'a';
-        break;
-    case 1:
-        str += 'b';
-        break;
-    case 2:
-        str += 'c';
-        break;
-    case 3:
-        str += 'd';
-        break;
-    case 4:
-        str += 'e';
-        break;
-    case 5:
-        str += 'f';
-        break;
-    case 6:
-        str += 'g';
-        break;
-    case 7:
-        str += 'h';
-        break;
-    }
-    switch (rank_yindex(sq))
-    {
-    case 0:
-        str += '1';
-        break;
-    case 1:
-        str += '2';
-        break;
-    case 2:
-        str += '3';
-        break;
-    case 3:
-        str += '4';
-        break;
-    case 4:
-        str += '5';
-        break;
-    case 5:
-        str += '6';
-        break;
-    case 6:
-        str += '7';
-        break;
-    case 7:
-        str += '8';
-        break;
-    }
-    return str;
 }
