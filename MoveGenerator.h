@@ -9,6 +9,7 @@
 class MoveGenerator
 {
 public:
+    inline MoveGenerator(Chess* ptr) : ch(*ptr) {}
     inline MoveGenerator(Chess& pos) : ch(pos) {}
     Chess& ch;
     bool is_game_over(bool test);
@@ -20,7 +21,7 @@ public:
     U64 gen_op_attack_mask(bool test);
     U64 pinned_pieces;
     void init(bool test);
-    static std::string move_san(Chess ch, move mv);
+    static std::string move_san(move mv);
 private:
     void gen_pawn_moves(move (&pawn_moves)[120], bool test);
     void gen_knight_piece_moves(move (&knight_moves)[120], int sq, bool test);

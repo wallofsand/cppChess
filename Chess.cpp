@@ -1,12 +1,13 @@
 #include "Chess.h"
 
+ch_stk::ChessStack<Chess> Chess::stack;
+
 Chess::Chess()
 {
     this->black_to_move = false;
     this->ep_square = -1;
     this->castle_rights = 0b1111;
     build_bitboards();
-    std::vector<move> history;
     this->zhash = hash();
 }
 
@@ -23,11 +24,7 @@ Chess::Chess()
  */
 Chess::Chess(const std::string fen)
 {
-    // some other initialization
     this->castle_rights = 0;
-    std::vector<move> history;
-    this->zhash = hash();
-
     int loc = 0;
 
     // field 1: piece locations
@@ -111,12 +108,14 @@ Chess::Chess(const std::string fen)
 
     // field 6: fullmove clock
     this->fullmoves = 0;
+    std::string fmstr = "";
     while (fen[loc] != ' ')
     {
-        this->fullmoves *= 10;
-        this->fullmoves += fen[loc] - 48;
+        fmstr += fen[loc];
         loc++;
     }
+    this->fullmoves = std::stoi(fmstr);
+    this->zhash = hash();
 }
 
 /*
@@ -199,9 +198,9 @@ Chess::Chess(const Chess& _ch)
     this->black_to_move = _ch.black_to_move;
     this->castle_rights = _ch.castle_rights;
     this->ep_square     = _ch.ep_square;
-    this->history       = _ch.history;
-    this->prev_hash     = _ch.prev_hash;
     this->zhash         = _ch.zhash;
+    this->fullmoves     = _ch.fullmoves;
+    this->halfmoves     = _ch.halfmoves;
     // copy the bitboards
     this->bb_white   = _ch.bb_white;
     this->bb_black   = _ch.bb_black;
@@ -214,36 +213,20 @@ Chess::Chess(const Chess& _ch)
     this->bb_occ     = _ch.bb_occ;
 }
 
-/***********************************
- *       OLD COPY CONSTRUCOR       *
- ***********************************
- * Chess::Chess(const Chess& ch)   *
- * {                               *
- *     black_to_move = false;      *
- *     ep_square = -1;             *
- *     castle_rights = 0b1111;     *
- *     build_bitboards();          *
- *     std::vector<move> history;  *
- *     zhash = hash();             *
- *     for (move mv : ch.history)  *
- *         make_move(mv);          *
- * }                               *
- **********************************/
-
 /*
  * Set up the starting position
  */
 void Chess::build_bitboards()
 {
-    bb_white   = 0b1111111111111111;
-    bb_black   = bb_white      << (8 * 6);
-    bb_pawns   = 0b11111111ull << (8 * 6) | (0b11111111 << 8);
-    bb_knights = 0b01000010ull << (8 * 7) | 0b01000010;
-    bb_bishops = 0b00100100ull << (8 * 7) | 0b00100100;
-    bb_rooks   = 0b10000001ull << (8 * 7) | 0b10000001;
-    bb_queens  = 0b00001000ull << (8 * 7) | 0b00001000;
-    bb_kings   = 0b00010000ull << (8 * 7) | 0b00010000;
-    bb_occ     = bb_white                 | bb_black;
+    bb_white   = 0b1111111111111111ull;
+    bb_black   = bb_white      << 8 * 6;
+    bb_pawns   = 0b11111111ull << 8 * 6 | 0b11111111ull << 8;
+    bb_knights = 0b01000010ull << 8 * 7 | 0b01000010ull;
+    bb_bishops = 0b00100100ull << 8 * 7 | 0b00100100ull;
+    bb_rooks   = 0b10000001ull << 8 * 7 | 0b10000001ull;
+    bb_queens  = 0b00001000ull << 8 * 7 | 0b00001000ull;
+    bb_kings   = 0b00010000ull << 8 * 7 | 0b00010000ull;
+    bb_occ     = bb_white               | bb_black;
 }
 
 /*
@@ -303,11 +286,20 @@ bool Chess::black_at(int sq) const
     return bb_black & 1ull << sq;
 }
 
-void Chess::make_move(move mv, bool test)
+void Chess::push_move(const move mv, bool test)
 {
+    Chess* curr = state();
+    Chess* next = new Chess(*curr);
+    next->make_move(mv, test);
+    // update the game stack
+    stack.push(next);
+}
+
+void Chess::make_move(const move mv, bool test)
+{
+    halfmoves++;
     int start = Move::start(mv);
     int end = Move::end(mv);
-    prev_hash.push_back(zhash);
 
     // Captured piece
     int type = piece_at(end);
@@ -317,10 +309,14 @@ void Chess::make_move(move mv, bool test)
         zhash ^= TTable::sq_color_type_64x2x6[end][!black_to_move][type - 1];
         *bb_piece[type] &= ~(1ull << end);
         *bb_color[!black_to_move] &= ~(1ull << end);
+
+        // reset the halfmove counter after a capture
+        halfmoves = 0;
     }
 
     // Moving piece
     type = Chess::piece_at(start);
+
     // remove the moving piece
     *bb_piece[type] &= ~(1ull << start);
     *bb_color[black_to_move] &= ~(1ull << start);
@@ -331,22 +327,24 @@ void Chess::make_move(move mv, bool test)
     *bb_color[black_to_move] |= 1ull << end;
     zhash ^= TTable::sq_color_type_64x2x6[end][black_to_move][(Move::promote(mv) ? Move::promote(mv) : type) - 1];
 
-    // clear ep square
+    // Handle en passant captures and update ep square
     zhash ^= (ep_square >= 0) ? TTable::ep_file[Compass::file_xindex(ep_square)] : 0;
+    if (type == ch_cst::PAWN)
+    {
+        // a pawn moved; reset the halfmove counter
+        halfmoves = 0;
 
-    // ep capture
-    if (type == ch_cst::PAWN && end == ep_square)
-    {
-        bb_pawns &= ~(1ull << (end - directions::PAWN_DIR[black_to_move]));
-        *bb_color[!black_to_move] &= ~(1ull << (end - directions::PAWN_DIR[black_to_move]));
-        zhash ^= TTable::sq_color_type_64x2x6[end - directions::PAWN_DIR[black_to_move]][!black_to_move][ch_cst::PAWN - 1];
+        // en passant capture
+        bb_pawns ^= end == ep_square ? 1ull << (end - directions::PAWN_DIR[black_to_move]) : 0;
+        *bb_color[!black_to_move] ^= end == ep_square ? 1ull << (end - directions::PAWN_DIR[black_to_move]) : 0;
+        zhash ^= end == ep_square ? TTable::sq_color_type_64x2x6[end - directions::PAWN_DIR[black_to_move]][!black_to_move][ch_cst::PAWN - 1] : 0;
+
+        // double advance; prepare new en passant square
+        ep_square = (start - end) % 16 == 0 ? start + directions::PAWN_DIR[black_to_move] : -1;
+        zhash ^= (start - end) % 16 == 0 ? TTable::ep_file[Compass::file_xindex(ep_square)] : 0;
     }
-    // update ep square
-    else if (type == ch_cst::PAWN && (start - end) % 16 == 0)
-    {
-        ep_square = start + directions::PAWN_DIR[black_to_move];
-        zhash ^= TTable::ep_file[Compass::file_xindex(ep_square)];
-    } else ep_square = -1;
+    // not a pawn move; reset ep_square
+    else ep_square = -1;
 
     // castles, disable castle rights
     if (type == ch_cst::KING)
@@ -394,30 +392,47 @@ void Chess::make_move(move mv, bool test)
     }
 
     bb_occ = bb_white | bb_black;
+    fullmoves += black_to_move;
     black_to_move = !black_to_move;
     zhash ^= TTable::is_black_turn;
-    history.push_back(mv);
 }
 
 void Chess::unmake_move(int undos)
 {
-    std::vector<move> temp = history;
-    history.clear();
-    prev_hash.clear();
-    black_to_move = false;
-    ep_square = -1;
-    castle_rights = 0b1111;
-    build_bitboards();
-    zhash = hash();
-    for (int i = 0; i < temp.size() - undos; i++)
-        make_move(temp[i]);
+    for (int i = 0; i < undos; i++)
+    {
+        stack.pop();
+    }
 }
+
+/*****************************************************
+ *          OLD UNMAKE MOVE (PRE-STACK)              *
+ *****************************************************
+ * void Chess::unmake_move(int undos)                *
+ * {                                                 *
+ *     std::vector<move> temp = history;             *
+ *     history.clear();                              *
+ *     prev_hash.clear();                            *
+ *     black_to_move = false;                        *
+ *     ep_square = -1;                               *
+ *     castle_rights = 0b1111;                       *
+ *     build_bitboards();                            *
+ *     zhash = hash();                               *
+ *     halfmoves = 0;                                *
+ *     for (int i = 0; i < temp.size() - undos; i++) *
+ *         make_move(temp[i]);                       *
+ * }                                                 *
+ ****************************************************/
 
 int Chess::repetitions() const
 {
     int count = 1;
-    for (U64 h : prev_hash)
-        count += (zhash == h);
+    ch_stk::StackNode<Chess>* tmp = stack.top;
+    while (tmp->next)
+    {
+        count += (zhash == tmp->pos->zhash);
+        tmp = tmp->next;
+    }
     return count;
 }
 

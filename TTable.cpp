@@ -15,7 +15,7 @@ TTable::TTable()
     TTable::collisions = 0;
     TTable::writes = 0;
     // e.g. keep one global instance (per thread)
-    TTable::rng.seed(seed_val);
+    TTable::rng.seed(SEED_VAL);
     TTable::is_black_turn = U64_dist(rng);
     TTable::castle_rights_wb_kq[ch_cst::WHITE_INDEX][0] = U64_dist(rng);
     TTable::castle_rights_wb_kq[ch_cst::WHITE_INDEX][1] = U64_dist(rng);

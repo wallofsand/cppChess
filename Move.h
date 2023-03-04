@@ -5,6 +5,7 @@
 #include <iostream>
 
 typedef uint16_t move;
+#define MAXMOVES 120
 
 namespace Move
 {

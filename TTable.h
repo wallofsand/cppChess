@@ -35,7 +35,8 @@ class TTable
 public:
     TTable();
     static const int DEFAULT_SIZE = 35000011;
-    static const U64 seed_val = 15375420585056461361ull;
+    static const U64 SEED_VAL = 15375420585056461361ull;
+
     // the Mersenne Twister with a popular choice of parameters
     static MyRNG rng;
     static std::uniform_int_distribution<U64> U64_dist;
@@ -51,6 +52,7 @@ public:
 
     static U64 is_black_turn;
     static U64 hits, collisions, writes;
+
     static float fill_ratio();
     static int hash_index(U64 key);
     static void add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv = 0);
