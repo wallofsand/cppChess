@@ -31,6 +31,7 @@ move Player::iterative_search(int depth, U64& nodes, bool test)
     // Iterative search loop
     for (int iter = 1; iter <= depth; iter++)
     {
+        fmt::print("Beginning search at depth {} . . . \n", iter);
         for (int mvidx = 0; mvidx < moves[MAXMOVES - 1]; mvidx++)
         {
             Chess::push_move(moves[mvidx]);
@@ -196,8 +197,6 @@ void Player::order_moves_by_piece(const move* moves, move* ordered) const
 float Player::eval(int mate_offset, bool test)
 {
     Chess& ch = *Chess::state();
-    int material_score = 0;
-    float positional_score = 0;
     MoveGenerator eval_gen(ch);
     move moves[MAXMOVES] = {};
     eval_gen.gen_moves(moves);
@@ -205,7 +204,7 @@ float Player::eval(int mate_offset, bool test)
     // is the game over/detect threefold repetition
     if (!moves[MAXMOVES - 1] || ch.repetitions() >= 3)
         // if it is a stalemate, return 0
-        return eval_gen.in_check ? ((-99.99f - mate_offset) * (ch.black_to_move ? -1 : 1)) : 0;
+        return eval_gen.in_check ? (-99.99f - mate_offset) : 0;
 
     // game isn't over, eval the position:
     // endgame interpolation
@@ -229,8 +228,8 @@ float Player::eval(int mate_offset, bool test)
 
     // round to the nearest hundreth
     score = std::round(score) / 100;
-    if (test) fmt::print("net moves: {:<3} | mobility: {:<4.2f} | position: {:<4.2f} | score: {:<4.2f}\n",
-        net_mobility, mobility_score/100, positional_score/100, score);
+    if (test) fmt::print("net moves: {:<3} | mobility: {:<4.2f} | score: {:<4.2f}\n",
+        net_mobility, mobility_score/100, score);
     return score;
 }
 
@@ -245,12 +244,12 @@ float Player::eval_position(float middlegame_weight)
     score += eval_piece(middlegame_weight, ch_cst::KING, false);
 
     // black pieces and position
-    score += eval_piece(middlegame_weight, ch_cst::PAWN, true);
-    score += eval_piece(middlegame_weight, ch_cst::KNIGHT, true);
-    score += eval_piece(middlegame_weight, ch_cst::BISHOP, true);
-    score += eval_piece(middlegame_weight, ch_cst::ROOK, true);
-    score += eval_piece(middlegame_weight, ch_cst::QUEEN, true);
-    score += eval_piece(middlegame_weight, ch_cst::KING, true);
+    score -= eval_piece(middlegame_weight, ch_cst::PAWN, true);
+    score -= eval_piece(middlegame_weight, ch_cst::KNIGHT, true);
+    score -= eval_piece(middlegame_weight, ch_cst::BISHOP, true);
+    score -= eval_piece(middlegame_weight, ch_cst::ROOK, true);
+    score -= eval_piece(middlegame_weight, ch_cst::QUEEN, true);
+    score -= eval_piece(middlegame_weight, ch_cst::KING, true);
     return score;
 }
 
@@ -263,8 +262,8 @@ float Player::eval_piece(float middlegame_weight, int piece, bool is_black)
     while (pieces)
     {
         int sq = 63 - BB::lz_count(pieces & 0-pieces);
-        material_score += var_piece_value[piece] * is_black ? -1 : 1;
-        positional_score += PieceLocationTables::complex_read(piece, sq, middlegame_weight, is_black) * is_black ? -1 : 1;
+        material_score += var_piece_value[piece];
+        positional_score += PieceLocationTables::complex_read(piece, sq, middlegame_weight, is_black);
         pieces &= pieces - 1;
     }
     return material_score + positional_score;

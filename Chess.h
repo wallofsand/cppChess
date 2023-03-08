@@ -54,7 +54,7 @@ public:
     // make_ and unmake_ methods
     static void push_move(const move mv, bool test = false);
     void make_move(move mv, bool test = false);
-    static void unmake_move(int undos);
+    static void unmake_move(uint32_t undos);
 private:
     void build_bitboards();
 };

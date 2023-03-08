@@ -5,15 +5,15 @@ namespace ch_stk
 {
     template <class T>
     struct StackNode {
+        StackNode* next;
+        T* pos;
+
         StackNode() : next(nullptr), pos(nullptr) {};
-        StackNode(T* ch) : pos(ch) {};
+        StackNode(T* ch) : next(nullptr), pos(ch) {};
         inline ~StackNode() {
             delete next;
             delete pos;
         };
-
-        StackNode* next;
-        T* pos;
     };
 
     template <class T>
@@ -28,7 +28,7 @@ namespace ch_stk
             top = node;
         };
         inline void pop() {
-            if (is_empty()) return;
+            if (is_empty() || top->next == nullptr) return;
             StackNode<T>* tmp = top;
             top = top->next;
             tmp->next = nullptr;

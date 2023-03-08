@@ -6,7 +6,7 @@ U64 perft(int depth, U64& nodes);
 U64 eperft_root(int depth);
 U64 eperft(int depth, U64& nodes);
 
-const int SIM_DEPTH = 5;
+const int SIM_DEPTH = 3;
 
 const std::string HELP_STRINGS[] = {
     "\nWelcome to Graham's C++ chess.\n"
@@ -37,12 +37,20 @@ int main(int arg0, char** args)
     Compass();
     TTable();
 
-    int human = -2;
-    fmt::print("Welcome to Graham's C++ chess.\nWhich color will you play?\n0: white   1: black   2: sim game   -1: free play\n");
-    while (human < -1 || human > 2)
-        std::cin >> human;
+    enum human_index {
+        PLAY_WHITE,
+        PLAY_BLACK,
+        PLAY_SIM,
+        PLAY_FREE
+    } human;
+    fmt::print("Welcome to Graham's C++ chess.\nWhich color will you play?\n   0: white      1: black\n   2: sim game   3: free play\n");
+    int in = -1;
+    while (in < PLAY_WHITE || in > PLAY_FREE)
+        std::cin >> in;
+    human = human_index(in);
 
     Chess::stack.top->pos = new Chess (ch_cst::START_FEN);
+
     // Player low_mobility(0.80f), high_mobility(1.20f);
     // Player players[2] = { low_mobility, high_mobility };
 
@@ -64,9 +72,8 @@ int main(int arg0, char** args)
         // print ui
         fmt::print("\n");
         ch.print_board(true);
-        fmt::print("hash:  {:0>16x}\nwrites: {} hits: {} collisions: {}\n",
-            ch.zhash,
-            TTable::writes, TTable::hits, TTable::collisions);
+        fmt::print("fen: {}\nhash: {:0>16x}\nwrites: {} hits: {} collisions: {}\n",
+            ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::collisions);
         engine.eval(0, true);
         fmt::print("nodes: {} n/s: {:0.0f}\n",
             nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f);
@@ -74,7 +81,7 @@ int main(int arg0, char** args)
             fmt::print("{}{} {}\n", Chess::stack.top->next->pos->fullmoves, ch.black_to_move ? ". " : ".. ", last_move);
         fmt::print("reps: {} halfmoves: {}\n", ch.repetitions(), ch.halfmoves);
         if (!playing) break;
-        if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1)
+        if (!ch.black_to_move && human == PLAY_WHITE || ch.black_to_move && human == PLAY_BLACK || human == PLAY_FREE)
             for (int i = 0; i < moves[MAXMOVES - 1]; i++)
                 fmt::print("{} ", MoveGenerator::move_san(moves[i]));
         fmt::print("\n{} to move: ", ch.black_to_move ? "Black" : "White");
@@ -82,12 +89,16 @@ int main(int arg0, char** args)
         // get input
         game_timer.reset();
         std::string input = "";
-        if (!ch.black_to_move && human == 0 || ch.black_to_move && human == 1 || human == -1)
+        if (!ch.black_to_move && human == PLAY_WHITE
+                || ch.black_to_move && human == PLAY_BLACK
+                || human == PLAY_FREE)
             std::cin >> input;
-
-        // if no input, get ai move
-        if (!ch.black_to_move && human == 1 || ch.black_to_move && human == 0 || human == 2)
+        else
+        // if (!ch.black_to_move && human == PLAY_BLACK
+                // || ch.black_to_move && human == PLAY_WHITE
+                // || human == PLAY_SIM)
         {
+            // if no input, get ai move
             std::cout << "Pondering . . ." << std::endl;
             // move engine_move = players[ch.black_to_move].iterative_search(ch, SIM_DEPTH, nodes, false);
             move engine_move = engine.iterative_search(SIM_DEPTH, nodes, false);
@@ -95,16 +106,19 @@ int main(int arg0, char** args)
             Chess::push_move(engine_move);
             if (human == 2)
                 sim_log.write(last_move + " ");
+            continue;
         }
 
         // otherwise, handle input
-        else if (input == "um" && ch.fullmoves > 0)
+        if (input == "um")
         {
-            int undos = 0;
-            while (undos < 1 || undos > ch.fullmoves)
+            unsigned int undos = 0;
+            while (undos < 1)
                 std::cin >> undos;
-            ch.unmake_move(undos);
+            Chess::unmake_move(undos);
         }
+        else if (input == "fen")
+            fmt::print("{}\n", ch.fen());
         else if (input == "help" || input == "?")
             for (std::string tip : HELP_STRINGS)
                 fmt::print("{}", tip);
@@ -118,7 +132,7 @@ int main(int arg0, char** args)
             else
                 fmt::print("No move found.\n");
         }
-        else if (input == "null") // null move - skip your turn
+        else if (input == "null") // null move - skip your turn. highly illegal
             ch.black_to_move = !ch.black_to_move;
         else if (input == "aim")
         {
@@ -221,7 +235,7 @@ U64 perft_root(int depth, int log_depth)
             SearchLogger::time_to_string(), perft_timer.elapsed(), nodes_per_second, leaf_nodes, depth);
 
     // initial position tested, verify results
-    if (!Chess::stack.is_empty())
+    if (Chess::stack.is_empty())
     {
         if (depth > perft_log.depth)
         {

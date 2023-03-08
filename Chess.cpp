@@ -109,12 +109,13 @@ Chess::Chess(const std::string fen)
     // field 6: fullmove clock
     this->fullmoves = 0;
     std::string fmstr = "";
-    while (fen[loc] != ' ')
+    while (fen[loc] && fen[loc] != ' ')
     {
         fmstr += fen[loc];
         loc++;
     }
     this->fullmoves = std::stoi(fmstr);
+
     this->zhash = hash();
 }
 
@@ -133,12 +134,11 @@ std::string Chess::fen() const
 {
     std::string fen = "";
 
-    int loc = 0;
-
     // field 1: piece locations
-    int spaces = 0;
-    for (int r = 7; r >= 0; r--) {
-        for (int f = 0; f < 7; f++)
+    for (int r = 7; r > -1; r--)
+    {
+        int spaces = 0;
+        for (int f = 0; f < 8; f++)
         {
             int sq = 8 * r + f;
             if (bb_occ & 1ull << sq)
@@ -151,13 +151,11 @@ std::string Chess::fen() const
                 fen += ch_cst::piece_char[(black_at(sq) << 3) | piece_at(sq)];
             }
             else spaces++;
-            if (spaces)
-            {
-                fen += std::to_string(spaces);
-                spaces = 0;
-            }
         }
-        fen += '/';
+        if (spaces)
+            fen += std::to_string(spaces);
+        if (r > 0)
+            fen += '/';
     }
     fen += ' ';
 
@@ -181,11 +179,12 @@ std::string Chess::fen() const
     fen += ' ';
 
     // field 4: ep target square
-    if (ep_square) fen += ch_cst::string_from_square[ep_square] + ' ';
+    if (ep_square != -1) fen += ch_cst::string_from_square[ep_square] + ' ';
     else           fen += "- ";
 
     // field 5: halfmove clock
     fen += std::to_string(halfmoves);
+    fen += ' ';
 
     // field 6: fullmove clock
     fen += std::to_string(fullmoves);
@@ -397,12 +396,10 @@ void Chess::make_move(const move mv, bool test)
     zhash ^= TTable::is_black_turn;
 }
 
-void Chess::unmake_move(int undos)
+void Chess::unmake_move(uint32_t undos)
 {
-    for (int i = 0; i < undos; i++)
-    {
+    for (uint32_t i = 0; i < undos; i++)
         stack.pop();
-    }
 }
 
 /*****************************************************
@@ -426,7 +423,7 @@ void Chess::unmake_move(int undos)
 
 int Chess::repetitions() const
 {
-    int count = 1;
+    int count = 0;
     ch_stk::StackNode<Chess>* tmp = stack.top;
     while (tmp->next)
     {

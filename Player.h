@@ -7,7 +7,7 @@
 #include "SearchLogger.h"
 #include "MoveGenerator.h"
 
-const int MOB_CONST = 5;
+const int MOB_CONST = 4;
 const int RESPONSE_DEPTH = 2;
 
 class Player
