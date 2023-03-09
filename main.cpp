@@ -6,7 +6,7 @@ U64 perft(int depth, U64& nodes);
 U64 eperft_root(int depth);
 U64 eperft(int depth, U64& nodes);
 
-const int SIM_DEPTH = 3;
+const int SIM_DEPTH = 5;
 
 const std::string HELP_STRINGS[] = {
     "\nWelcome to Graham's C++ chess.\n"
@@ -23,7 +23,7 @@ const std::string HELP_STRINGS[] = {
     "help: \tDisplays this message.\n"
 };
 
-const std::string PERFT_RESULTS[] = {
+const std::string PERFT_RESULTS[16] = {
     "1", "20", "400", "8902", "197281", "4865609", "119060324", "3195901860",
     "84998978956", "2439530234167", "69352859712417", "2097651003696806",
     "62854969236701747", "1981066775000396239", "61885021521585529237",
@@ -94,9 +94,6 @@ int main(int arg0, char** args)
                 || human == PLAY_FREE)
             std::cin >> input;
         else
-        // if (!ch.black_to_move && human == PLAY_BLACK
-                // || ch.black_to_move && human == PLAY_WHITE
-                // || human == PLAY_SIM)
         {
             // if no input, get ai move
             std::cout << "Pondering . . ." << std::endl;

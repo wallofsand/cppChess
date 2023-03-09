@@ -28,10 +28,11 @@ move Player::iterative_search(int depth, U64& nodes, bool test)
     move best = moves[0];
     nodes = 0;
 
+    fmt::print("Beginning search at depth ");
     // Iterative search loop
     for (int iter = 1; iter <= depth; iter++)
     {
-        fmt::print("Beginning search at depth {} . . . \n", iter);
+        fmt::print("{} . . . ", iter);
         for (int mvidx = 0; mvidx < moves[MAXMOVES - 1]; mvidx++)
         {
             Chess::push_move(moves[mvidx]);
@@ -46,6 +47,7 @@ move Player::iterative_search(int depth, U64& nodes, bool test)
         }
         TTable::add_item(ch.zhash, iter, Entry::FLAG_EXACT, high_score, best);
     }
+    fmt::print(" \n");
     return best;
 }
 
