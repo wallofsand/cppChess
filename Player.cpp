@@ -16,39 +16,38 @@ Player::Player(float mob_percent)
  */
 move Player::iterative_search(int depth, U64& nodes, bool test)
 {
+    TTable::hits = 0;
+
     // get the current game state
     Chess& ch = *Chess::state();
 
-    MoveGenerator mgen(ch);
-    float high_score = -99.99f;
     move moves[MAXMOVES] = {};
+    MoveGenerator mgen(ch);
     mgen.gen_moves(moves);
     if (moves[MAXMOVES - 1] == 1)
         return moves[0];
-    move best = moves[0];
-    nodes = 0;
 
     fmt::print("Beginning search at depth ");
-    // Iterative search loop
     for (int iter = 1; iter <= depth; iter++)
     {
+        nodes = 0;
         fmt::print("{} . . . ", iter);
+        float high_score = -99.99f;
         for (int mvidx = 0; mvidx < moves[MAXMOVES - 1]; mvidx++)
         {
             Chess::push_move(moves[mvidx]);
             float score = -nega_max(iter - 1, nodes, -99.99f, -high_score, test);
-            best        = score > high_score ? moves[mvidx] : best;
-            high_score  = score > high_score ? score        : high_score;
-            ch.unmake_move(1);
+            Chess::unmake_move(1);
             // print output of search
             if (test && iter == depth)
-                fmt::print("{:>2d}/{}: {:<6} {:0.2f}\n",
+                fmt::print("\n{:>2d}/{}: {:<6} {:0.2f}",
                     mvidx + 1, moves[MAXMOVES - 1], MoveGenerator::move_san(moves[mvidx]), score);
+            Move::arr_shift_right(moves, score > high_score ? mvidx : 0);
+            high_score = score > high_score ? score : high_score;
         }
-        TTable::add_item(ch.zhash, iter, Entry::FLAG_EXACT, high_score, best);
     }
     fmt::print(" \n");
-    return best;
+    return moves[0];
 }
 
 /*
@@ -84,7 +83,14 @@ float Player::nega_max(int depth, U64& nodes, float alpha, float beta, bool test
                 return alpha;
             else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
                 return beta;
-            TTable::hits--;
+            // prioritize searching previous best moves
+            if (prev.best)
+            {
+                int best_pos = 0;
+                while (moves[best_pos] != prev.best) best_pos++;
+                Move::arr_shift_right(moves, best_pos);
+            }
+            else TTable::hits--;
         }
         if (!depth)
         {
@@ -99,7 +105,7 @@ float Player::nega_max(int depth, U64& nodes, float alpha, float beta, bool test
     {
         Chess::push_move(moves[mvidx]);
         float score = -nega_max(depth - 1, nodes, -beta, -alpha, test);
-        ch.unmake_move(1);
+        Chess::unmake_move(1);
         if (score >= beta)
         {
             TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta);
@@ -156,7 +162,7 @@ float Player::quiescence_search(int depth, U64& nodes, float alpha, float beta, 
         nodes++;
         Chess::push_move(moves[mvidx]);
         float score = -quiescence_search(depth - 1, nodes, -beta, -alpha, test);
-        ch.unmake_move(1);
+        Chess::unmake_move(1);
         if (score >= beta)
         {
             TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta);
@@ -257,16 +263,20 @@ float Player::eval_position(float middlegame_weight)
 
 float Player::eval_piece(float middlegame_weight, int piece, bool is_black)
 {
-    Chess& ch = *Chess::state();
-    float material_score = 0;
-    float positional_score = 0;
-    U64 pieces = *ch.bb_color[is_black] & *ch.bb_piece[piece];
+    float score = 0;
+    U64 pieces = *Chess::state()->bb_color[is_black] & *Chess::state()->bb_piece[piece];
     while (pieces)
     {
-        int sq = 63 - BB::lz_count(pieces & 0-pieces);
-        material_score += var_piece_value[piece];
-        positional_score += PieceLocationTables::complex_read(piece, sq, middlegame_weight, is_black);
+        score += var_piece_value[piece] + PieceLocationTables::complex_read(piece, 63 - BB::lz_count(pieces & 0-pieces), middlegame_weight, is_black);
         pieces &= pieces - 1;
     }
-    return material_score + positional_score;
+    return score;
+}
+
+float Player::king_safety(bool is_black) const
+{
+    Chess ch = *Chess::state();
+    U64 kattacks = Compass::king_attacks[ch.find_king(is_black)];
+
+    return 0.25 * BB::num_bits_flipped(kattacks);
 }

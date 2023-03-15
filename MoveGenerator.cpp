@@ -2,6 +2,7 @@
 
 void MoveGenerator::init(bool test)
 {
+    ch = *Chess::state();
     op_attack_mask = gen_op_attack_mask(test);
     checks_exist(test);
     pinned_pieces = find_pins(test);
@@ -32,7 +33,7 @@ void MoveGenerator::checks_exist(bool test)
         return;
 
     U64 op = *ch.bb_color[1 - ch.black_to_move];
-    int ksq = find_king(ch.black_to_move);
+    int ksq = ch.find_king(ch.black_to_move);
 
     // knights
     U64 attackers = ch.bb_knights & op & Compass::knight_attacks[ksq];
@@ -171,7 +172,7 @@ U64 MoveGenerator::find_pins(bool test)
  */
 U64 MoveGenerator::gen_op_attack_mask(bool test)
 {
-    U64 mask = Compass::king_attacks[find_king(!ch.black_to_move)];
+    U64 mask = Compass::king_attacks[ch.find_king(!ch.black_to_move)];
     U64 op = *ch.bb_color[!ch.black_to_move];
     U64 empty = ~ch.bb_occ | (ch.bb_kings & *ch.bb_color[ch.black_to_move]);
 
@@ -205,16 +206,6 @@ U64 MoveGenerator::gen_op_attack_mask(bool test)
         attackers &= attackers - 1;
     }
     return mask;
-}
-
-/*
- * Method to find a given king.
- * @param color the color index of the king to search for
- * @return the square index of the king (0-63)
- */
-int MoveGenerator::find_king(int color)
-{
-    return 63 - BB::lz_count(ch.bb_kings & *ch.bb_color[color]);
 }
 
 /*
@@ -308,8 +299,10 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[MAXMOVES], bool test)
     U64 op = *ch.bb_color[!ch.black_to_move];
 
     // pawn captures
-    U64 captures_east = (ch.black_to_move) ? BB::SoEa_shift_one(pawns) & (op | 1ull << ch.ep_square) : BB::NoEa_shift_one(pawns) & (op | 1ull << ch.ep_square);
-    U64 captures_west = (ch.black_to_move) ? BB::SoWe_shift_one(pawns) & (op | 1ull << ch.ep_square) : BB::NoWe_shift_one(pawns) & (op | 1ull << ch.ep_square);
+    U64 captures_east = (ch.black_to_move) ? BB::SoEa_shift_one(pawns) & (op | 1ull << ch.ep_square) 
+                        /* white's move */ : BB::NoEa_shift_one(pawns) & (op | 1ull << ch.ep_square);
+    U64 captures_west = (ch.black_to_move) ? BB::SoWe_shift_one(pawns) & (op | 1ull << ch.ep_square) 
+                        /* white's move */ : BB::NoWe_shift_one(pawns) & (op | 1ull << ch.ep_square);
 
     // eastern captures
     while (captures_east)
@@ -320,7 +313,7 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[MAXMOVES], bool test)
         captures_east &= captures_east - 1;
         int start_sq = end_sq - DIRS[4 + 2 * ch.black_to_move];
         if (BB::contains_square(pinned_pieces, start_sq)
-                && !BB::contains_square(Compass::ray_square(find_king(ch.black_to_move), start_sq, op), end_sq))
+                && !BB::contains_square(Compass::ray_square(ch.find_king(ch.black_to_move), start_sq, op), end_sq))
             continue;
         if (Compass::rank_yindex(end_sq) % 7 != 0)
         {
@@ -349,7 +342,7 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[MAXMOVES], bool test)
         captures_west &= captures_west - 1;
         int start_sq = end_sq - DIRS[5 + 2 * ch.black_to_move];
         if (BB::contains_square(pinned_pieces, start_sq)
-                && !BB::contains_square(Compass::ray_square(find_king(ch.black_to_move), start_sq, op), end_sq))
+                && !BB::contains_square(Compass::ray_square(ch.find_king(ch.black_to_move), start_sq, op), end_sq))
             continue;
         if (Compass::rank_yindex(end_sq) % 7 != 0)
         {
@@ -385,7 +378,7 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[MAXMOVES], bool test)
         int start_sq = end_sq - PAWN_DIR[ch.black_to_move];
         if (BB::contains_square(pawns, start_sq)
                 && (!BB::contains_square(pinned_pieces, start_sq)
-                    || Compass::file_xindex(find_king(ch.black_to_move)) == Compass::file_xindex(end_sq)))
+                    || Compass::file_xindex(ch.find_king(ch.black_to_move)) == Compass::file_xindex(end_sq)))
         {
             if (Compass::rank_yindex(end_sq) % 7 != 0)
             {
@@ -407,7 +400,7 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[MAXMOVES], bool test)
         // double advances
         else if (BB::contains_square(pawns, end_sq - 2 * PAWN_DIR[ch.black_to_move]) &&
             (!BB::contains_square(pinned_pieces, end_sq - 2 * PAWN_DIR[ch.black_to_move])
-            || Compass::file_xindex(find_king(ch.black_to_move)) == Compass::file_xindex(end_sq)))
+            || Compass::file_xindex(ch.find_king(ch.black_to_move)) == Compass::file_xindex(end_sq)))
         {
             pawn_moves[pawn_moves[MAXMOVES - 1]] = Move::build_move(end_sq - 2 * PAWN_DIR[ch.black_to_move], end_sq);
             pawn_moves[MAXMOVES - 1]++;
@@ -471,7 +464,7 @@ void MoveGenerator::gen_bishop_piece_moves(move (&bishop_moves)[MAXMOVES], int s
     while (ts)
     {
         // x & -x masks the LS1B
-        if (~pinned_pieces & ss || Compass::ray_square(find_king(ch.black_to_move), start) & ts & 0-ts)
+        if (~pinned_pieces & ss || Compass::ray_square(ch.find_king(ch.black_to_move), start) & ts & 0-ts)
         {
             bishop_moves[bishop_moves[MAXMOVES - 1]] = Move::build_move(start, 63 - BB::lz_count(ts & 0-ts));
             bishop_moves[MAXMOVES - 1]++;
@@ -507,7 +500,7 @@ void MoveGenerator::gen_rook_piece_moves(move (&rook_moves)[MAXMOVES], int start
     while (ts)
     {
         // x & -x masks the LS1B
-        if (~pinned_pieces & ss || Compass::ray_square(find_king(ch.black_to_move), start) & ts & 0-ts)
+        if (~pinned_pieces & ss || Compass::ray_square(ch.find_king(ch.black_to_move), start) & ts & 0-ts)
         {
             rook_moves[rook_moves[MAXMOVES - 1]] = Move::build_move(start, 63 - BB::lz_count(ts & 0-ts));
             rook_moves[MAXMOVES - 1]++;
@@ -532,7 +525,7 @@ void MoveGenerator::gen_rook_piece_moves(move (&rook_moves)[MAXMOVES], int start
 
 void MoveGenerator::gen_king_piece_moves(move (&king_moves)[MAXMOVES], bool test)
 {
-    int king_sq = find_king(ch.black_to_move);
+    int king_sq = ch.find_king(ch.black_to_move);
     U64 ts = Compass::king_attacks[king_sq]
            & ~*ch.bb_color[ch.black_to_move]
            & ~op_attack_mask;

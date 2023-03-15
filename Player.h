@@ -21,6 +21,7 @@ public:
     float eval(int mate_offset, bool test = false);
     float eval_position(float middlegame_weight);
     float eval_piece(float middlegame_weight, int piece, bool is_black);
+    float king_safety(bool is_black) const;
     void order_moves_by_piece(const move moves[120], move* ordered) const;
 private:
     SearchLogger search_log;

@@ -13,6 +13,7 @@ namespace Move
     int start(const move& m);
     int end(const move& m);
     int promote(const move& m);
+    void arr_shift_right(move (&arr)[120], int pos);
     std::string to_string(const move m);
 };
 

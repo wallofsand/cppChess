@@ -37,9 +37,7 @@ float TTable::fill_ratio()
 {
     float num_elements = 0;
     for (Entry e : table)
-    {
-        if (e.flag) num_elements++;
-    }
+        num_elements += (e.flag != 1);
     return num_elements / DEFAULT_SIZE;
 }
 
@@ -57,8 +55,9 @@ void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv)
     // record a collision
     if (index != hash_index(key))
         collisions++;
-    // if the position is already searched to a greater depth, do not write
-    if (read(index).depth > depth)
+    // if the position is already searched to a greater depth or if
+    // the position is already searched to a more exact result, do not write
+    if (read(index).depth > depth || read(index).depth == depth && flag != Entry::FLAG_EXACT)
         return;
     table[index] = Entry(key, depth, flag, score, mv);
     writes++;

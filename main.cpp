@@ -6,7 +6,7 @@ U64 perft(int depth, U64& nodes);
 U64 eperft_root(int depth);
 U64 eperft(int depth, U64& nodes);
 
-const int SIM_DEPTH = 5;
+const int SIM_DEPTH = 4;
 
 const std::string HELP_STRINGS[] = {
     "\nWelcome to Graham's C++ chess.\n"
@@ -72,11 +72,10 @@ int main(int arg0, char** args)
         // print ui
         fmt::print("\n");
         ch.print_board(true);
-        fmt::print("fen: {}\nhash: {:0>16x}\nwrites: {} hits: {} collisions: {}\n",
+        fmt::print("fen: {}\nhash: {:0>16X}\nwrites: {} hits: {} collisions: {}\n",
             ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::collisions);
         engine.eval(0, true);
-        fmt::print("nodes: {} n/s: {:0.0f}\n",
-            nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f);
+        fmt::print("nodes: {} n/s: {:0.0f}\n", nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f);
         if (Chess::stack.top->next)
             fmt::print("{}{} {}\n", Chess::stack.top->next->pos->fullmoves, ch.black_to_move ? ". " : ".. ", last_move);
         fmt::print("reps: {} halfmoves: {}\n", ch.repetitions(), ch.halfmoves);
@@ -232,7 +231,7 @@ U64 perft_root(int depth, int log_depth)
             SearchLogger::time_to_string(), perft_timer.elapsed(), nodes_per_second, leaf_nodes, depth);
 
     // initial position tested, verify results
-    if (Chess::stack.is_empty())
+    if (ch.fen() == ch_cst::START_FEN)
     {
         if (depth > perft_log.depth)
         {

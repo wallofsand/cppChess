@@ -45,6 +45,7 @@ public:
     U64 zhash;
 
     std::string fen() const;
+    int find_king(bool is_black) const;
     int piece_at(int sq) const;
     bool black_at(int sq) const;
     U64 hash() const;

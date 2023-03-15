@@ -276,6 +276,16 @@ int Chess::piece_at(int sq) const
 }
 
 /*
+ * Method to find a given king.
+ * @param color the color index of the king to search for
+ * @return the square index of the king (0-63)
+ */
+int Chess::find_king(bool is_black) const
+{
+    return 63 - BB::lz_count(bb_kings & *bb_color[is_black]);
+}
+
+/*
  * Method to return the color of a piece on a square, if any
  * @param sq the square index to check
  * @return 0 for white, 1 for black, 0 if no piece is found

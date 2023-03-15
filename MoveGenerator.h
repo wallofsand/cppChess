@@ -9,11 +9,11 @@
 class MoveGenerator
 {
 public:
+    // MoveGenerator();
     inline MoveGenerator(Chess* ptr) : ch(*ptr) {}
     inline MoveGenerator(Chess& pos) : ch(pos) {}
     Chess& ch;
     bool is_game_over(bool test);
-    int find_king(int color);
     move* gen_moves(move (&moves)[120], bool test = false);
     void checks_exist(bool test);
     bool in_check = false;

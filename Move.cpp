@@ -25,3 +25,18 @@ std::string Move::to_string(const move m)
     return ch_cst::string_from_square[start(m)]+ ch_cst::string_from_square[end(m)]
         + (promote(m) ? "=" + ch_cst::piece_char[promote(m)] : "");
 }
+
+/*
+ * Method to shift each element before pos in an array to the right.
+ * The first element of the array is replaced with the element at pos.
+ */
+void Move::arr_shift_right(move (&arr)[120], int pos)
+{
+    move best = arr[pos];
+    while (pos > 0)
+    {
+        arr[pos] = arr[pos - 1];
+        pos--;
+    }
+    arr[0] = best;
+}
