@@ -299,10 +299,10 @@ void MoveGenerator::gen_pawn_moves(move (&pawn_moves)[MAXMOVES], bool test)
     U64 op = *ch.bb_color[!ch.black_to_move];
 
     // pawn captures
-    U64 captures_east = (ch.black_to_move) ? BB::SoEa_shift_one(pawns) & (op | 1ull << ch.ep_square) 
-                        /* white's move */ : BB::NoEa_shift_one(pawns) & (op | 1ull << ch.ep_square);
-    U64 captures_west = (ch.black_to_move) ? BB::SoWe_shift_one(pawns) & (op | 1ull << ch.ep_square) 
-                        /* white's move */ : BB::NoWe_shift_one(pawns) & (op | 1ull << ch.ep_square);
+    U64 captures_east = (ch.black_to_move) ? BB::SoEa_shift_one(pawns) & (op | (uint64_t) (ch.ep_square > -1) << ch.ep_square)
+                        /* white's move */ : BB::NoEa_shift_one(pawns) & (op | (uint64_t) (ch.ep_square > -1) << ch.ep_square);
+    U64 captures_west = (ch.black_to_move) ? BB::SoWe_shift_one(pawns) & (op | (uint64_t) (ch.ep_square > -1) << ch.ep_square)
+                        /* white's move */ : BB::NoWe_shift_one(pawns) & (op | (uint64_t) (ch.ep_square > -1) << ch.ep_square);
 
     // eastern captures
     while (captures_east)
