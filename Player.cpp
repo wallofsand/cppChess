@@ -16,7 +16,7 @@ Player::Player(float mob_percent)
  */
 move Player::iterative_search(int depth, U64& nodes, bool test)
 {
-    TTable::hits = 0;
+    TTable::clear();
 
     // get the current game state
     Chess& ch = *Chess::state();
@@ -24,13 +24,12 @@ move Player::iterative_search(int depth, U64& nodes, bool test)
     move moves[MAXMOVES] = {};
     MoveGenerator mgen(ch);
     mgen.gen_moves(moves);
-    if (moves[MAXMOVES - 1] == 1)
-        return moves[0];
+    // if (moves[MAXMOVES - 1] == 1)
+    //     return moves[0];
 
     fmt::print("Beginning search at depth ");
     for (int iter = 1; iter <= depth; iter++)
     {
-        nodes = 0;
         fmt::print("{} . . . ", iter);
         float high_score = -99.99f;
         for (int mvidx = 0; mvidx < moves[MAXMOVES - 1]; mvidx++)
@@ -64,43 +63,49 @@ float Player::nega_max(int depth, U64& nodes, float alpha, float beta, bool test
     MoveGenerator mgen(ch);
     move moves[MAXMOVES] = {};
     mgen.gen_moves(moves);
+    nodes++;
+
     // check for mate
     if (!moves[MAXMOVES - 1])
         return eval(depth);
+
     // check the t-table for a best move
     if (ch.repetitions() > 2)
         return 0.0f;
-    // if the stored depth was >= remaining search depth, use that result
+
     Entry prev = TTable::probe(ch.zhash);
-    if (!depth || prev.depth > depth)
+    // if the stored depth was >= remaining search depth, use that result
+    if (prev.depth >= depth)
     {
-        if (prev.flag && prev.depth >= depth)
-        {
-            TTable::hits++;
-            if (prev.flag == Entry::FLAG_EXACT)
-                return prev.score;
-            else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
-                return alpha;
-            else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
-                return beta;
-            // prioritize searching previous best moves
-            if (prev.best)
-            {
-                int best_pos = 0;
-                while (moves[best_pos] != prev.best) best_pos++;
-                Move::arr_shift_right(moves, best_pos);
-            }
-            else TTable::hits--;
-        }
-        if (!depth)
-        {
-            float score = quiescence_search(depth, nodes, alpha, beta, test);
-            return score;
-        }
+        TTable::hits++;
+        if (prev.flag == Entry::FLAG_EXACT)
+            return prev.score;
+        else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
+            return alpha;
+        else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
+            return beta;
+        TTable::hits--;
     }
 
-    nodes++;
+    if (!depth)
+    {
+        nodes--;
+        float score = quiescence_search(depth, nodes, alpha, beta, test);
+        TTable::add_item(ch.zhash, depth, Entry::FLAG_EXACT, alpha);
+        return score;
+    }
+
+    // prioritize searching previous best moves
     move best = 0;
+    if (prev.best)
+    {
+        TTable::hits++;
+        int best_pos = 0;
+        while (moves[best_pos] != prev.best)
+            best_pos++;
+        Move::arr_shift_right(moves, best_pos);
+    }
+
     for (int mvidx = 0; mvidx < moves[MAXMOVES - 1]; mvidx++)
     {
         Chess::push_move(moves[mvidx]);
@@ -128,6 +133,7 @@ float Player::quiescence_search(int depth, U64& nodes, float alpha, float beta, 
     move moves[MAXMOVES] {};
     mgen.gen_moves(moves);
     float stand_pat = eval(depth, test);
+    nodes++;
     if (!moves[MAXMOVES - 1] || stand_pat >= beta)
         return stand_pat;
 
@@ -137,22 +143,30 @@ float Player::quiescence_search(int depth, U64& nodes, float alpha, float beta, 
     if (stand_pat < alpha - DELTA)
         return alpha;
 
-    // if the stored depth was >= remaining search depth, use that result
     Entry prev = TTable::probe(ch.zhash);
+    // if the stored depth was >= remaining search depth, use that result
     if (prev.depth >= depth)
     {
         TTable::hits++;
         if (prev.flag == Entry::FLAG_EXACT)
             return prev.score;
         else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
-            return alpha;
+            return alpha; // max score of stored move is worse than alpha
         else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
-            return beta;
+            return beta; // min score of stored move is better than beta
         TTable::hits--;
     }
 
+    // prioritize searching previous best moves
+    if (prev.best)
+    {
+        TTable::hits++;
+        int best_pos = 0;
+        while (moves[best_pos] != prev.best) best_pos++;
+        Move::arr_shift_right(moves, best_pos);
+    }
+
     // make captures until no captures remain, then eval
-    nodes++;
     alpha = stand_pat > alpha ? stand_pat : alpha;
     move best = 0;
     for (int mvidx = 0; mvidx < moves[MAXMOVES - 1]; mvidx++)
@@ -163,9 +177,13 @@ float Player::quiescence_search(int depth, U64& nodes, float alpha, float beta, 
         Chess::push_move(moves[mvidx]);
         float score = -quiescence_search(depth - 1, nodes, -beta, -alpha, test);
         Chess::unmake_move(1);
+
+        // move scored >= beta (fail-high)
+        // failing high means there is a "best" move, even though we can't play it
+        // really the move is just "good enough", since there could be a better move
         if (score >= beta)
         {
-            TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta);
+            TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta, moves[mvidx]);
             return beta;
         }
         best = score > alpha ? moves[mvidx] : best;
@@ -175,7 +193,7 @@ float Player::quiescence_search(int depth, U64& nodes, float alpha, float beta, 
     return alpha;
 }
 
-void Player::order_moves_by_piece(const move* moves, move* ordered) const
+void Player::order_moves_by_piece(const move moves[MAXMOVES], move* ordered) const
 {
     Chess& ch = *Chess::state();
     ordered[MAXMOVES] = {};
@@ -236,7 +254,7 @@ float Player::eval(int mate_offset, bool test)
 
     // round to the nearest hundreth
     score = std::round(score) / 100;
-    if (test) fmt::print("net moves: {:<3} | mobility: {:<4.2f} | score: {:<4.2f}\n",
+    if (test) fmt::print("net moves: {:<5} | mobility: {:<4.2f} | score: {:<4.2f}\n",
         net_mobility, mobility_score/100, score);
     return score;
 }

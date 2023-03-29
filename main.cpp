@@ -56,9 +56,9 @@ int main(int arg0, char** args)
 
     bool playing = true;
     std::string last_move = "ERROR";
-    U64 nodes = 0;
     Timer game_timer;
     SearchLogger sim_log("sim_log", 0);
+    U64 nodes = 0;
 
     // main game loop
     while (playing)
@@ -67,15 +67,15 @@ int main(int arg0, char** args)
         MoveGenerator mgen(ch);
         move moves[MAXMOVES] = {};
         mgen.gen_moves(moves);
-        if (!moves[MAXMOVES - 1] || ch.repetitions() > 2) playing = false;
 
         // print ui
         fmt::print("\n");
         ch.print_board(true);
-        fmt::print("fen: {}\nhash: {:0>16X}\nwrites: {} hits: {} collisions: {}\n",
-            ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::collisions);
+        fmt::print("fen: {}\nhash: {:0>16X}\nwrites: {} hits: {} fill: %{:0.2f}\n",
+            ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::fill_ratio() * 100);
         engine.eval(0, true);
-        fmt::print("nodes: {} n/s: {:0.0f}\n", nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f);
+        fmt::print("nodes: {:>10l} n/s: {:0.3f} time: {:0.3f}s\n",
+                nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f, game_timer.elapsed() >= 0.1f ? game_timer.elapsed() / 1000 : 0.0f);
         if (Chess::stack.top->next)
             fmt::print("{}{} {}\n", Chess::stack.top->next->pos->fullmoves, ch.black_to_move ? ". " : ".. ", last_move);
         fmt::print("reps: {} halfmoves: {}\n", ch.repetitions(), ch.halfmoves);
@@ -86,6 +86,7 @@ int main(int arg0, char** args)
         fmt::print("\n{} to move: ", ch.black_to_move ? "Black" : "White");
 
         // get input
+        nodes = 0;
         game_timer.reset();
         std::string input = "";
         if (!ch.black_to_move && human == PLAY_WHITE
@@ -128,8 +129,11 @@ int main(int arg0, char** args)
             else
                 fmt::print("No move found.\n");
         }
-        else if (input == "null") // null move - skip your turn. highly illegal
+        else if (input == "null" && human == PLAY_FREE) // null move - skip your turn. highly illegal
+        {
             ch.black_to_move = !ch.black_to_move;
+            ch.zhash ^= TTable::is_black_turn;
+        }
         else if (input == "aim")
         {
             int depth = 0;

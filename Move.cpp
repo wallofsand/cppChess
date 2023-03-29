@@ -30,7 +30,7 @@ std::string Move::to_string(const move m)
  * Method to shift each element before pos in an array to the right.
  * The first element of the array is replaced with the element at pos.
  */
-void Move::arr_shift_right(move (&arr)[120], int pos)
+void Move::arr_shift_right(move (&arr)[MAXMOVES], int pos)
 {
     move best = arr[pos];
     while (pos > 0)

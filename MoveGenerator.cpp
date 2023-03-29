@@ -216,9 +216,12 @@ move* MoveGenerator::gen_moves(move (&moves)[MAXMOVES], bool test)
 {
     init(test);
 
-    // king
     moves[MAXMOVES - 1] = 0;
+    if (ch.repetitions() > 2)
+        return moves;
     move temp[MAXMOVES] = {};
+
+    // king
     gen_king_piece_moves(temp, test);
     for (int i = 0; i < temp[MAXMOVES - 1]; i++)
     {

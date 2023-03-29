@@ -11,22 +11,39 @@ Entry TTable::table[TTable::DEFAULT_SIZE];
 
 TTable::TTable()
 {
-    TTable::hits = 0;
-    TTable::collisions = 0;
-    TTable::writes = 0;
+    hits = 0;
+    collisions = 0;
+    writes = 0;
     // e.g. keep one global instance (per thread)
-    TTable::rng.seed(SEED_VAL);
-    TTable::is_black_turn = U64_dist(rng);
-    TTable::castle_rights_wb_kq[ch_cst::WHITE_INDEX][0] = U64_dist(rng);
-    TTable::castle_rights_wb_kq[ch_cst::WHITE_INDEX][1] = U64_dist(rng);
-    TTable::castle_rights_wb_kq[ch_cst::BLACK_INDEX][0] = U64_dist(rng);
-    TTable::castle_rights_wb_kq[ch_cst::BLACK_INDEX][1] = U64_dist(rng);
+    rng.seed(SEED_VAL);
+    is_black_turn = U64_dist(rng);
+    castle_rights_wb_kq[ch_cst::WHITE_INDEX][0] = U64_dist(rng);
+    castle_rights_wb_kq[ch_cst::WHITE_INDEX][1] = U64_dist(rng);
+    castle_rights_wb_kq[ch_cst::BLACK_INDEX][0] = U64_dist(rng);
+    castle_rights_wb_kq[ch_cst::BLACK_INDEX][1] = U64_dist(rng);
     for (int file = 0; file < 8; file++)
-        TTable::ep_file[file] = U64_dist(rng);
+        ep_file[file] = U64_dist(rng);
     for (int sq = 0; sq < 64; sq++)
         for (int type = 0; type < 6; type++)
             for (int color = 0; color < 2; color++)
-                TTable::sq_color_type_64x2x6[sq][color][type] = U64_dist(rng);
+                sq_color_type_64x2x6[sq][color][type] = U64_dist(rng);
+}
+
+/*
+ * Method to empty the transposition table.
+ */
+void TTable::clear()
+{
+    writes = 0;
+    hits = 0;
+    for (int idx = 0; idx < DEFAULT_SIZE; idx++)
+    {
+        table[idx].key = 0;
+        table[idx].depth = -100;
+        table[idx].flag = 0;
+        table[idx].score = 0.0f;
+        table[idx].best = 0;
+    }
 }
 
 /*
@@ -36,25 +53,28 @@ TTable::TTable()
 float TTable::fill_ratio()
 {
     float num_elements = 0;
+    // for (int idx = 0; idx < DEFAULT_SIZE; idx++)
+    //     num_elements += table[idx].flag > 0;
     for (Entry e : table)
-        num_elements += (e.flag != 1);
+        num_elements += e.flag > 0;
     return num_elements / DEFAULT_SIZE;
 }
 
 int TTable::hash_index(U64 key)
 {
-    return std::abs((int) key % DEFAULT_SIZE);
+    return std::abs((int) (key % DEFAULT_SIZE));
 }
 
 void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv)
 {
+    if (writes > 3451808)
+        clear();
     int index = hash_index(key);
     // if hash_index(key) is full, find the next empty index
     while (read(index).flag && read(index).key != key)
         index++;
-    // if the position is already searched to a greater depth or if
-    // the position is already searched to a more exact result, do not write
-    if (read(index).depth > depth || read(index).depth == depth && flag != Entry::FLAG_EXACT)
+    // if the position is already searched to a greater depth, do not write
+    if (read(index).depth > depth)
         return;
     // record a collision
     if (index != hash_index(key))
