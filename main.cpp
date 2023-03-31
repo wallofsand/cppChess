@@ -74,7 +74,7 @@ int main(int arg0, char** args)
         fmt::print("fen: {}\nhash: {:0>16X}\nwrites: {} hits: {} fill: %{:0.2f}\n",
             ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::fill_ratio() * 100);
         engine.eval(0, true);
-        fmt::print("nodes: {:>10l} n/s: {:0.3f} time: {:0.3f}s\n",
+        fmt::print("nodes: {:<10d} n/s: {:0.3f} time: {:0.3f}s\n",
                 nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f, game_timer.elapsed() >= 0.1f ? game_timer.elapsed() / 1000 : 0.0f);
         if (Chess::stack.top->next)
             fmt::print("{}{} {}\n", Chess::stack.top->next->pos->fullmoves, ch.black_to_move ? ". " : ".. ", last_move);
