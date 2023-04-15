@@ -53,8 +53,6 @@ void TTable::clear()
 float TTable::fill_ratio()
 {
     float num_elements = 0;
-    // for (int idx = 0; idx < DEFAULT_SIZE; idx++)
-    //     num_elements += table[idx].flag > 0;
     for (Entry e : table)
         num_elements += e.flag > 0;
     return num_elements / DEFAULT_SIZE;
@@ -67,7 +65,7 @@ int TTable::hash_index(U64 key)
 
 void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv)
 {
-    if (writes > 3451808)
+    if (writes / DEFAULT_SIZE > 0.7)
         clear();
     int index = hash_index(key);
     // if hash_index(key) is full, find the next empty index

@@ -18,7 +18,7 @@ bool MoveGenerator::is_game_over(bool test)
 {
     move moves[MAXMOVES] = {};
     gen_moves(moves);
-    return !moves[MAXMOVES - 1] || ch.repetitions() > 2;
+    return !moves[MAXMOVES - 1] || ch.halfmoves > 49 || ch.repetitions() > 2;
 }
 
 void MoveGenerator::checks_exist(bool test)
@@ -126,35 +126,35 @@ U64 MoveGenerator::find_pins(bool test)
 
     // North
     U64 ray = BB::nort_attacks(king, ~*ch.bb_color[!ch.black_to_move]);
-    U64 pinned = (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.black_to_move]) == 1)
+    U64 pinned = (ray & en_rooks && BB::cbits(ray & *ch.bb_color[ch.black_to_move]) == 1)
             ? ray & *ch.bb_color[ch.black_to_move] : 0ull;
     // East
     ray = BB::east_attacks(king, ~*ch.bb_color[!ch.black_to_move]);
-    pinned |= (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.black_to_move]) == 1)
+    pinned |= (ray & en_rooks && BB::cbits(ray & *ch.bb_color[ch.black_to_move]) == 1)
             ? ray & *ch.bb_color[ch.black_to_move] : 0ull;
     // South
     ray = BB::sout_attacks(king, ~*ch.bb_color[!ch.black_to_move]);
-    pinned |= (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.black_to_move]) == 1)
+    pinned |= (ray & en_rooks && BB::cbits(ray & *ch.bb_color[ch.black_to_move]) == 1)
             ? ray & *ch.bb_color[ch.black_to_move] : 0ull;
     // West
     ray = BB::west_attacks(king, ~*ch.bb_color[!ch.black_to_move]);
-    pinned |= (ray & en_rooks && BB::num_bits_flipped(ray & *ch.bb_color[ch.black_to_move]) == 1)
+    pinned |= (ray & en_rooks && BB::cbits(ray & *ch.bb_color[ch.black_to_move]) == 1)
             ? ray & *ch.bb_color[ch.black_to_move] : 0ull;
     // NorthEast
     ray = BB::NoEa_attacks(king, ~*ch.bb_color[!ch.black_to_move]);
-    pinned |= (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.black_to_move]) == 1)
+    pinned |= (ray & en_bishops && BB::cbits(ray & *ch.bb_color[ch.black_to_move]) == 1)
             ? ray & *ch.bb_color[ch.black_to_move] : 0ull;
     // NorthWest
     ray = BB::NoWe_attacks(king, ~*ch.bb_color[!ch.black_to_move]);
-    pinned |= (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.black_to_move]) == 1)
+    pinned |= (ray & en_bishops && BB::cbits(ray & *ch.bb_color[ch.black_to_move]) == 1)
             ? ray & *ch.bb_color[ch.black_to_move] : 0ull;
     // SouthEast
     ray = BB::SoEa_attacks(king, ~*ch.bb_color[!ch.black_to_move]);
-    pinned |= (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.black_to_move]) == 1)
+    pinned |= (ray & en_bishops && BB::cbits(ray & *ch.bb_color[ch.black_to_move]) == 1)
             ? ray & *ch.bb_color[ch.black_to_move] : 0ull;
     // SouthWest
     ray = BB::SoWe_attacks(king, ~*ch.bb_color[!ch.black_to_move]);
-    pinned |= (ray & en_bishops && BB::num_bits_flipped(ray & *ch.bb_color[ch.black_to_move]) == 1)
+    pinned |= (ray & en_bishops && BB::cbits(ray & *ch.bb_color[ch.black_to_move]) == 1)
             ? ray & *ch.bb_color[ch.black_to_move] : 0ull;
 
     // if (test && pinned)

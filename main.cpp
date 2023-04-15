@@ -41,15 +41,19 @@ int main(int arg0, char** args)
         PLAY_WHITE,
         PLAY_BLACK,
         PLAY_SIM,
-        PLAY_FREE
+        PLAY_FREE,
+        PLAY_STOP
     } human;
     fmt::print("Welcome to Graham's C++ chess.\nWhich color will you play?\n   0: white      1: black\n   2: sim game   3: free play\n");
-    int in = -1;
-    while (in < PLAY_WHITE || in > PLAY_FREE)
+    int in = PLAY_STOP;
+    // TODO:
+    in = PLAY_SIM;
+    while (in < PLAY_WHITE || in >= PLAY_STOP)
         std::cin >> in;
     human = human_index(in);
 
-    Chess::stack.top->pos = new Chess (ch_cst::START_FEN);
+    Chess::stack.top->pos = new Chess (ch_cst::TEST_FEN);
+    // Chess::stack.top->pos = new Chess (ch_cst::START_FEN);
 
     // Player low_mobility(0.80f), high_mobility(1.20f);
     // Player players[2] = { low_mobility, high_mobility };
@@ -57,7 +61,11 @@ int main(int arg0, char** args)
     bool playing = true;
     std::string last_move = "ERROR";
     Timer game_timer;
-    SearchLogger sim_log("sim_log", 0);
+    SearchLogger sim_log("sim_log", 0, (fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND));
+    if (human == PLAY_SIM)
+    {
+        sim_log.
+    }
     U64 nodes = 0;
 
     // main game loop
@@ -71,7 +79,7 @@ int main(int arg0, char** args)
         // print ui
         fmt::print("\n");
         ch.print_board(true);
-        fmt::print("fen: {}\nhash: {:0>16X}\nwrites: {} hits: {} fill: %{:0.2f}\n",
+        fmt::print("fen: {}\nhash: {:0>16X}\nwrites: {} hits: {} fill: %{:2.2f}\n",
             ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::fill_ratio() * 100);
         engine.eval(0, true);
         fmt::print("nodes: {:<10d} n/s: {:0.3f} time: {:0.3f}s\n",
@@ -85,17 +93,21 @@ int main(int arg0, char** args)
                 fmt::print("{} ", MoveGenerator::move_san(moves[i]));
         fmt::print("\n{} to move: ", ch.black_to_move ? "Black" : "White");
 
-        // get input
         nodes = 0;
         game_timer.reset();
         std::string input = "";
+
+        if (human == PLAY_SIM && mgen.is_game_over(false))
+            break;
+
+        // get input
         if (!ch.black_to_move && human == PLAY_WHITE
                 || ch.black_to_move && human == PLAY_BLACK
                 || human == PLAY_FREE)
             std::cin >> input;
         else
         {
-            // if no input, get ai move
+            // get computer player input
             std::cout << "Pondering . . ." << std::endl;
             // move engine_move = players[ch.black_to_move].iterative_search(ch, SIM_DEPTH, nodes, false);
             move engine_move = engine.iterative_search(SIM_DEPTH, nodes, false);

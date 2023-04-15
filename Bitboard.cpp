@@ -12,10 +12,11 @@ bool BB::contains_square(U64 bb, int sq)
 }
 
 /*
+ * Method to count the number of true bits in a bitboard
  * @param bb any bitboard
  * @return the number of bits set in bb
  */
-int BB::num_bits_flipped(U64 bb)
+int BB::cbits(U64 bb)
 {
     int count = 0;
     while (bb)

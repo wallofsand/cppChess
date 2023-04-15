@@ -8,7 +8,6 @@ Player::Player(float mob_percent)
 
 /*
  * Method to find a move using an iterative search
- * @param ch the position to search
  * @param depth target depth to search
  * @param nodes U64& to count the number of positions searched
  * @param test true if special debug information should be printed
@@ -16,16 +15,11 @@ Player::Player(float mob_percent)
  */
 move Player::iterative_search(int depth, U64& nodes, bool test)
 {
-    TTable::clear();
-
-    // get the current game state
-    Chess& ch = *Chess::state();
-
     move moves[MAXMOVES] = {};
-    MoveGenerator mgen(ch);
+    MoveGenerator mgen(Chess::state());
     mgen.gen_moves(moves);
-    // if (moves[MAXMOVES - 1] == 1)
-    //     return moves[0];
+    bool extended = false;
+    // depth += BB::cbits(Chess::state()->bb_occ) < 6;
 
     fmt::print("Beginning search at depth ");
     for (int iter = 1; iter <= depth; iter++)
@@ -43,6 +37,12 @@ move Player::iterative_search(int depth, U64& nodes, bool test)
                     mvidx + 1, moves[MAXMOVES - 1], MoveGenerator::move_san(moves[mvidx]), score);
             Move::arr_shift_right(moves, score > high_score ? mvidx : 0);
             high_score = score > high_score ? score : high_score;
+        }
+        if (!extended && iter == depth && high_score > var_piece_value[ch_cst::QUEEN] / 100)
+        {
+            // if we are winning by more than a queen, search a little more.
+            depth += 3;
+            extended = true;
         }
     }
     fmt::print(" \n");
@@ -234,7 +234,7 @@ float Player::eval(int mate_offset, bool test)
 
     // game isn't over, eval the position:
     // endgame interpolation
-    float middlegame_weight = BB::num_bits_flipped(ch.bb_occ) / var_endgame_weight;
+    float middlegame_weight = BB::cbits(ch.bb_occ) / var_endgame_weight;
     float score = Player::eval_position(middlegame_weight);
 
     // adjust the eval so the player to move is positive
@@ -296,5 +296,5 @@ float Player::king_safety(bool is_black) const
     Chess ch = *Chess::state();
     U64 kattacks = Compass::king_attacks[ch.find_king(is_black)];
 
-    return 0.25 * BB::num_bits_flipped(kattacks);
+    return 0.25 * BB::cbits(kattacks);
 }

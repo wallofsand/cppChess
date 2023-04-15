@@ -40,7 +40,7 @@ namespace BB
     U64 gen_shift(U64 bb, int s);
     U64 flip_vertical(U64 bb);
     bool contains_square(U64 bb, int sq);
-    int num_bits_flipped(U64 bb);
+    int cbits(U64 bb);
     void print_U64(U64 bb, std::string name = "", bool fmt = false);
     void print_binary_string(std::string bbstr, bool fmt = false);
     std::string build_binary_string(U64 bb);
