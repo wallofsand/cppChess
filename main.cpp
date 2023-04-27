@@ -9,7 +9,7 @@ U64 eperft(int depth, U64& nodes);
 const int SIM_DEPTH = 4;
 
 const std::string HELP_STRINGS[] = {
-    "\nWelcome to Graham's C++ chess.\n"
+    "\nWelcome to Graham's C++ chess!\n"
     "Enter a move exactly as it is printed to play that move.\n"
     "Or enter one of the following commands:\n"
     "end: \tQuit the game.\n",
@@ -32,8 +32,7 @@ const std::string PERFT_RESULTS[16] = {
 
 Player engine(1.0f);
 
-int main(int arg0, char** args)
-{
+int main(int arg0, char** args) {
     Compass();
     TTable();
 
@@ -44,7 +43,7 @@ int main(int arg0, char** args)
         PLAY_FREE,
         PLAY_STOP
     } human;
-    fmt::print("Welcome to Graham's C++ chess.\nWhich color will you play?\n   0: white      1: black\n   2: sim game   3: free play\n");
+    fmt::print("Welcome to Graham's C++ chess!\nWhich color will you play?\n   0: white      1: black\n   2: sim game   3: free play\n");
     int in = PLAY_STOP;
     while (in < PLAY_WHITE || in >= PLAY_STOP)
         std::cin >> in;
