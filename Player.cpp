@@ -20,6 +20,7 @@ move Player::iterative_search(int depth, U64& nodes, bool test)
     mgen.gen_moves(moves);
     bool extended = false;
     // depth += BB::cbits(Chess::state()->bb_occ) < 6;
+    if (TTable::fill_ratio() > 0.7) TTable::clear();
 
     fmt::print("Beginning search at depth ");
     for (int iter = 1; iter <= depth; iter++)

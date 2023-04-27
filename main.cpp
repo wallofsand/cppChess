@@ -46,14 +46,12 @@ int main(int arg0, char** args)
     } human;
     fmt::print("Welcome to Graham's C++ chess.\nWhich color will you play?\n   0: white      1: black\n   2: sim game   3: free play\n");
     int in = PLAY_STOP;
-    // TODO:
-    in = PLAY_SIM;
     while (in < PLAY_WHITE || in >= PLAY_STOP)
         std::cin >> in;
     human = human_index(in);
 
-    Chess::stack.top->pos = new Chess (ch_cst::TEST_FEN);
-    // Chess::stack.top->pos = new Chess (ch_cst::START_FEN);
+    // Chess::stack.top->pos = new Chess (ch_cst::TEST_FEN);
+    Chess::stack.top->pos = new Chess (ch_cst::START_FEN);
 
     // Player low_mobility(0.80f), high_mobility(1.20f);
     // Player players[2] = { low_mobility, high_mobility };
@@ -62,10 +60,7 @@ int main(int arg0, char** args)
     std::string last_move = "ERROR";
     Timer game_timer;
     SearchLogger sim_log("sim_log", 0, (fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND));
-    if (human == PLAY_SIM)
-    {
-        sim_log.
-    }
+
     U64 nodes = 0;
 
     // main game loop
@@ -83,7 +78,7 @@ int main(int arg0, char** args)
             ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::fill_ratio() * 100);
         engine.eval(0, true);
         fmt::print("nodes: {:<10d} n/s: {:0.3f} time: {:0.3f}s\n",
-                nodes, game_timer.elapsed() >= 0.1f ? nodes / game_timer.elapsed() : 0.0f, game_timer.elapsed() >= 0.1f ? game_timer.elapsed() / 1000 : 0.0f);
+                nodes, game_timer.elapsed() >= 0.01f ? nodes / game_timer.elapsed() : 0.0f, game_timer.elapsed());
         if (Chess::stack.top->next)
             fmt::print("{}{} {}\n", Chess::stack.top->next->pos->fullmoves, ch.black_to_move ? ". " : ".. ", last_move);
         fmt::print("reps: {} halfmoves: {}\n", ch.repetitions(), ch.halfmoves);
@@ -113,8 +108,10 @@ int main(int arg0, char** args)
             move engine_move = engine.iterative_search(SIM_DEPTH, nodes, false);
             last_move = MoveGenerator::move_san(engine_move);
             Chess::push_move(engine_move);
-            if (human == 2)
+            if (human == PLAY_SIM) {
+                if (!ch.black_to_move) sim_log.write(std::to_string(ch.fullmoves) + ". ");
                 sim_log.write(last_move + " ");
+            }
             continue;
         }
 
@@ -141,7 +138,7 @@ int main(int arg0, char** args)
             else
                 fmt::print("No move found.\n");
         }
-        else if (input == "null" && human == PLAY_FREE) // null move - skip your turn. highly illegal
+        else if (input == "null" && human == PLAY_FREE) // null move - skip your turn. highly illegal!
         {
             ch.black_to_move = !ch.black_to_move;
             ch.zhash ^= TTable::is_black_turn;
