@@ -16,18 +16,22 @@
 
 class SearchLogger {
 public:
-    SearchLogger() {}
-    SearchLogger(std::string str, int d);
-    SearchLogger(std::string str, int d, int params);
-    std::string buffer;
-    const std::string file_path();
-    const void write(std::string text);
+    inline SearchLogger() : out(fmt::output_file(file_path(),
+            fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND)) {}
+    inline SearchLogger(std::string str, int d) : name(str), depth(d), out(fmt::output_file(file_path(),
+            fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND)) {}
+    inline SearchLogger(std::string str, int d, int params) : name(str), depth(d), out(fmt::output_file(file_path(), params)) {}
+    inline ~SearchLogger() { out.close(); }
+    const std::string file_path() const;
+    void write(std::string text);
     void log_position(std::string mv_text);
     static std::string date_to_string();
     static std::string time_to_string();
     int depth;
+    std::string buffer = "";
 private:
     std::string name;
+    fmt::ostream out;
 };
 
 #endif

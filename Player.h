@@ -17,9 +17,9 @@ public:
     move get_book_move(bool test);
     float nega_max(int depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);
     float quiescence_search(int depth, U64& nodes, float alpha = -99.99, float beta = 99.99, bool test = false);
-    float eval(int mate_offset, bool test = false);
-    float eval_position(float middlegame_weight);
-    float eval_piece(float middlegame_weight, int piece, bool is_black);
+    float eval(int mate_offset, bool test = false) const;
+    float eval_position(float middlegame_weight) const;
+    float eval_piece(float middlegame_weight, int piece, bool is_black) const;
     float king_safety(bool is_black) const;
     void order_moves_by_piece(const move moves[MAXMOVES], move* ordered) const;
 private:

@@ -7,11 +7,10 @@
 
 #define U64 uint64_t
 
-namespace BB
-{
-    // intersect before west (right) shifts
+namespace BB {
+    // intersect before west shifts
     const U64 NOT_A_FILE = 0xfefefefefefefefe;
-    // intersect before east (left) shifts
+    // intersect before east shifts
     const U64 NOT_H_FILE = 0x7f7f7f7f7f7f7f7f;
     U64 nort_shift_one(U64 bb);
     U64 sout_shift_one(U64 bb);
@@ -40,7 +39,7 @@ namespace BB
     U64 gen_shift(U64 bb, int s);
     U64 flip_vertical(U64 bb);
     bool contains_square(U64 bb, int sq);
-    int cbits(U64 bb);
+    int count_bits(U64 bb);
     void print_U64(U64 bb, std::string name = "", bool fmt = false);
     void print_binary_string(std::string bbstr, bool fmt = false);
     std::string build_binary_string(U64 bb);
