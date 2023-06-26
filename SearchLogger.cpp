@@ -10,8 +10,7 @@ const std::string SearchLogger::file_path() const {
  * @param text the string to write
  */
 void SearchLogger::write(std::string text) {
-    fmt::ostream out = fmt::output_file(file_path(), fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND);
-    out.print(text);
+    fmt::output_file(file_path(), fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND).print(text);
 }
 
 void SearchLogger::log_position(std::string mv_txt) {

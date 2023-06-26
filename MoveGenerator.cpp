@@ -240,6 +240,7 @@ move* MoveGenerator::gen_moves(move (&moves)[MAXMOVES], bool test) {
     ss = ch.bb_knights & *ch.bb_color[ch.black_to_move];
     while (ss) {
         // x & -x masks the LS1B
+        // gen_knight_piece_moves(temp, __builtin_ctzl(ss), test);
         gen_knight_piece_moves(temp, 63 - BB::lz_count(ss & 0-ss), test);
         for (int i = 0; i < temp[MAXMOVES - 1]; i++) {
             moves[moves[MAXMOVES - 1]] = temp[i];

@@ -1,9 +1,5 @@
 #include "Player.h"
 
-Player::Player(float mob_percent) : search_log("iter_search_log", 0) {
-    var_mobility_weight = MOB_CONST * mob_percent;
-}
-
 /*
  * Method to find a move using an iterative search
  * @param depth target depth to search
@@ -12,12 +8,12 @@ Player::Player(float mob_percent) : search_log("iter_search_log", 0) {
  * @return the best move found in the search
  */
 move Player::iterative_search(int depth, U64& nodes, bool test) {
+    #define EXTEND_DEPTH 1
     move moves[MAXMOVES] = {};
     MoveGenerator mgen(Chess::state());
     mgen.gen_moves(moves);
+    order_moves_by_piece(moves);
     bool extended = false;
-    // depth += BB::count_bits(Chess::state()->bb_occ) < 6;
-    if (TTable::fill_ratio() > 0.7) TTable::clear();
 
     fmt::print("Beginning search at depth ");
     for (int iter = 1; iter <= depth; iter++) {
@@ -34,9 +30,9 @@ move Player::iterative_search(int depth, U64& nodes, bool test) {
             Move::arr_shift_right(moves, score > high_score ? mvidx : 0);
             high_score = score > high_score ? score : high_score;
         }
-        if (!extended && iter == depth && high_score > var_piece_value[ch_cst::QUEEN] / 100) {
+        if (!extended && iter == depth && high_score > var_piece_value[ch_cst::QUEEN] / 100.0) {
             // if we are winning by more than a queen, search a little more.
-            depth += 3;
+            depth += EXTEND_DEPTH;
             extended = true;
         }
     }
@@ -45,11 +41,11 @@ move Player::iterative_search(int depth, U64& nodes, bool test) {
 }
 
 /*
- * @param ch the position to be searched
  * @param depth the number of ply to search
  * @param nodes the number of positions seen so far
- * @param a the score-to-beat for future evaluations
- * @param b the minimum eval allowed by the opponent
+ * @param alpha the score-to-beat for future evaluations
+ * @param beta the minimum eval allowed by the opponent
+ * @param test should special debug information be printed
  * @return the eval of the most favorable end node
  */
 float Player::nega_max(int depth, U64& nodes, float alpha, float beta, bool test) {
@@ -57,6 +53,7 @@ float Player::nega_max(int depth, U64& nodes, float alpha, float beta, bool test
     MoveGenerator mgen(ch);
     move moves[MAXMOVES] = {};
     mgen.gen_moves(moves);
+    order_moves_by_piece(moves);
     nodes++;
 
     // check for mate
@@ -67,16 +64,21 @@ float Player::nega_max(int depth, U64& nodes, float alpha, float beta, bool test
     if (ch.repetitions() > 2)
         return 0.0f;
 
-    Entry prev = TTable::probe(ch.zhash);
+    Entry& prev = TTable::probe(ch.zhash);
     // if the stored depth was >= remaining search depth, use that result
     if (prev.depth >= depth) {
         TTable::hits++;
-        if (prev.flag == Entry::FLAG_EXACT)
+        if (prev.flag == Entry::FLAG_EXACT) {
             return prev.score;
-        else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
+        } else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha) {
+            // no move in the position is better than alpha
+            prev.score = alpha;
             return alpha;
-        else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
+        } else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta) {
+            // "good enough" score of the position is better than beta - will fail low
+            prev.score = beta;
             return beta;
+        }
         TTable::hits--;
     }
 
@@ -97,15 +99,16 @@ float Player::nega_max(int depth, U64& nodes, float alpha, float beta, bool test
         Move::arr_shift_right(moves, best_pos);
     }
 
-    for (int mvidx = 0; mvidx < moves[MAXMOVES - 1]; mvidx++) {
-        Chess::push_move(moves[mvidx]);
+    for (int i = 0; i < moves[MAXMOVES - 1]; i++) {
+        Chess::push_move(moves[i]);
         float score = -nega_max(depth - 1, nodes, -beta, -alpha, test);
         Chess::unmake_move(1);
         if (score >= beta) {
             TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta);
             return beta;
         }
-        alpha = score > alpha ? score : alpha;
+        best  = score > alpha ? moves[i] : best;
+        alpha = score > alpha ? score    : alpha;
     }
     TTable::add_item(ch.zhash, depth, best ? Entry::FLAG_EXACT : Entry::FLAG_ALPHA, alpha, best);
     return alpha;
@@ -120,6 +123,7 @@ float Player::quiescence_search(int depth, U64& nodes, float alpha, float beta, 
     MoveGenerator mgen(ch);
     move moves[MAXMOVES] {};
     mgen.gen_moves(moves);
+    order_moves_by_piece(moves);
     float stand_pat = eval(depth, test);
     nodes++;
     if (!moves[MAXMOVES - 1] || stand_pat >= beta)
@@ -131,16 +135,21 @@ float Player::quiescence_search(int depth, U64& nodes, float alpha, float beta, 
     if (stand_pat < alpha - DELTA)
         return alpha;
 
-    Entry prev = TTable::probe(ch.zhash);
+    Entry& prev = TTable::probe(ch.zhash);
     // if the stored depth was >= remaining search depth, use that result
     if (prev.depth >= depth) {
         TTable::hits++;
-        if (prev.flag == Entry::FLAG_EXACT)
+        if (prev.flag == Entry::FLAG_EXACT) {
             return prev.score;
-        else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha)
-            return alpha; // max score of stored move is worse than alpha
-        else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta)
-            return beta; // min score of stored move is better than beta
+        } else if (prev.flag == Entry::FLAG_ALPHA && prev.score <= alpha) {
+            // no move in the position is better than alpha
+            prev.score = alpha;
+            return alpha;
+        } else if (prev.flag == Entry::FLAG_BETA && prev.score >= beta) {
+            // "good enough" score of the position is better than beta - will fail low
+            prev.score = beta;
+            return beta;
+        }
         TTable::hits--;
     }
 
@@ -155,44 +164,78 @@ float Player::quiescence_search(int depth, U64& nodes, float alpha, float beta, 
     // make captures until no captures remain, then eval
     alpha = stand_pat > alpha ? stand_pat : alpha;
     move best = 0;
-    for (int mvidx = 0; mvidx < moves[MAXMOVES - 1]; mvidx++) {
-        if (!BB::contains_square(ch.bb_occ, Move::end(moves[mvidx])) && Move::end(moves[mvidx]) != ch.ep_square)
+    for (int i = 0; i < moves[MAXMOVES - 1]; i++) {
+        if (!BB::contains_square(ch.bb_occ, Move::end(moves[i])) && Move::end(moves[i]) != ch.ep_square)
             continue;
         nodes++;
-        Chess::push_move(moves[mvidx]);
+        Chess::push_move(moves[i]);
         float score = -quiescence_search(depth - 1, nodes, -beta, -alpha, test);
         Chess::unmake_move(1);
 
-        // move scored >= beta (fail-high)
+        // move scored is >= beta (fail-high):
         // failing high means there is a "best" move, even though we can't play it
-        // really the move is just "good enough", since there could be a better move
+        // really the move is just "good enough", since there could be a better move we didn't check yet
         if (score >= beta) {
-            TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta, moves[mvidx]);
+            TTable::add_item(ch.zhash, depth, Entry::FLAG_BETA, beta, moves[i]);
             return beta;
         }
-        best = score > alpha ? moves[mvidx] : best;
-        alpha = score > alpha ? score : alpha;
+        best  = score > alpha ? moves[i] : best;
+        alpha = score > alpha ? score    : alpha;
     }
     TTable::add_item(ch.zhash, depth, best ? Entry::FLAG_EXACT : Entry::FLAG_ALPHA, alpha, best);
     return alpha;
 }
 
-void Player::order_moves_by_piece(const move moves[MAXMOVES], move* ordered) const {
+void Player::order_moves_by_piece(move moves[MAXMOVES]) const {
     Chess& ch = *Chess::state();
-    ordered[MAXMOVES] = {};
+    int idx = 0;
     move hash_move = TTable::read(ch.zhash).best;
-    if (hash_move) {
-        ordered[ordered[MAXMOVES - 1]] = hash_move;
-        ordered[MAXMOVES - 1]++;
-    }
-    for (int piece = ch_cst::KING; piece >= ch_cst::PAWN; piece--)
-        for (int i = 0; i < moves[MAXMOVES - 1]; i++) {
-            if (!BB::contains_square(*ch.bb_piece[piece], Move::start(moves[i])) || moves[i] == hash_move)
+    move temp;
+    if (hash_move)
+        for (int i = 0; i < moves[MAXMOVES - 1]; i++)
+            if (moves[i] == hash_move) {
+                temp       = moves[i];
+                moves[i]   = moves[idx];
+                moves[idx] = temp;
+                idx++;
+                break;
+            }
+    for (int capture = ch_cst::QUEEN; capture >= ch_cst::PAWN; capture--)
+        for (int i = idx; i < moves[MAXMOVES - 1]; i++) {
+            if (!BB::contains_square(*ch.bb_piece[capture], Move::end(moves[i])))
                 continue;
-            ordered[ordered[MAXMOVES - 1]] = moves[i];
-            ordered[MAXMOVES - 1]++;
+            temp       = moves[i];
+            moves[i]   = moves[idx];
+            moves[idx] = temp;
+            idx++;
+        }
+    for (int piece = ch_cst::KING; piece > ch_cst::PAWN; piece--)
+        for (int i = idx; i < moves[MAXMOVES - 1]; i++) {
+            if (!BB::contains_square(*ch.bb_piece[piece], Move::start(moves[i])))
+                continue;
+            temp       = moves[i];
+            moves[i]   = moves[idx];
+            moves[idx] = temp;
+            idx++;
         }
 }
+
+// void Player::order_moves_by_piece(move moves[MAXMOVES]) const {
+//     Chess& ch = *Chess::state();
+//     ordered[MAXMOVES] = {};
+//     move hash_move = TTable::read(ch.zhash).best;
+//     if (hash_move) {
+//         ordered[ordered[MAXMOVES - 1]] = hash_move;
+//         ordered[MAXMOVES - 1]++;
+//     }
+//     for (int piece = ch_cst::KING; piece >= ch_cst::PAWN; piece--)
+//         for (int i = 0; i < moves[MAXMOVES - 1]; i++) {
+//             if (!BB::contains_square(*ch.bb_piece[piece], Move::start(moves[i])) || moves[i] == hash_move)
+//                 continue;
+//             ordered[ordered[MAXMOVES - 1]] = moves[i];
+//             ordered[MAXMOVES - 1]++;
+//         }
+// }
 
 /*
  * Method to evaluate a given position
@@ -231,6 +274,12 @@ float Player::eval(int mate_offset, bool test) const {
     // mobility is worth less in the endgame
     float mobility_score = net_mobility * var_mobility_weight * middlegame_weight;
     score += mobility_score;
+
+    // king safety
+    U64 kattacks = Compass::king_attacks[ch.find_king(ch.black_to_move)];
+    score -= 25 * BB::count_bits(kattacks & eval_gen.op_attack_mask);
+    kattacks = Compass::king_attacks[ch.find_king(!ch.black_to_move)];
+    score += 25 * BB::count_bits(kattacks & op_gen.op_attack_mask);
 
     // round to the nearest hundreth
     score = std::round(score) / 100;
@@ -271,11 +320,4 @@ float Player::eval_piece(float middlegame_weight, int piece, bool is_black) cons
         pieces &= pieces - 1;
     }
     return score;
-}
-
-float Player::king_safety(bool is_black) const {
-    Chess ch = *Chess::state();
-    U64 kattacks = Compass::king_attacks[ch.find_king(is_black)];
-
-    return 0.25 * BB::count_bits(kattacks);
 }

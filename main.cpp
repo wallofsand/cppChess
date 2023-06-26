@@ -2,17 +2,17 @@
 #include "Player.h"
 
 U64 perft_root(int depth, int log_depth = 1);
-U64 perft(int depth, U64& nodes);
+U64 perft(int depth, int log_depth, U64& nodes);
 U64 eperft_root(int depth);
 U64 eperft(int depth, U64& nodes);
 
-const int SIM_DEPTH = 5;
+const int SIM_DEPTH = 4;
 
 const std::string HELP_STRINGS[] = {
     "\nWelcome to Graham's C++ chess!\n"
     "Enter a move exactly as it is printed to play that move.\n"
     "Or enter one of the following commands:\n"
-    "end: \tQuit the game.\n",
+    "quit: \tQuit the game.\n",
     "um x: \tUndo the last x moves.\n",
     "aim x: \tSearch to depth x and make a move. Allows depth of 1-9.\n",
     "\tSearches deeper than four ply may take extemely long.\n",
@@ -45,11 +45,12 @@ int main(int arg0, char** args) {
     } human;
     fmt::print("Welcome to Graham's C++ chess!\nWhich color will you play?\n   0: white      1: black\n   2: sim game   3: free play\n");
     int in = PLAY_STOP;
+    in = PLAY_SIM;
     while (in < PLAY_WHITE || in >= PLAY_STOP)
         std::cin >> in;
     human = human_index(in);
 
-    // Chess::stack.top->pos = new Chess (ch_cst::TEST_FEN);
+    // Chess::stack.top->pos = new Chess (ch_cst::LONG_FEN);
     Chess::stack.top->pos = new Chess (ch_cst::START_FEN);
 
     // Player low_mobility(0.80f), high_mobility(1.20f);
@@ -58,7 +59,7 @@ int main(int arg0, char** args) {
     bool playing = true;
     std::string last_move = "ERROR";
     Timer game_timer;
-    SearchLogger sim_log("sim_log", 0, (fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND));
+    SearchLogger sim_log("sim_log");
 
     U64 nodes = 0;
 
@@ -72,8 +73,8 @@ int main(int arg0, char** args) {
         // print ui
         fmt::print("\n");
         ch.print_board(true);
-        fmt::print("fen: {}\nhash: {:0>16X}\nwrites: {} hits: {} fill: %{:2.2f}\n",
-            ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::fill_ratio() * 100);
+        fmt::print("fen: {}\nhash: {:0>16X}\nwrites: {} hits: {} collisions: {} fill: %{:2.2f}\n",
+            ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::collisions, TTable::fill_ratio() * 100);
         engine.eval(0, true);
         fmt::print("nodes: {:<10d} n/s: {:0.3f} time: {:0.3f}s\n",
                 nodes, game_timer.elapsed() >= 0.01f ? nodes / game_timer.elapsed() : 0.0f, game_timer.elapsed());
@@ -91,12 +92,10 @@ int main(int arg0, char** args) {
         std::string input = "";
 
         if (human == PLAY_SIM && mgen.is_game_over(false))
-            human = PLAY_FREE;
+            playing = false;
 
         // get input
-        if (!ch.black_to_move && human == PLAY_WHITE
-                || ch.black_to_move && human == PLAY_BLACK
-                || human == PLAY_FREE)
+        if (human == ch.black_to_move|| human == PLAY_FREE)
             std::cin >> input;
         else {
             // get computer player input
@@ -105,10 +104,8 @@ int main(int arg0, char** args) {
             move engine_move = engine.iterative_search(SIM_DEPTH, nodes, false);
             last_move = MoveGenerator::move_san(engine_move);
             Chess::push_move(engine_move);
-            if (human == PLAY_SIM) {
-                if (!ch.black_to_move) sim_log.write(std::to_string(ch.fullmoves) + ". ");
-                sim_log.write(last_move + " ");
-            }
+            if (!ch.black_to_move) sim_log.write(std::to_string(ch.fullmoves) + ". ");
+            sim_log.write(last_move + " ");
             continue;
         }
 
@@ -118,14 +115,12 @@ int main(int arg0, char** args) {
             while (undos < 1)
                 std::cin >> undos;
             Chess::unmake_move(undos);
-        } else if (input == "fen")
-            fmt::print("{}\n", ch.fen());
-        else if (input == "help" || input == "?")
+        } else if (input == "help" || input == "?") {
             for (std::string tip : HELP_STRINGS)
                 fmt::print("{}", tip);
-        else if (input == "probe")
+        } else if (input == "probe") {
             fmt::print("{}\n", TTable::probe(ch.zhash).to_string());
-        else if (input == "best") {
+        } else if (input == "best") {
             Entry e = TTable::probe(ch.zhash);
             if (TTable::probe(ch.zhash).best)
                 fmt::print("{}\n", MoveGenerator::move_san(TTable::probe(ch.zhash).best));
@@ -154,7 +149,7 @@ int main(int arg0, char** args) {
             while (depth < 0)
                 std::cin >> depth;
             eperft_root(depth);
-        } else if (input == "end") {
+        } else if (input == "quit") {
             playing = false;
         } else for (int i = 0; i < moves[MAXMOVES - 1]; i++) {
             if (input != MoveGenerator::move_san(moves[i]))
@@ -176,7 +171,7 @@ int main(int arg0, char** args) {
     return 0;
 }
 
-SearchLogger perft_log("perft_log", 0);
+SearchLogger perft_log("perft_log");
 
 /*
  * PERformance Test root method
@@ -187,11 +182,9 @@ SearchLogger perft_log("perft_log", 0);
  */
 U64 perft_root(int depth, int log_depth) {
     Chess ch = *Chess::state();
-    log_depth = log_depth < depth ? log_depth : depth;
-    perft_log.depth = depth - log_depth;
     U64 leaf_nodes = 0;
     U64 nodes = 0;
-    if (depth > perft_log.depth)
+    if (log_depth > 0)
         perft_log.write(fmt::format("Starting perft({}) at {}\n",
             depth, SearchLogger::time_to_string()));
     Timer perft_timer;
@@ -205,13 +198,13 @@ U64 perft_root(int depth, int log_depth) {
     else for (int mvidx = 0; mvidx < moves[MAXMOVES - 1]; mvidx++) {
         move mv = moves[mvidx];
         std::cout << fmt::format("{}/{}:\t{} ", mvidx + 1, moves[MAXMOVES - 1], Move::to_string(mv));
-        if (depth > perft_log.depth)
+        if (log_depth > 0)
             perft_log.buffer = fmt::format("{}/{}:\t{} ", mvidx + 1, moves[MAXMOVES - 1], Move::to_string(mv));
         Chess::push_move(mv);
         nodes++;
-        U64 i = perft(depth - 1, nodes);
+        U64 i = perft(depth - 1, log_depth - 1, nodes);
         std::cout << i << std::endl;
-        if (depth == 1 + perft_log.depth)
+        if (log_depth > 0)
             perft_log.write(fmt::format("{}{}\n", perft_log.buffer, std::to_string(i)));
         leaf_nodes += i;
         ch.unmake_move(1);
@@ -221,7 +214,7 @@ U64 perft_root(int depth, int log_depth) {
         nodes_per_second = std::round(nodes_per_second / perft_timer.elapsed());
 
     // test finished, print results
-    if (depth > perft_log.depth)
+    if (log_depth > 0)
         perft_log.write(fmt::format("{}: search finished in {}s at {} nodes/s\n{} leaf nodes found at depth {}.\n",
             SearchLogger::time_to_string(), perft_timer.elapsed(), nodes_per_second, leaf_nodes, depth));
     std::cout << fmt::format("{}: search finished in {}s at {} nodes/s\n{} leaf nodes found at depth {}.\n",
@@ -229,7 +222,7 @@ U64 perft_root(int depth, int log_depth) {
 
     // initial position tested, verify results
     if (ch.fen() == ch_cst::START_FEN) {
-        if (depth > perft_log.depth) {
+        if (log_depth > 0) {
             perft_log.write(fmt::format("{} nodes expected. ", PERFT_RESULTS[depth]));
             if (leaf_nodes != std::stoll(PERFT_RESULTS[depth]))
                 perft_log.write("Uh oh!\n");
@@ -243,7 +236,7 @@ U64 perft_root(int depth, int log_depth) {
             std::cout << "Nice!";
         std::cout << std::endl;
     }
-    if (depth > perft_log.depth)
+    if (log_depth > 0)
         perft_log.write("\n");
     return leaf_nodes;
 }
@@ -253,7 +246,7 @@ U64 perft_root(int depth, int log_depth) {
  * @param ch the current position to search
  * @param depth number of ply remaining in the search
  */
-U64 perft(int depth, U64& nodes) {
+U64 perft(int depth, int log_depth, U64& nodes) {
     if (!depth)
         return 1;
     Chess ch = *Chess::state();
@@ -262,16 +255,16 @@ U64 perft(int depth, U64& nodes) {
     move moves[MAXMOVES] = {};
     perft_gen.gen_moves(moves);
     for (int mvidx = 0; mvidx < moves[MAXMOVES - 1]; mvidx++) {
-        if (depth > perft_log.depth)
+        if (log_depth > 0)
             perft_log.buffer += fmt::format(" {}", MoveGenerator::move_san(moves[mvidx]));
         Chess::push_move(moves[mvidx]);
         nodes++;
-        U64 i = perft(depth - 1, nodes);
+        U64 i = perft(depth - 1, log_depth - 1, nodes);
         leaf_nodes += i;
         ch.unmake_move(1);
-        if (depth == 1 + perft_log.depth)
+        if (depth == 1 + log_depth)
             perft_log.write(fmt::format("{} {}\n", perft_log.buffer, std::to_string(i)));
-        if (depth > perft_log.depth)
+        if (log_depth > 0)
             perft_log.buffer.erase(perft_log.buffer.find_last_of(' '), perft_log.buffer.length());
     }
     return leaf_nodes;

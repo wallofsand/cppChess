@@ -9,8 +9,7 @@
 
 typedef std::mt19937_64 MyRNG;
 
-struct Entry
-{
+struct Entry {
     Entry() : key(0), depth(-100), flag(0), score(0.0f), best(0) {}
     Entry(U64 k, int8_t d, uint8_t f, float score) : key(k), depth(d), flag(f), score(score), best(0) {}
     Entry(U64 k, int8_t d, uint8_t f, float score, move m) : key(k), depth(d), flag(f), score(score), best(m) {}
@@ -19,9 +18,9 @@ struct Entry
     uint8_t flag;
     float score;
     move best;
-    inline std::string to_string() const
-    { return fmt::format("key: {} depth: {} flag: {} score: {} best: {}",
-        key, depth, flag, score, best); };
+    inline std::string to_string() const { return fmt::format(
+        "key: {} depth: {} flag: {} score: {} best: {}",
+         key,    depth,    flag,    score,    best); };
     // eval is exact value (all moves were searched)
     static const uint8_t FLAG_EXACT = 1;
     // eval is < alpha value
@@ -30,8 +29,7 @@ struct Entry
     static const uint8_t FLAG_BETA = 3;
 };
 
-class TTable
-{
+class TTable {
 public:
     TTable();
     // smaller table cleared every move
@@ -53,14 +51,14 @@ public:
     static U64 ep_file[8];
 
     static U64 is_black_turn;
-    static U64 hits, collisions, writes;
+    static U64 hits, collisions, writes, clears;
 
     static void clear();
     static float fill_ratio();
     static int hash_index(U64 key);
     static void add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv = 0);
-    static Entry read(U64 key);
-    static Entry probe(U64 key);
+    static Entry& read(U64 key);
+    static Entry& probe(U64 key);
 private:
     static Entry table[DEFAULT_SIZE];
 };
