@@ -20,8 +20,9 @@ public:
     float eval(int mate_offset, bool test = false) const;
     float eval_position(float middlegame_weight) const;
     float eval_piece(float middlegame_weight, int piece, bool is_black) const;
-    float king_safety(bool is_black) const;
+    float king_safety(bool is_black, U64 op_attack_mask) const;
     void order_moves_by_piece(const move moves[MAXMOVES], move* ordered) const;
+    int best_piece() const;
 private:
     SearchLogger search_log;
     float var_endgame_weight = 32.0f;

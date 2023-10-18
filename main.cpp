@@ -6,7 +6,7 @@ U64 perft(int depth, U64& nodes);
 U64 eperft_root(int depth);
 U64 eperft(int depth, U64& nodes);
 
-const int SIM_DEPTH = 5;
+const int SIM_DEPTH = 4;
 
 const std::string HELP_STRINGS[] = {
     "\nWelcome to Graham's C++ chess!\n"
@@ -44,7 +44,7 @@ int main(int arg0, char** args) {
         PLAY_STOP
     } human;
     fmt::print("Welcome to Graham's C++ chess!\nWhich color will you play?\n   0: white      1: black\n   2: sim game   3: free play\n");
-    int in = PLAY_STOP;
+    int in = PLAY_SIM;
     while (in < PLAY_WHITE || in >= PLAY_STOP)
         std::cin >> in;
     human = human_index(in);
@@ -56,10 +56,10 @@ int main(int arg0, char** args) {
     // Player players[2] = { low_mobility, high_mobility };
 
     bool playing = true;
+    bool print_ui = true;
     std::string last_move = "ERROR";
     Timer game_timer;
     SearchLogger sim_log("sim_log", 0, (fmt::file::WRONLY | fmt::file::CREATE | fmt::file::APPEND));
-
     U64 nodes = 0;
 
     // main game loop
@@ -68,38 +68,43 @@ int main(int arg0, char** args) {
         MoveGenerator mgen(ch);
         move moves[MAXMOVES] = {};
         mgen.gen_moves(moves);
-
         // print ui
-        fmt::print("\n");
-        ch.print_board(true);
-        fmt::print("fen: {}\nhash: {:0>16X}\nwrites: {} hits: {} fill: %{:2.2f}\n",
-            ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::fill_ratio() * 100);
-        engine.eval(0, true);
-        fmt::print("nodes: {:<10d} n/s: {:0.3f} time: {:0.3f}s\n",
-                nodes, game_timer.elapsed() >= 0.01f ? nodes / game_timer.elapsed() : 0.0f, game_timer.elapsed());
-        if (Chess::stack.top->next)
-            fmt::print("{}{} {}\n", Chess::stack.top->next->pos->fullmoves, ch.black_to_move ? ". " : ".. ", last_move);
-        fmt::print("reps: {} halfmoves: {}\n", ch.repetitions(), ch.halfmoves);
-        if (!playing) break;
-        if (!ch.black_to_move && human == PLAY_WHITE || ch.black_to_move && human == PLAY_BLACK || human == PLAY_FREE)
-            for (int i = 0; i < moves[MAXMOVES - 1]; i++)
-                fmt::print("{} ", MoveGenerator::move_san(moves[i]));
-        fmt::print("\n{} to move: ", ch.black_to_move ? "Black" : "White");
+        if (print_ui) {
+            fmt::print("\n");
+            ch.print_board(true);
+            fmt::print("fen: {}\nhash: {:0>16X}\nwrites: {} hits: {} fill: %{:2.2f} fill2: %{:2.2f}\n",
+                ch.fen(), ch.zhash, TTable::writes, TTable::hits, TTable::fill_ratio() * 100, TTable::fill_test() * 100);
+            // print position eval
+            engine.eval(0, true);
+            // print search information
+            fmt::print("nodes: {:<10d} n/s: {:0.3f} time: {:0.3f}s\n",
+                    nodes, game_timer.elapsed() >= 0.01f ? nodes / game_timer.elapsed() : 0.0f, game_timer.elapsed());
+            // print game information
+            if (Chess::stack.top->next)
+                fmt::print("{}{} {}\n", Chess::stack.top->next->pos->fullmoves, ch.black_to_move ? ". " : ".. ", last_move);
+            fmt::print("reps: {} halfmoves: {}\n", ch.repetitions(), ch.halfmoves);
+            // print legal moves if it's a human player's turn
+            if (!ch.black_to_move && human == PLAY_WHITE || ch.black_to_move && human == PLAY_BLACK || human == PLAY_FREE)
+                for (int i = 0; i < moves[MAXMOVES - 1]; i++)
+                    fmt::print("{} ", MoveGenerator::move_san(moves[i]));
+            // print player to move
+            fmt::print("\n{} to move: ", ch.black_to_move ? "Black" : "White");
+        }
 
         nodes = 0;
         game_timer.reset();
         std::string input = "";
 
-        if (human == PLAY_SIM && mgen.is_game_over(false))
-            human = PLAY_FREE;
+        if (human == PLAY_SIM && mgen.is_game_over(false)) {
+            sim_log.write("\n");
+            break;
+        }
 
-        // get input
-        if (!ch.black_to_move && human == PLAY_WHITE
-                || ch.black_to_move && human == PLAY_BLACK
-                || human == PLAY_FREE)
+        // get human player input
+        if (human == PLAY_FREE || ch.black_to_move == human)
             std::cin >> input;
+        // get computer player input
         else {
-            // get computer player input
             std::cout << "Pondering . . ." << std::endl;
             // move engine_move = players[ch.black_to_move].iterative_search(ch, SIM_DEPTH, nodes, false);
             move engine_move = engine.iterative_search(SIM_DEPTH, nodes, false);

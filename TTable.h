@@ -9,8 +9,7 @@
 
 typedef std::mt19937_64 MyRNG;
 
-struct Entry
-{
+struct Entry {
     Entry() : key(0), depth(-100), flag(0), score(0.0f), best(0) {}
     Entry(U64 k, int8_t d, uint8_t f, float score) : key(k), depth(d), flag(f), score(score), best(0) {}
     Entry(U64 k, int8_t d, uint8_t f, float score, move m) : key(k), depth(d), flag(f), score(score), best(m) {}
@@ -30,13 +29,12 @@ struct Entry
     static const uint8_t FLAG_BETA = 3;
 };
 
-class TTable
-{
+class TTable {
 public:
     TTable();
     // smaller table cleared every move
-    static const int DEFAULT_SIZE = 5595979;
-    // static const int DEFAULT_SIZE = 35000011;
+    // static const int DEFAULT_SIZE = 5595979;
+    static const int DEFAULT_SIZE = 35000011;
     static const U64 SEED_VAL = 15375420585056461361ull;
 
     // the Mersenne Twister with a popular choice of parameters
@@ -56,6 +54,7 @@ public:
     static U64 hits, collisions, writes;
 
     static void clear();
+    static float fill_test();
     static float fill_ratio();
     static int hash_index(U64 key);
     static void add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv = 0);

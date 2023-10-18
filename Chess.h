@@ -9,14 +9,12 @@
 #include "TTable.h"
 #include "ChessStack.h"
 
-namespace ch_cst
-{
+namespace ch_cst {
     const std::string TEST_FEN = "4k3/4pp2/8/8/8/8/8/3QK3 w KQkq - 0 1";
     const std::string START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 }
 
-class Chess
-{
+class Chess {
 public:
     Chess();
     Chess(const Chess& ch);

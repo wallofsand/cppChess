@@ -524,7 +524,7 @@ std::string MoveGenerator::move_san(move mv) {
     int piece = ch.piece_at(start);
 
     // check for ambiguity
-    for (int i = 0; i < moves[MAXMOVES - 1]; i++) {
+    for (int i = 0; i < moves[MAXMOVES-1]; i++) {
         move m2 = moves[i];
         if (Move::start(m2) == start || Move::end(m2) != end || ch.piece_at(Move::start(m2)) != piece)
             continue;
@@ -564,8 +564,9 @@ std::string MoveGenerator::move_san(move mv) {
     Chess::push_move(mv);
     MoveGenerator check_gen(Chess::state());
     check_gen.init(false);
+    check_gen.gen_moves(moves);
     if (check_gen.in_check)
-        san += "+";
+        san += !moves[MAXMOVES-1] ? "#" : "+";
     Chess::unmake_move(1);
 
     return san;

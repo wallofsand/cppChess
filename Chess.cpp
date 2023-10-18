@@ -175,15 +175,15 @@ Chess::Chess(const Chess& _ch) {
     this->fullmoves     = _ch.fullmoves;
     this->halfmoves     = _ch.halfmoves;
     // copy the bitboards
-    this->bb_white   = _ch.bb_white;
-    this->bb_black   = _ch.bb_black;
-    this->bb_pawns   = _ch.bb_pawns;
-    this->bb_knights = _ch.bb_knights;
-    this->bb_bishops = _ch.bb_bishops;
-    this->bb_rooks   = _ch.bb_rooks;
-    this->bb_queens  = _ch.bb_queens;
-    this->bb_kings   = _ch.bb_kings;
-    this->bb_occ     = _ch.bb_occ;
+    this->bb_white      = _ch.bb_white;
+    this->bb_black      = _ch.bb_black;
+    this->bb_pawns      = _ch.bb_pawns;
+    this->bb_knights    = _ch.bb_knights;
+    this->bb_bishops    = _ch.bb_bishops;
+    this->bb_rooks      = _ch.bb_rooks;
+    this->bb_queens     = _ch.bb_queens;
+    this->bb_kings      = _ch.bb_kings;
+    this->bb_occ        = _ch.bb_occ;
 }
 
 /*

@@ -16,8 +16,10 @@ move Player::iterative_search(int depth, U64& nodes, bool test) {
     MoveGenerator mgen(Chess::state());
     mgen.gen_moves(moves);
     bool extended = false;
+    // extend search in pawn endgames
+    if (best_piece() == ch_cst::PAWN) depth += 2;
     // depth += BB::count_bits(Chess::state()->bb_occ) < 6;
-    if (TTable::fill_ratio() > 0.7) TTable::clear();
+    // if (TTable::fill_ratio() > 0.7) TTable::clear();
 
     fmt::print("Beginning search at depth ");
     for (int iter = 1; iter <= depth; iter++) {
@@ -35,7 +37,7 @@ move Player::iterative_search(int depth, U64& nodes, bool test) {
             high_score = score > high_score ? score : high_score;
         }
         if (!extended && iter == depth && high_score > var_piece_value[ch_cst::QUEEN] / 100) {
-            // if we are winning by more than a queen, search a little more.
+            // if we are winning by more than a queen, search a lot more.
             depth += 3;
             extended = true;
         }
@@ -63,7 +65,7 @@ float Player::nega_max(int depth, U64& nodes, float alpha, float beta, bool test
     if (!moves[MAXMOVES - 1])
         return eval(depth);
 
-    // check the t-table for a best move
+    // check for threefold repition
     if (ch.repetitions() > 2)
         return 0.0f;
 
@@ -80,6 +82,7 @@ float Player::nega_max(int depth, U64& nodes, float alpha, float beta, bool test
         TTable::hits--;
     }
 
+    // end of normal search, begin quiesence search
     if (!depth) {
         nodes--;
         float score = quiescence_search(depth, nodes, alpha, beta, test);
@@ -124,6 +127,10 @@ float Player::quiescence_search(int depth, U64& nodes, float alpha, float beta, 
     nodes++;
     if (!moves[MAXMOVES - 1] || stand_pat >= beta)
         return stand_pat;
+
+    // check for threefold repition
+    if (ch.repetitions() > 2)
+        return 0.0f;
 
     // Delta pruning: if a huge swing (> 1 queen)
     // is not enough to improve the position, give up
@@ -208,24 +215,38 @@ float Player::eval(int mate_offset, bool test) const {
     eval_gen.gen_moves(moves);
 
     // is the game over/detect threefold repetition
-    if (!moves[MAXMOVES - 1] || ch.repetitions() >= 3)
+    if (!moves[MAXMOVES - 1] || ch.repetitions() >= 3) {
         // if it is a stalemate, return 0
+        if (test) fmt::print("{}", eval_gen.in_check ? "Checkmate!\n" : "Game is a stalemate!\n");
         return eval_gen.in_check ? (-99.99f - mate_offset) : 0;
+    }
 
     // game isn't over, eval the position:
     // endgame interpolation
     float middlegame_weight = BB::count_bits(ch.bb_occ) / var_endgame_weight;
     float score = eval_position(middlegame_weight);
 
+
+    // check op moves for mobility & king safety
+    MoveGenerator op_gen(Chess::state());
+    op_gen.gen_moves(moves);
+
+    // TODO: completely unfuck king safety
+    // king safety score:
+    U64 attack_mask = eval_gen.op_attack_mask;
+    U64 op_attack_mask = op_gen.op_attack_mask;
+    float white_king_safety = king_safety(false, !ch.black_to_move ? op_attack_mask : attack_mask);
+    float black_king_safety = king_safety(true, ch.black_to_move ? op_attack_mask : attack_mask);
+    // score += white_king_safety;
+    // score -= black_king_safety;
+
     // adjust the eval so the player to move is positive
     score = ch.black_to_move ? -score : score;
 
     // mobility score:
     ch.black_to_move = !ch.black_to_move;
-    int net_mobility = moves[MAXMOVES - 1];
-    MoveGenerator op_gen(Chess::state());
-    op_gen.gen_moves(moves);
-    net_mobility -= moves[MAXMOVES - 1];
+    int net_mobility = moves[MAXMOVES-1];
+    net_mobility -= moves[MAXMOVES-1];
     ch.black_to_move = !ch.black_to_move;
 
     // mobility is worth less in the endgame
@@ -234,8 +255,10 @@ float Player::eval(int mate_offset, bool test) const {
 
     // round to the nearest hundreth
     score = std::round(score) / 100;
+    // print debug information
     if (test) fmt::print("net moves: {:<5} | mobility: {:<4.2f} | score: {:<4.2f}\n",
         net_mobility, mobility_score/100, score);
+    if (test) fmt::print("white/black king safety: {} / {}\n", white_king_safety, black_king_safety);
     return score;
 }
 
@@ -273,9 +296,22 @@ float Player::eval_piece(float middlegame_weight, int piece, bool is_black) cons
     return score;
 }
 
-float Player::king_safety(bool is_black) const {
+// returns the number of threatened squares around the king
+float Player::king_safety(bool is_black, U64 op_attack_mask) const {
     Chess ch = *Chess::state();
-    U64 kattacks = Compass::king_attacks[ch.find_king(is_black)];
+    // square around the king
+    U64 kattacks = Compass::king_attacks[ch.find_king(is_black)]
+    // squares attacked by op
+            & op_attack_mask;
+    return BB::count_bits(kattacks);
+}
 
-    return 0.25 * BB::count_bits(kattacks);
+int Player::best_piece() const {
+    Chess ch = *Chess::state();
+    if (ch.bb_queens) return ch_cst::QUEEN;
+    if (ch.bb_rooks) return ch_cst::ROOK;
+    if (ch.bb_bishops) return ch_cst::BISHOP;
+    if (ch.bb_knights) return ch_cst::KNIGHT;
+    if (ch.bb_pawns) return ch_cst::PAWN;
+    return ch_cst::KING;
 }

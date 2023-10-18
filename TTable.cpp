@@ -9,8 +9,7 @@ U64 TTable::castle_rights_wb_kq[2][2];
 U64 TTable::ep_file[8];
 Entry TTable::table[TTable::DEFAULT_SIZE];
 
-TTable::TTable()
-{
+TTable::TTable() {
     hits = 0;
     collisions = 0;
     writes = 0;
@@ -32,40 +31,40 @@ TTable::TTable()
 /*
  * Method to empty the transposition table.
  */
-void TTable::clear()
-{
+void TTable::clear() {
     writes = 0;
     hits = 0;
-    for (int idx = 0; idx < DEFAULT_SIZE; idx++)
-    {
+    for (int idx = 0; idx < DEFAULT_SIZE; idx++) {
         table[idx].key = 0;
         table[idx].depth = -100;
         table[idx].flag = 0;
         table[idx].score = 0.0f;
         table[idx].best = 0;
     }
+    fmt::print("TTable cleared!\n");
+}
+
+float TTable::fill_test() {
+    return (float) writes / DEFAULT_SIZE;
 }
 
 /*
  * Method to calculate how full the transposition table is
  * @return the percent of Entries in the t-table that have been written too
  */
-float TTable::fill_ratio()
-{
+float TTable::fill_ratio() {
     float num_elements = 0;
     for (Entry e : table)
         num_elements += e.flag > 0;
     return num_elements / DEFAULT_SIZE;
 }
 
-int TTable::hash_index(U64 key)
-{
+int TTable::hash_index(U64 key) {
     return std::abs((int) (key % DEFAULT_SIZE));
 }
 
-void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv)
-{
-    if (writes / DEFAULT_SIZE > 0.7)
+void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv) {
+    if ((float) writes / DEFAULT_SIZE > 0.7)
         clear();
     int index = hash_index(key);
     // if hash_index(key) is full, find the next empty index
@@ -81,15 +80,13 @@ void TTable::add_item(U64 key, int8_t depth, uint8_t flag, float score, move mv)
     writes++;
 }
 
-Entry TTable::probe(U64 key)
-{
+Entry TTable::probe(U64 key) {
     int index = hash_index(key);
     while (read(index).flag && read(index).key != key)
         index++;
     return read(index);
 }
 
-Entry TTable::read(U64 key)
-{
+Entry TTable::read(U64 key) {
     return table[hash_index(key)];
 }

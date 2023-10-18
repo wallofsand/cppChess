@@ -4,6 +4,10 @@ project(cppChess VERSION 0.1.0)
 include_directories(cppChess ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/fmt/include/fmt)
 
+set(DCMAKE_CXX_FLAGS -pg)
+set(DCMAKE_EXE_LINKER_FLAGS -pg)
+set(DCMAKE_SHARED_LINKER_FLAGS -pg)
+
 add_executable(cppChess
     main.cpp Compass.cpp
     Bitboard.cpp Chess.cpp
