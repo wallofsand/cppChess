@@ -243,6 +243,7 @@ float Player::eval(int mate_offset, bool test) const {
     // adjust the eval so the player to move is positive
     score = ch.black_to_move ? -score : score;
 
+    // TODO: This also needs unfucking
     // mobility score:
     ch.black_to_move = !ch.black_to_move;
     int net_mobility = moves[MAXMOVES-1];

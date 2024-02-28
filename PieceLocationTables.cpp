@@ -16,7 +16,7 @@ const int* PieceLocationTables::endgame_piece_tables[7] =
 
 // all tables are read from black's perspective
 // when white reads a table, we need to flip it along the Y axis
-const int PieceLocationTables::read(const int* table, int sq, bool is_black)
+const int PieceLocationTables::read(const int table[64], int sq, bool is_black)
 {
     sq = is_black ? sq : ((7 - (sq >> 3)) << 3) + (sq % 8);
     return table[sq];

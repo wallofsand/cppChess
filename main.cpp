@@ -37,6 +37,7 @@ int main(int arg0, char** args) {
     TTable();
 
     enum human_index {
+        AWAIT_INPUT = -1,
         PLAY_WHITE,
         PLAY_BLACK,
         PLAY_SIM,
@@ -44,7 +45,8 @@ int main(int arg0, char** args) {
         PLAY_STOP
     } human;
     fmt::print("Welcome to Graham's C++ chess!\nWhich color will you play?\n   0: white      1: black\n   2: sim game   3: free play\n");
-    int in = PLAY_SIM;
+    int in = -1;
+    // in = PLAY_SIM;
     while (in < PLAY_WHITE || in >= PLAY_STOP)
         std::cin >> in;
     human = human_index(in);
